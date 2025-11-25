@@ -1,0 +1,97 @@
+//
+//  RecentlyViewedCardView.swift
+//  Aroti
+//
+
+import SwiftUI
+
+struct RecentlyViewedCardView: View {
+    private let items = ["Celtic Cross", "Three Card", "Daily Spread"]
+    
+    var body: some View {
+        DesignCard(title: "Card / Recently Viewed") {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 16) {
+                    ForEach(items, id: \.self) { item in
+                        ZStack(alignment: .topLeading) {
+                            // Background
+                            ZStack {
+                                // Glass card background (rgba(23, 20, 31, 0.75))
+                                RoundedRectangle(cornerRadius: DesignRadius.main)
+                                    .fill(Color(red: 23/255, green: 20/255, blue: 31/255, opacity: 0.75))
+                                
+                                // Ultra thin material for glass effect
+                                RoundedRectangle(cornerRadius: DesignRadius.main)
+                                    .fill(.ultraThinMaterial)
+                                
+                                // Liquid glass highlight at top
+                                VStack {
+                                    Rectangle()
+                                        .fill(
+                                            LinearGradient(
+                                                colors: [Color.clear, Color.white.opacity(0.12), Color.clear],
+                                                startPoint: .leading,
+                                                endPoint: .trailing
+                                            )
+                                        )
+                                        .frame(height: 1)
+                                        .opacity(0.8)
+                                    Spacer()
+                                }
+                                
+                                // Decorative shimmer element (top right)
+                                VStack {
+                                    HStack {
+                                        Spacer()
+                                        Circle()
+                                            .fill(Color.white.opacity(0.4))
+                                            .frame(width: 8, height: 8)
+                                            .padding(.top, 8)
+                                            .padding(.trailing, 8)
+                                    }
+                                    Spacer()
+                                }
+                            }
+                            .overlay(
+                                RoundedRectangle(cornerRadius: DesignRadius.main)
+                                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                            )
+                            
+                            // Content
+                            VStack(alignment: .leading, spacing: 12) {
+                                // Tag badge
+                                Text("Recently Viewed".uppercased())
+                                    .font(DesignTypography.caption1Font(weight: .medium))
+                                    .foregroundColor(DesignColors.mutedForeground)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 6)
+                                    .background(
+                                        Capsule()
+                                            .fill(Color.white.opacity(0.08))
+                                            .overlay(
+                                                Capsule()
+                                                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                                            )
+                                    )
+                                
+                                // Title
+                                Text(item)
+                                    .font(DesignTypography.headlineFont(weight: .semibold))
+                                    .foregroundColor(DesignColors.foreground)
+                                
+                                // Subtitle
+                                Text("Tap to view")
+                                    .font(DesignTypography.bodyFont())
+                                    .foregroundColor(DesignColors.mutedForeground)
+                            }
+                            .padding(24)
+                        }
+                        .shadow(color: Color.black.opacity(0.45), radius: 16, x: 0, y: 4)
+                        .shadow(color: Color.black.opacity(0.35), radius: 4, x: 0, y: 1)
+                    }
+                }
+            }
+        }
+    }
+}
+

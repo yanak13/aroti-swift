@@ -12,6 +12,7 @@ enum TabItem: String, CaseIterable {
     case discovery = "Discovery"
     case booking = "Booking"
     case profile = "Profile"
+    case guidance = "Guidance"
     
     var icon: String {
         switch self {
@@ -19,6 +20,7 @@ enum TabItem: String, CaseIterable {
         case .discovery: return "safari.fill"
         case .booking: return "calendar"
         case .profile: return "person.fill"
+        case .guidance: return "message.fill"
         }
     }
 }

@@ -12,6 +12,7 @@ struct BaseHeader: View {
     let subtitle: String?
     let leftAction: HeaderAction?
     let rightAction: HeaderAction?
+    let rightView: AnyView?
     
     struct HeaderAction {
         let icon: Image
@@ -23,12 +24,14 @@ struct BaseHeader: View {
         title: String,
         subtitle: String? = nil,
         leftAction: HeaderAction? = nil,
-        rightAction: HeaderAction? = nil
+        rightAction: HeaderAction? = nil,
+        rightView: AnyView? = nil
     ) {
         self.title = title
         self.subtitle = subtitle
         self.leftAction = leftAction
         self.rightAction = rightAction
+        self.rightView = rightView
     }
     
     var body: some View {
@@ -61,7 +64,9 @@ struct BaseHeader: View {
                 
                 Spacer()
                 
-                if let rightAction = rightAction {
+                if let rightView = rightView {
+                    rightView
+                } else if let rightAction = rightAction {
                     Button(action: rightAction.action) {
                         rightAction.icon
                             .foregroundColor(DesignColors.foreground)

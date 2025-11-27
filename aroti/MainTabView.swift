@@ -55,6 +55,9 @@ struct MainTabView: View {
                     }
                 }
                 .tag(TabItem.profile)
+            case .guidance:
+                GuidanceView(selectedTab: $selectedTab)
+                    .tag(TabItem.guidance)
             }
         }
     }

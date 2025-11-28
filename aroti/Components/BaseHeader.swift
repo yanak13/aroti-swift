@@ -39,7 +39,7 @@ struct BaseHeader: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            HStack {
+            HStack(alignment: .center, spacing: 12) {
                 if let leftAction = leftAction {
                     Button(action: leftAction.action) {
                         leftAction.icon
@@ -49,10 +49,6 @@ struct BaseHeader: View {
                 } else if alignment == .center {
                     Spacer()
                         .frame(width: 24, height: 24)
-                }
-                
-                if alignment == .center {
-                    Spacer()
                 }
                 
                 VStack(alignment: alignment == .leading ? .leading : .center, spacing: 2) {
@@ -66,6 +62,7 @@ struct BaseHeader: View {
                             .foregroundColor(DesignColors.mutedForeground)
                     }
                 }
+                .frame(maxWidth: .infinity, alignment: alignment == .leading ? .leading : .center)
                 
                 if alignment == .center {
                     Spacer()

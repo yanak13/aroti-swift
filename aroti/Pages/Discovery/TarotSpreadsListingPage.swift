@@ -59,7 +59,8 @@ struct TarotSpreadsListingPage: View {
                             label: "Back to Discovery",
                             action: { dismiss() }
                         ),
-                        alignment: .leading
+                        alignment: .leading,
+                        horizontalPadding: 0
                     )
                     .padding(.top, 12)
                     

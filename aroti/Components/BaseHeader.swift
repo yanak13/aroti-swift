@@ -14,6 +14,7 @@ struct BaseHeader: View {
     let rightAction: HeaderAction?
     let rightView: AnyView?
     let alignment: HorizontalAlignment
+    let horizontalPadding: CGFloat
     
     struct HeaderAction {
         let icon: Image
@@ -27,7 +28,8 @@ struct BaseHeader: View {
         leftAction: HeaderAction? = nil,
         rightAction: HeaderAction? = nil,
         rightView: AnyView? = nil,
-        alignment: HorizontalAlignment = .center
+        alignment: HorizontalAlignment = .center,
+        horizontalPadding: CGFloat = DesignSpacing.sm
     ) {
         self.title = title
         self.subtitle = subtitle
@@ -35,6 +37,7 @@ struct BaseHeader: View {
         self.rightAction = rightAction
         self.rightView = rightView
         self.alignment = alignment
+        self.horizontalPadding = horizontalPadding
     }
     
     var body: some View {
@@ -82,7 +85,7 @@ struct BaseHeader: View {
                 }
             }
         }
-        .padding(.horizontal, DesignSpacing.sm)
+        .padding(.horizontal, horizontalPadding)
         .padding(.vertical, DesignSpacing.sm)
     }
 }

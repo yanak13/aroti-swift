@@ -312,7 +312,8 @@ private extension GuidanceView {
                                 )
                             }
                         }
-                    )
+                    ),
+                    alignment: .leading
                 )
             )
         case .overview:
@@ -329,7 +330,8 @@ private extension GuidanceView {
                         icon: Image(systemName: "star.fill"),
                         label: "View points",
                         action: { currentScreen = .points }
-                    )
+                    ),
+                    alignment: .leading
                 )
             )
         case .points:
@@ -341,7 +343,8 @@ private extension GuidanceView {
                         icon: Image(systemName: "chevron.left"),
                         label: "Back",
                         action: { currentScreen = .chat }
-                    )
+                    ),
+                    alignment: .leading
                 )
             )
         case .history:
@@ -353,7 +356,8 @@ private extension GuidanceView {
                         icon: Image(systemName: "chevron.left"),
                         label: "Back",
                         action: { currentScreen = .chat }
-                    )
+                    ),
+                    alignment: .leading
                 )
             )
         }
@@ -1170,30 +1174,13 @@ private struct GuidanceHistoryItem: View {
                     .foregroundColor(DesignColors.mutedForeground)
                 
                 // 3-dot menu
-                Menu {
-                    Button("Share", systemImage: "square.and.arrow.up") {
-                        onShare()
-                    }
-                    Button("Rename", systemImage: "pencil") {
-                        onRename()
-                    }
-                    Button(session.isArchived ? "Unarchive" : "Archive", systemImage: "archivebox") {
-                        onArchive()
-                    }
-                    Divider()
-                    Button("Delete", systemImage: "trash", role: .destructive) {
-                        onDelete()
-                    }
-                } label: {
-                    Image(systemName: "ellipsis")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(DesignColors.mutedForeground)
-                        .frame(width: 32, height: 32)
-                        .background(
-                            Circle()
-                                .fill(Color.white.opacity(0.05))
-                        )
-                }
+                CustomMenuButton(
+                    onShare: onShare,
+                    onRename: onRename,
+                    onArchive: onArchive,
+                    onDelete: onDelete,
+                    isArchived: session.isArchived
+                )
             }
         }
         .padding(.vertical, 12)

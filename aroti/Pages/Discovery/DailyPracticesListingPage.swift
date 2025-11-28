@@ -45,7 +45,8 @@ struct DailyPracticesListingPage: View {
                             icon: Image(systemName: "chevron.left"),
                             label: "Back to Discovery",
                             action: { dismiss() }
-                        )
+                        ),
+                        alignment: .leading
                     )
                     .padding(.top, 12)
                     

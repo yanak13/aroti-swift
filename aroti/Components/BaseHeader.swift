@@ -13,6 +13,7 @@ struct BaseHeader: View {
     let leftAction: HeaderAction?
     let rightAction: HeaderAction?
     let rightView: AnyView?
+    let alignment: HorizontalAlignment
     
     struct HeaderAction {
         let icon: Image
@@ -25,13 +26,15 @@ struct BaseHeader: View {
         subtitle: String? = nil,
         leftAction: HeaderAction? = nil,
         rightAction: HeaderAction? = nil,
-        rightView: AnyView? = nil
+        rightView: AnyView? = nil,
+        alignment: HorizontalAlignment = .center
     ) {
         self.title = title
         self.subtitle = subtitle
         self.leftAction = leftAction
         self.rightAction = rightAction
         self.rightView = rightView
+        self.alignment = alignment
     }
     
     var body: some View {
@@ -43,14 +46,16 @@ struct BaseHeader: View {
                             .foregroundColor(DesignColors.foreground)
                             .frame(width: 24, height: 24)
                     }
-                } else {
+                } else if alignment == .center {
                     Spacer()
                         .frame(width: 24, height: 24)
                 }
                 
-                Spacer()
+                if alignment == .center {
+                    Spacer()
+                }
                 
-                VStack(spacing: 2) {
+                VStack(alignment: alignment == .leading ? .leading : .center, spacing: 2) {
                     Text(title)
                         .font(DesignTypography.headlineFont())
                         .foregroundColor(DesignColors.foreground)
@@ -62,7 +67,9 @@ struct BaseHeader: View {
                     }
                 }
                 
-                Spacer()
+                if alignment == .center {
+                    Spacer()
+                }
                 
                 if let rightView = rightView {
                     rightView
@@ -72,7 +79,7 @@ struct BaseHeader: View {
                             .foregroundColor(DesignColors.foreground)
                             .frame(width: 24, height: 24)
                     }
-                } else {
+                } else if alignment == .center {
                     Spacer()
                         .frame(width: 24, height: 24)
                 }

@@ -20,85 +20,87 @@ struct DiscoveryView: View {
     @State private var points: Int = 120
     
     var body: some View {
-        GeometryReader { geometry in
-            ZStack(alignment: .bottom) {
-                CelestialBackground()
-                
-                ScrollView {
-                    VStack(spacing: 24) {
-                        // Header - matching Home page style
-                        HStack {
-                            Text("Discovery")
-                                .font(DesignTypography.title2Font(weight: .semibold))
-                                .foregroundColor(DesignColors.foreground)
-                            
-                            Spacer()
-                            
-                            // Points Badge
-                            HStack(spacing: 4) {
-                                Image(systemName: "sparkles")
-                                    .font(.system(size: 16))
-                                    .foregroundColor(DesignColors.accent)
-                                Text("\(points)")
-                                    .font(DesignTypography.subheadFont(weight: .medium))
-                                    .foregroundColor(DesignColors.accent)
-                            }
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(
-                                Capsule()
-                                    .fill(DesignColors.accent.opacity(0.1))
-                            )
-                        }
-                        .padding(.horizontal, DiscoveryLayout.horizontalPadding)
-                        .padding(.top, max(0, geometry.safeAreaInsets.top - 45))
-                        
-                        // Main Content
+        NavigationStack {
+            GeometryReader { geometry in
+                ZStack(alignment: .bottom) {
+                    CelestialBackground()
+                    
+                    ScrollView {
                         VStack(spacing: 24) {
-                            // 1. For You Section
-                            ForYouSection()
+                            // Header - matching Home page style
+                            HStack {
+                                Text("Discovery")
+                                    .font(DesignTypography.title2Font(weight: .semibold))
+                                    .foregroundColor(DesignColors.foreground)
+                                
+                                Spacer()
+                                
+                                // Points Badge
+                                HStack(spacing: 4) {
+                                    Image(systemName: "sparkles")
+                                        .font(.system(size: 16))
+                                        .foregroundColor(DesignColors.accent)
+                                    Text("\(points)")
+                                        .font(DesignTypography.subheadFont(weight: .medium))
+                                        .foregroundColor(DesignColors.accent)
+                                }
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(
+                                    Capsule()
+                                        .fill(DesignColors.accent.opacity(0.1))
+                                )
+                            }
+                            .padding(.horizontal, DiscoveryLayout.horizontalPadding)
+                            .padding(.top, max(0, geometry.safeAreaInsets.top - 45))
                             
-                            // 2. Tarot Spreads Section
-                            TarotSpreadsSection()
+                            // Main Content
+                            VStack(spacing: 24) {
+                                // 1. For You Section
+                                ForYouSection()
+                                
+                                // 2. Tarot Spreads Section
+                                TarotSpreadsSection()
+                                
+                                // 3. Browse by Category
+                                BrowseByCategorySection(
+                                    selectedCategory: $selectedCategory
+                                )
+                                
+                                // 4. Category Grid
+                                CategoryGridSection(selectedCategory: selectedCategory)
+                                
+                                // 5. Daily Practice
+                                DailyPracticeSection()
+                                
+                                // 6. Your Journey Section
+                                YourJourneySection()
+                                
+                                // 7. Recently Viewed Section
+                                RecentlyViewedSection()
+                                
+                                // 8. Courses Section
+                                CoursesSection()
+                            }
+                            .padding(.horizontal, DiscoveryLayout.horizontalPadding)
                             
-                            // 3. Browse by Category
-                            BrowseByCategorySection(
-                                selectedCategory: $selectedCategory
-                            )
-                            
-                            // 4. Category Grid
-                            CategoryGridSection(selectedCategory: selectedCategory)
-                            
-                            // 5. Daily Practice
-                            DailyPracticeSection()
-                            
-                            // 6. Your Journey Section
-                            YourJourneySection()
-                            
-                            // 7. Recently Viewed Section
-                            RecentlyViewedSection()
-                            
-                            // 8. Courses Section
-                            CoursesSection()
+                            // Footer spacing
+                            Spacer()
+                                .frame(height: 60)
                         }
-                        .padding(.horizontal, DiscoveryLayout.horizontalPadding)
-                        
-                        // Footer spacing
+                    }
+                    
+                    // Bottom Navigation Bar
+                    VStack {
                         Spacer()
-                            .frame(height: 60)
+                        BottomNavigationBar(selectedTab: $selectedTab) { tab in
+                            selectedTab = tab
+                        }
                     }
+                    .ignoresSafeArea(edges: .bottom)
                 }
-                
-                // Bottom Navigation Bar
-                VStack {
-                    Spacer()
-                    BottomNavigationBar(selectedTab: $selectedTab) { tab in
-                        selectedTab = tab
-                    }
-                }
-                .ignoresSafeArea(edges: .bottom)
+                .navigationBarHidden(true)
             }
-            .navigationBarHidden(true)
         }
     }
 }
@@ -144,7 +146,7 @@ struct ForYouSection: View {
                 
                 Spacer()
                 
-                Button(action: {}) {
+                NavigationLink(destination: ForYouListingPage()) {
                     HStack(spacing: 4) {
                         Text("View All")
                             .font(DesignTypography.subheadFont())
@@ -160,7 +162,10 @@ struct ForYouSection: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: DiscoveryLayout.interCardSpacing) {
                     ForEach(items) { item in
-                        ForYouCard(item: item)
+                        NavigationLink(destination: ArticleDetailPage(articleId: item.id)) {
+                            ForYouCard(item: item)
+                        }
+                        .buttonStyle(PlainButtonStyle())
                     }
                     ForYouDailyQuizCard()
                 }
@@ -283,7 +288,7 @@ struct TarotSpreadsSection: View {
                 
                 Spacer()
                 
-                Button(action: {}) {
+                NavigationLink(destination: TarotSpreadsListingPage()) {
                     HStack(spacing: 4) {
                         Text("View All")
                             .font(DesignTypography.subheadFont())
@@ -298,11 +303,14 @@ struct TarotSpreadsSection: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: DiscoveryLayout.interCardSpacing) {
                     ForEach(spreads) { spread in
-                        TarotSpreadCard(
-                            name: spread.title,
-                            cardCount: spread.cardCount,
-                            action: {}
-                        )
+                        NavigationLink(destination: TarotSpreadDetailPage(spreadId: spread.id)) {
+                            TarotSpreadCard(
+                                name: spread.title,
+                                cardCount: spread.cardCount,
+                                action: {}
+                            )
+                        }
+                        .buttonStyle(PlainButtonStyle())
                     }
                 }
                 .padding(.horizontal, DiscoveryLayout.horizontalPadding)
@@ -322,7 +330,10 @@ struct SpreadItem: Identifiable {
 struct BrowseByCategorySection: View {
     @Binding var selectedCategory: String?
     
-    let categories = ["All", "Tarot", "Numerology", "Meditation", "Crystals", "Astrology", "Moon Phases", "Rituals", "Candles"]
+    // First row: 8 items
+    let firstRowCategories = ["All", "Tarot", "Numerology", "Meditation", "Crystals", "Astrology", "Moon Phases", "Rituals"]
+    // Second row: 7 items
+    let secondRowCategories = ["Candles", "Energy Work", "Divination", "Chakras", "Manifestation", "Spiritual Guides", "Angel Numbers"]
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -336,23 +347,44 @@ struct BrowseByCategorySection: View {
             }
             
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    ForEach(categories, id: \.self) { category in
-                        let isAll = category == "All"
-                        CategoryChip(
-                            label: category,
-                            isActive: isAll ? selectedCategory == nil : selectedCategory == category,
-                            action: {
-                                if isAll {
-                                    selectedCategory = nil
-                                } else {
-                                    selectedCategory = selectedCategory == category ? nil : category
+                VStack(alignment: .leading, spacing: 8) {
+                    // First row
+                    HStack(spacing: 8) {
+                        ForEach(firstRowCategories, id: \.self) { category in
+                            let isAll = category == "All"
+                            CategoryChip(
+                                label: category,
+                                isActive: isAll ? selectedCategory == nil : selectedCategory == category,
+                                action: {
+                                    if isAll {
+                                        selectedCategory = nil
+                                    } else {
+                                        selectedCategory = selectedCategory == category ? nil : category
+                                    }
                                 }
-                            }
-                        )
-                        .padding(.horizontal, 4)
+                            )
+                        }
+                    }
+                    
+                    // Second row
+                    HStack(spacing: 8) {
+                        ForEach(secondRowCategories, id: \.self) { category in
+                            let isAll = category == "All"
+                            CategoryChip(
+                                label: category,
+                                isActive: isAll ? selectedCategory == nil : selectedCategory == category,
+                                action: {
+                                    if isAll {
+                                        selectedCategory = nil
+                                    } else {
+                                        selectedCategory = selectedCategory == category ? nil : category
+                                    }
+                                }
+                            )
+                        }
                     }
                 }
+                .frame(minWidth: UIScreen.main.bounds.width - (DiscoveryLayout.horizontalPadding * 2))
                 .padding(.horizontal, DiscoveryLayout.horizontalPadding)
             }
             .padding(.horizontal, -DiscoveryLayout.horizontalPadding)
@@ -375,7 +407,10 @@ struct CategoryGridSection: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: DiscoveryLayout.interCardSpacing) {
                     ForEach(categoryItems.filter { $0.category == category }) { item in
-                        CategoryGridCard(item: item)
+                        NavigationLink(destination: ArticleDetailPage(articleId: item.id)) {
+                            CategoryGridCard(item: item)
+                        }
+                        .buttonStyle(PlainButtonStyle())
                     }
                 }
                 .padding(.horizontal, DiscoveryLayout.horizontalPadding)
@@ -385,7 +420,10 @@ struct CategoryGridSection: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: DiscoveryLayout.interCardSpacing) {
                     ForEach(categoryItems) { item in
-                        CategoryGridCard(item: item)
+                        NavigationLink(destination: ArticleDetailPage(articleId: item.id)) {
+                            CategoryGridCard(item: item)
+                        }
+                        .buttonStyle(PlainButtonStyle())
                     }
                 }
                 .padding(.horizontal, DiscoveryLayout.horizontalPadding)
@@ -464,7 +502,7 @@ struct DailyPracticeSection: View {
                 
                 Spacer()
                 
-                Button(action: {}) {
+                NavigationLink(destination: DailyPracticesListingPage()) {
                     HStack(spacing: 4) {
                         Text("View All")
                             .font(DesignTypography.subheadFont())
@@ -479,7 +517,10 @@ struct DailyPracticeSection: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: DiscoveryLayout.interCardSpacing) {
                     ForEach(practices) { practice in
-                        DiscoveryPracticeCard(practice: practice)
+                        NavigationLink(destination: PracticeDetailPage(practiceId: practice.id)) {
+                            DiscoveryPracticeCard(practice: practice)
+                        }
+                        .buttonStyle(PlainButtonStyle())
                     }
                 }
                 .padding(.horizontal, DiscoveryLayout.horizontalPadding)
@@ -536,9 +577,9 @@ struct DiscoveryPracticeCard: View {
 // MARK: - Courses Section
 struct CoursesSection: View {
     let courses = [
-        CourseItem(id: "1", title: "Tarot Fundamentals", description: "Master the basics of tarot reading and card in...", lessonCount: 8, duration: "2h 30m", price: 29.99),
-        CourseItem(id: "2", title: "Advanced Astrology", description: "Deep dive into planetary aspects and chart in...", lessonCount: 12, duration: "4h 15m", price: 49.99),
-        CourseItem(id: "3", title: "Numerology Mastery", description: "Learn to calculate and interpret life path num...", lessonCount: 10, duration: "3h 20m", price: 39.99)
+        DiscoveryCourseItem(id: "1", title: "Tarot Fundamentals", description: "Master the basics of tarot reading and card in...", lessonCount: 8, duration: "2h 30m", price: 29.99),
+        DiscoveryCourseItem(id: "2", title: "Advanced Astrology", description: "Deep dive into planetary aspects and chart in...", lessonCount: 12, duration: "4h 15m", price: 49.99),
+        DiscoveryCourseItem(id: "3", title: "Numerology Mastery", description: "Learn to calculate and interpret life path num...", lessonCount: 10, duration: "3h 20m", price: 39.99)
     ]
     
     var body: some View {
@@ -555,7 +596,7 @@ struct CoursesSection: View {
                 
                 Spacer()
                 
-                Button(action: {}) {
+                NavigationLink(destination: CoursesListingPage()) {
                     HStack(spacing: 4) {
                         Text("View All")
                             .font(DesignTypography.subheadFont())
@@ -576,7 +617,7 @@ struct CoursesSection: View {
     }
 }
 
-struct CourseItem: Identifiable {
+struct DiscoveryCourseItem: Identifiable {
     let id: String
     let title: String
     let description: String
@@ -586,7 +627,7 @@ struct CourseItem: Identifiable {
 }
 
 struct CourseCard: View {
-    let course: CourseItem
+    let course: DiscoveryCourseItem
     
     var body: some View {
         BaseCard(variant: .interactive, action: {}) {
@@ -692,6 +733,22 @@ struct YourJourneySection: View {
                         }
                     }
                     .frame(height: 6)
+                    
+                    // View Your Journey Button
+                    NavigationLink(destination: JourneyPage()) {
+                        ArotiButton(
+                            kind: .primary,
+                            action: {}
+                        ) {
+                            HStack(spacing: 8) {
+                                Text("View Your Journey")
+                                    .font(DesignTypography.subheadFont(weight: .medium))
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 14))
+                            }
+                        }
+                    }
+                    .buttonStyle(PlainButtonStyle())
                 }
             }
         }
@@ -749,7 +806,22 @@ struct RecentlyViewedSection: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: DiscoveryLayout.interCardSpacing) {
                     ForEach(items) { item in
-                        RecentlyViewedCard(item: item)
+                        Group {
+                            if item.type == "Spread" {
+                                NavigationLink(destination: TarotSpreadDetailPage(spreadId: item.id)) {
+                                    RecentlyViewedCard(item: item)
+                                }
+                            } else if item.type == "Card" {
+                                NavigationLink(destination: ArticleDetailPage(articleId: item.id)) {
+                                    RecentlyViewedCard(item: item)
+                                }
+                            } else {
+                                NavigationLink(destination: ArticleDetailPage(articleId: item.id)) {
+                                    RecentlyViewedCard(item: item)
+                                }
+                            }
+                        }
+                        .buttonStyle(PlainButtonStyle())
                     }
                 }
                 .padding(.horizontal, DiscoveryLayout.horizontalPadding)

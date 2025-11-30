@@ -44,14 +44,14 @@ struct DiscoveryView: View {
                                         .font(DesignTypography.subheadFont(weight: .medium))
                                         .foregroundColor(DesignColors.accent)
                                 }
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 6)
+                                .padding(.horizontal, DesignSpacing.sm)
+                                
                                 .background(
                                     Capsule()
                                         .fill(DesignColors.accent.opacity(0.1))
                                 )
                             }
-                            .padding(.horizontal, DiscoveryLayout.horizontalPadding)
+                            .padding(.horizontal, DesignSpacing.sm)
                             .padding(.top, max(0, geometry.safeAreaInsets.top - 45))
                             
                             // Main Content
@@ -88,6 +88,8 @@ struct DiscoveryView: View {
                             Spacer()
                                 .frame(height: 60)
                         }
+                        .padding(.bottom, 60) // Space for bottom nav
+
                     }
                     
                     // Bottom Navigation Bar

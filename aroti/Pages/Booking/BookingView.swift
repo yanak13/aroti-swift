@@ -140,171 +140,175 @@ struct BookingView: View {
                             .padding(.horizontal, DesignSpacing.sm)
                             .padding(.top, max(0, geometry.safeAreaInsets.top - 45))
                             
-                            // Category Filters
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(spacing: 8) {
-                                    ForEach(categories, id: \.self) { category in
-                                        CategoryChip(
-                                            label: category,
-                                            isActive: activeCategory == category,
-                                            action: {
-                                                activeCategory = category
-                                            }
-                                        )
-                                    }
-                                }
-                                .padding(.horizontal, DesignSpacing.sm)
-                            }
-                            .padding(.vertical, DesignSpacing.sm)
-                            .padding(.horizontal, -DesignSpacing.sm)
-                            
-                            // Sort + Filter + Saved Bar
-                            HStack(spacing: 12) {
-                                // Sort Dropdown
-                                SortDropdown(selectedOption: $sortOption)
+                            VStack(spacing:24) {
                                 
-                                // Filter Button
-                                Button(action: { showFilters = true }) {
+                                
+                                // Category Filters
+                                ScrollView(.horizontal, showsIndicators: false) {
                                     HStack(spacing: 8) {
-                                        Image(systemName: "line.3.horizontal.decrease")
-                                            .font(.system(size: 16))
-                                        Text("Filter")
-                                            .font(DesignTypography.footnoteFont(weight: .medium))
-                                        
-                                        if activeFilterCount > 0 {
-                                            Text("\(activeFilterCount)")
-                                                .font(.system(size: 10, weight: .semibold))
-                                                .foregroundColor(DesignColors.accent)
-                                                .padding(.horizontal, 6)
-                                                .padding(.vertical, 2)
-                                                .background(
-                                                    Capsule()
-                                                        .fill(DesignColors.accent.opacity(0.2))
-                                                )
-                                        }
-                                    }
-                                    .foregroundColor(DesignColors.mutedForeground)
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 10)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: DesignRadius.secondary)
-                                            .fill(DesignColors.glassPrimary)
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: DesignRadius.secondary)
-                                                    .stroke(DesignColors.glassBorder, lineWidth: 1)
-                                            )
-                                    )
-                                }
-                                
-                                // Saved Filter
-                                Button(action: { showSavedOnly.toggle() }) {
-                                    HStack(spacing: 8) {
-                                        Image(systemName: showSavedOnly ? "bookmark.fill" : "bookmark")
-                                            .font(.system(size: 16))
-                                        Text("Saved")
-                                            .font(DesignTypography.footnoteFont(weight: .medium))
-                                    }
-                                    .foregroundColor(showSavedOnly ? DesignColors.accent : DesignColors.mutedForeground)
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 10)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: DesignRadius.secondary)
-                                            .fill(showSavedOnly ? DesignColors.accent.opacity(0.2) : DesignColors.glassPrimary)
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: DesignRadius.secondary)
-                                                    .stroke(showSavedOnly ? DesignColors.accent.opacity(0.5) : DesignColors.glassBorder, lineWidth: 1)
-                                            )
-                                    )
-                                }
-                            }
-                            .padding(.horizontal, DesignSpacing.sm)
-                            
-                            // Upcoming Sessions Section
-                            if !upcomingSessions.isEmpty {
-                                VStack(alignment: .leading, spacing: 16) {
-                                    BaseSectionHeader(
-                                        title: "Upcoming Sessions",
-                                        subtitle: "Your scheduled appointments"
-                                    )
-                                    
-                                    ForEach(upcomingSessions) { session in
-                                        UpcomingSessionCard(session: session) {
-                                            navigationPath.append(BookingDestination.sessionDetail(session.id))
-                                        }
-                                    }
-                                }
-                            }
-                            
-                            // Recommended Section
-                            if !filteredSpecialists.isEmpty {
-                                let recommended = Array(filteredSpecialists.prefix(2))
-                                let recommendedIds = Set(recommended.map { $0.id })
-                                let allSpecialists = filteredSpecialists.filter { !recommendedIds.contains($0.id) }
-                                
-                                if !recommended.isEmpty {
-                                    VStack(alignment: .leading, spacing: 16) {
-                                        BaseSectionHeader(
-                                            title: "Recommended for You",
-                                            subtitle: "Based on your interests and preferences"
-                                        )
-                                        
-                                        ForEach(recommended) { specialist in
-                                            SpecialistCard(
-                                                specialist: specialist,
-                                                onTap: {
-                                                    selectedSpecialist = specialist
-                                                    navigationPath.append(BookingDestination.specialist(specialist))
-                                                },
-                                                onBookSession: {
-                                                    selectedSpecialist = specialist
-                                                    navigationPath.append(BookingDestination.schedule(specialist))
-                                                },
-                                                onText: {
-                                                    // Navigate to messages
-                                                },
-                                                onFavoriteToggle: {
-                                                    // Handle favorite toggle
+                                        ForEach(categories, id: \.self) { category in
+                                            CategoryChip(
+                                                label: category,
+                                                isActive: activeCategory == category,
+                                                action: {
+                                                    activeCategory = category
                                                 }
                                             )
                                         }
                                     }
+                                    .padding(.horizontal, DesignSpacing.sm)
                                 }
+                                .padding(.vertical, DesignSpacing.sm)
+                                .padding(.horizontal, -DesignSpacing.sm)
                                 
-                                // All Specialists Section
-                                if !allSpecialists.isEmpty {
+                                // Sort + Filter + Saved Bar
+                                HStack(spacing: 12) {
+                                    // Sort Dropdown
+                                    SortDropdown(selectedOption: $sortOption)
+                                    
+                                    // Filter Button
+                                    Button(action: { showFilters = true }) {
+                                        HStack(spacing: 8) {
+                                            Image(systemName: "line.3.horizontal.decrease")
+                                                .font(.system(size: 16))
+                                            Text("Filter")
+                                                .font(DesignTypography.footnoteFont(weight: .medium))
+                                            
+                                            if activeFilterCount > 0 {
+                                                Text("\(activeFilterCount)")
+                                                    .font(.system(size: 10, weight: .semibold))
+                                                    .foregroundColor(DesignColors.accent)
+                                                    .padding(.horizontal, 6)
+                                                    .padding(.vertical, 2)
+                                                    .background(
+                                                        Capsule()
+                                                            .fill(DesignColors.accent.opacity(0.2))
+                                                    )
+                                            }
+                                        }
+                                        .foregroundColor(DesignColors.mutedForeground)
+                                        .padding(.horizontal, 16)
+                                        .padding(.vertical, 10)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: DesignRadius.secondary)
+                                                .fill(DesignColors.glassPrimary)
+                                                .overlay(
+                                                    RoundedRectangle(cornerRadius: DesignRadius.secondary)
+                                                        .stroke(DesignColors.glassBorder, lineWidth: 1)
+                                                )
+                                        )
+                                    }
+                                    
+                                    // Saved Filter
+                                    Button(action: { showSavedOnly.toggle() }) {
+                                        HStack(spacing: 8) {
+                                            Image(systemName: showSavedOnly ? "bookmark.fill" : "bookmark")
+                                                .font(.system(size: 16))
+                                            Text("Saved")
+                                                .font(DesignTypography.footnoteFont(weight: .medium))
+                                        }
+                                        .foregroundColor(showSavedOnly ? DesignColors.accent : DesignColors.mutedForeground)
+                                        .padding(.horizontal, 16)
+                                        .padding(.vertical, 10)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: DesignRadius.secondary)
+                                                .fill(showSavedOnly ? DesignColors.accent.opacity(0.2) : DesignColors.glassPrimary)
+                                                .overlay(
+                                                    RoundedRectangle(cornerRadius: DesignRadius.secondary)
+                                                        .stroke(showSavedOnly ? DesignColors.accent.opacity(0.5) : DesignColors.glassBorder, lineWidth: 1)
+                                                )
+                                        )
+                                    }
+                                }
+                                .padding(.horizontal, DesignSpacing.sm)
+                                
+                                // Upcoming Sessions Section
+                                if !upcomingSessions.isEmpty {
                                     VStack(alignment: .leading, spacing: 16) {
                                         BaseSectionHeader(
-                                            title: "All Specialists",
-                                            subtitle: "Browse our complete directory"
+                                            title: "Upcoming Sessions",
+                                            subtitle: "Your scheduled appointments"
                                         )
                                         
-                                        ForEach(allSpecialists) { specialist in
-                                            SpecialistCard(
-                                                specialist: specialist,
-                                                onTap: {
-                                                    selectedSpecialist = specialist
-                                                    navigationPath.append(BookingDestination.specialist(specialist))
-                                                },
-                                                onBookSession: {
-                                                    selectedSpecialist = specialist
-                                                    navigationPath.append(BookingDestination.schedule(specialist))
-                                                },
-                                                onText: {},
-                                                onFavoriteToggle: {}
-                                            )
+                                        ForEach(upcomingSessions) { session in
+                                            UpcomingSessionCard(session: session) {
+                                                navigationPath.append(BookingDestination.sessionDetail(session.id))
+                                            }
                                         }
                                     }
                                 }
-                            } else {
-                                VStack(spacing: 16) {
-                                    Text("No specialists found")
-                                        .font(DesignTypography.bodyFont())
-                                        .foregroundColor(DesignColors.mutedForeground)
-                                        .padding(.vertical, 32)
+                                
+                                // Recommended Section
+                                if !filteredSpecialists.isEmpty {
+                                    let recommended = Array(filteredSpecialists.prefix(2))
+                                    let recommendedIds = Set(recommended.map { $0.id })
+                                    let allSpecialists = filteredSpecialists.filter { !recommendedIds.contains($0.id) }
+                                    
+                                    if !recommended.isEmpty {
+                                        VStack(alignment: .leading, spacing: 16) {
+                                            BaseSectionHeader(
+                                                title: "Recommended for You",
+                                                subtitle: "Based on your interests and preferences"
+                                            )
+                                            
+                                            ForEach(recommended) { specialist in
+                                                SpecialistCard(
+                                                    specialist: specialist,
+                                                    onTap: {
+                                                        selectedSpecialist = specialist
+                                                        navigationPath.append(BookingDestination.specialist(specialist))
+                                                    },
+                                                    onBookSession: {
+                                                        selectedSpecialist = specialist
+                                                        navigationPath.append(BookingDestination.schedule(specialist))
+                                                    },
+                                                    onText: {
+                                                        // Navigate to messages
+                                                    },
+                                                    onFavoriteToggle: {
+                                                        // Handle favorite toggle
+                                                    }
+                                                )
+                                            }
+                                        }
+                                    }
+                                    
+                                    // All Specialists Section
+                                    if !allSpecialists.isEmpty {
+                                        VStack(alignment: .leading, spacing: 16) {
+                                            BaseSectionHeader(
+                                                title: "All Specialists",
+                                                subtitle: "Browse our complete directory"
+                                            )
+                                            
+                                            ForEach(allSpecialists) { specialist in
+                                                SpecialistCard(
+                                                    specialist: specialist,
+                                                    onTap: {
+                                                        selectedSpecialist = specialist
+                                                        navigationPath.append(BookingDestination.specialist(specialist))
+                                                    },
+                                                    onBookSession: {
+                                                        selectedSpecialist = specialist
+                                                        navigationPath.append(BookingDestination.schedule(specialist))
+                                                    },
+                                                    onText: {},
+                                                    onFavoriteToggle: {}
+                                                )
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    VStack(spacing: 16) {
+                                        Text("No specialists found")
+                                            .font(DesignTypography.bodyFont())
+                                            .foregroundColor(DesignColors.mutedForeground)
+                                            .padding(.vertical, 32)
+                                    }
                                 }
                             }
+                            .padding(.horizontal, DesignSpacing.sm)
                         }
-                        .padding(.horizontal, DesignSpacing.sm)
                         .padding(.bottom, 60) // Space for bottom nav
                     }
                     

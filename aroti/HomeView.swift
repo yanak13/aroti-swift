@@ -59,7 +59,7 @@ struct HomeView: View {
                     .padding(.horizontal, DesignSpacing.sm)
                     
                     // Main Content
-                    VStack(spacing: 16) {
+                    VStack(spacing: 24) {
                         // Tarot Card Section
                         if let insight = dailyInsight {
                             TarotCardView(

@@ -51,7 +51,7 @@ struct ForYouListingPage: View {
                         alignment: .leading,
                         horizontalPadding: 0
                     )
-                    .padding(.top, 12)
+                    .padding(.top, 0)
                     
                     ForEach(forYouItems) { item in
                         NavigationLink(

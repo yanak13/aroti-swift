@@ -62,7 +62,7 @@ struct TarotSpreadsListingPage: View {
                         alignment: .leading,
                         horizontalPadding: 0
                     )
-                    .padding(.top, 12)
+                    .padding(.top, 0)
                     
                     // Filter Section
                     ScrollView(.horizontal, showsIndicators: false) {

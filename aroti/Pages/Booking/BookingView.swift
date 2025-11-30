@@ -15,6 +15,8 @@ struct BookingView: View {
     @State private var showSavedOnly: Bool = false
     @State private var selectedSpecialist: Specialist?
     @State private var navigationPath = NavigationPath()
+    @State private var sortOption: SortOption? = nil
+    @State private var filters: FilterState = FilterState()
     
     private let categories = ["All", "Astrology", "Therapy", "Numerology", "Reiki", "Coaching"]
     
@@ -36,7 +38,83 @@ struct BookingView: View {
             }
         }
         
+        // Saved filter
+        if showSavedOnly {
+            // TODO: Implement favorites integration
+            // For now, we'll skip this filter
+        }
+        
+        // Availability filter
+        if let availability = filters.availability {
+            result = result.filter { specialist in
+                if availability == "today" || availability == "week" {
+                    return specialist.available
+                }
+                return true
+            }
+        }
+        
+        // Price range filter
+        if let priceMin = filters.priceMin, let priceMax = filters.priceMax {
+            result = result.filter { specialist in
+                specialist.price >= priceMin && specialist.price <= priceMax
+            }
+        }
+        
+        // Rating filter
+        if let ratingStr = filters.rating, let ratingThreshold = Double(ratingStr) {
+            result = result.filter { specialist in
+                specialist.rating >= ratingThreshold
+            }
+        }
+        
+        // Years of experience filter
+        if let yearsStr = filters.yearsOfExperience, let yearsThreshold = Int(yearsStr) {
+            result = result.filter { specialist in
+                specialist.yearsOfPractice >= yearsThreshold
+            }
+        }
+        
+        // Language filter
+        if !filters.languages.isEmpty {
+            result = result.filter { specialist in
+                !Set(specialist.languages).isDisjoint(with: Set(filters.languages))
+            }
+        }
+        
+        // Apply sorting
+        if let sort = sortOption {
+            result = result.sorted { a, b in
+                switch sort {
+                case .priceLow:
+                    return a.price < b.price
+                case .priceHigh:
+                    return a.price > b.price
+                case .rating:
+                    return a.rating > b.rating
+                case .sessions:
+                    return a.sessionCount > b.sessionCount
+                case .newest:
+                    if let aDate = a.addedDate, let bDate = b.addedDate {
+                        return aDate > bDate
+                    }
+                    return (a.yearsOfPractice) < (b.yearsOfPractice)
+                }
+            }
+        }
+        
         return result
+    }
+    
+    private var activeFilterCount: Int {
+        var count = 0
+        if filters.availability != nil { count += 1 }
+        if filters.priceMin != nil && filters.priceMin != 20 { count += 1 }
+        if filters.priceMax != nil && filters.priceMax != 80 { count += 1 }
+        if filters.rating != nil { count += 1 }
+        if filters.yearsOfExperience != nil { count += 1 }
+        count += filters.languages.count
+        return count
     }
     
     private var upcomingSessions: [Session] {
@@ -52,12 +130,15 @@ struct BookingView: View {
                     ScrollView {
                         VStack(spacing: 24) {
                             // Header - matching Home and Discovery page style
-                            BaseHeader(
-                                title: "Find Your Specialist",
-                                subtitle: "Personal guidance starts with the right connection"
-                            )
-                            .padding(.top, max(0, geometry.safeAreaInsets.top - 45))
+                            HStack {
+                                Text("Find Your Specialist")
+                                    .font(DesignTypography.title2Font(weight: .semibold))
+                                    .foregroundColor(DesignColors.foreground)
+                                
+                                Spacer()
+                            }
                             .padding(.horizontal, DesignSpacing.sm)
+                            .padding(.top, max(0, geometry.safeAreaInsets.top - 45))
                             
                             // Category Filters
                             ScrollView(.horizontal, showsIndicators: false) {
@@ -80,20 +161,29 @@ struct BookingView: View {
                             // Sort + Filter + Saved Bar
                             HStack(spacing: 12) {
                                 // Sort Dropdown
-                                Menu {
-                                    Button("Price: Low to High", action: {})
-                                    Button("Price: High to Low", action: {})
-                                    Button("Rating", action: {})
-                                    Button("Newest", action: {})
-                                } label: {
-                                    HStack {
-                                        Text("Sort")
-                                            .font(DesignTypography.subheadFont(weight: .medium))
-                                        Spacer()
-                                        Image(systemName: "chevron.down")
-                                            .font(.system(size: 12))
+                                SortDropdown(selectedOption: $sortOption)
+                                
+                                // Filter Button
+                                Button(action: { showFilters = true }) {
+                                    HStack(spacing: 8) {
+                                        Image(systemName: "line.3.horizontal.decrease")
+                                            .font(.system(size: 16))
+                                        Text("Filter")
+                                            .font(DesignTypography.footnoteFont(weight: .medium))
+                                        
+                                        if activeFilterCount > 0 {
+                                            Text("\(activeFilterCount)")
+                                                .font(.system(size: 10, weight: .semibold))
+                                                .foregroundColor(DesignColors.accent)
+                                                .padding(.horizontal, 6)
+                                                .padding(.vertical, 2)
+                                                .background(
+                                                    Capsule()
+                                                        .fill(DesignColors.accent.opacity(0.2))
+                                                )
+                                        }
                                     }
-                                    .foregroundColor(DesignColors.foreground)
+                                    .foregroundColor(DesignColors.mutedForeground)
                                     .padding(.horizontal, 16)
                                     .padding(.vertical, 10)
                                     .background(
@@ -106,23 +196,26 @@ struct BookingView: View {
                                     )
                                 }
                                 
-                                // Filter Button
-                                ArotiButton(
-                                    kind: .custom(.glassCardButton()),
-                                    title: "Filters",
-                                    action: { showFilters = true }
-                                )
-                                
                                 // Saved Filter
-                                ArotiButton(
-                                    kind: .custom(showSavedOnly ?
-                                        .pill(background: ArotiColor.accentSoft, textColor: ArotiColor.accent) :
-                                        .glassCardButton()
-                                    ),
-                                    title: "Saved",
-                                    icon: Image(systemName: showSavedOnly ? "bookmark.fill" : "bookmark"),
-                                    action: { showSavedOnly.toggle() }
-                                )
+                                Button(action: { showSavedOnly.toggle() }) {
+                                    HStack(spacing: 8) {
+                                        Image(systemName: showSavedOnly ? "bookmark.fill" : "bookmark")
+                                            .font(.system(size: 16))
+                                        Text("Saved")
+                                            .font(DesignTypography.footnoteFont(weight: .medium))
+                                    }
+                                    .foregroundColor(showSavedOnly ? DesignColors.accent : DesignColors.mutedForeground)
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 10)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: DesignRadius.secondary)
+                                            .fill(showSavedOnly ? DesignColors.accent.opacity(0.2) : DesignColors.glassPrimary)
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: DesignRadius.secondary)
+                                                    .stroke(showSavedOnly ? DesignColors.accent.opacity(0.5) : DesignColors.glassBorder, lineWidth: 1)
+                                            )
+                                    )
+                                }
                             }
                             .padding(.horizontal, DesignSpacing.sm)
                             
@@ -143,54 +236,71 @@ struct BookingView: View {
                             }
                             
                             // Recommended Section
-                            VStack(alignment: .leading, spacing: 16) {
-                                BaseSectionHeader(
-                                    title: "Recommended for You",
-                                    subtitle: "Based on your interests and preferences"
-                                )
+                            if !filteredSpecialists.isEmpty {
+                                let recommended = Array(filteredSpecialists.prefix(2))
+                                let recommendedIds = Set(recommended.map { $0.id })
+                                let allSpecialists = filteredSpecialists.filter { !recommendedIds.contains($0.id) }
                                 
-                                ForEach(filteredSpecialists.prefix(2)) { specialist in
-                                    SpecialistCard(
-                                        specialist: specialist,
-                                        onTap: {
-                                            selectedSpecialist = specialist
-                                            navigationPath.append(BookingDestination.specialist(specialist))
-                                        },
-                                        onBookSession: {
-                                            selectedSpecialist = specialist
-                                            navigationPath.append(BookingDestination.schedule(specialist))
-                                        },
-                                        onText: {
-                                            // Navigate to messages
-                                        },
-                                        onFavoriteToggle: {
-                                            // Handle favorite toggle
+                                if !recommended.isEmpty {
+                                    VStack(alignment: .leading, spacing: 16) {
+                                        BaseSectionHeader(
+                                            title: "Recommended for You",
+                                            subtitle: "Based on your interests and preferences"
+                                        )
+                                        
+                                        ForEach(recommended) { specialist in
+                                            SpecialistCard(
+                                                specialist: specialist,
+                                                onTap: {
+                                                    selectedSpecialist = specialist
+                                                    navigationPath.append(BookingDestination.specialist(specialist))
+                                                },
+                                                onBookSession: {
+                                                    selectedSpecialist = specialist
+                                                    navigationPath.append(BookingDestination.schedule(specialist))
+                                                },
+                                                onText: {
+                                                    // Navigate to messages
+                                                },
+                                                onFavoriteToggle: {
+                                                    // Handle favorite toggle
+                                                }
+                                            )
                                         }
-                                    )
+                                    }
                                 }
-                            }
-                            
-                            // All Specialists Section
-                            VStack(alignment: .leading, spacing: 16) {
-                                BaseSectionHeader(
-                                    title: "All Specialists",
-                                    subtitle: "Browse our complete directory"
-                                )
                                 
-                                ForEach(filteredSpecialists.dropFirst(2)) { specialist in
-                                    SpecialistCard(
-                                        specialist: specialist,
-                                        onTap: {
-                                            selectedSpecialist = specialist
-                                            navigationPath.append(BookingDestination.specialist(specialist))
-                                        },
-                                        onBookSession: {
-                                            selectedSpecialist = specialist
-                                            navigationPath.append(BookingDestination.schedule(specialist))
-                                        },
-                                        onText: {},
-                                        onFavoriteToggle: {}
-                                    )
+                                // All Specialists Section
+                                if !allSpecialists.isEmpty {
+                                    VStack(alignment: .leading, spacing: 16) {
+                                        BaseSectionHeader(
+                                            title: "All Specialists",
+                                            subtitle: "Browse our complete directory"
+                                        )
+                                        
+                                        ForEach(allSpecialists) { specialist in
+                                            SpecialistCard(
+                                                specialist: specialist,
+                                                onTap: {
+                                                    selectedSpecialist = specialist
+                                                    navigationPath.append(BookingDestination.specialist(specialist))
+                                                },
+                                                onBookSession: {
+                                                    selectedSpecialist = specialist
+                                                    navigationPath.append(BookingDestination.schedule(specialist))
+                                                },
+                                                onText: {},
+                                                onFavoriteToggle: {}
+                                            )
+                                        }
+                                    }
+                                }
+                            } else {
+                                VStack(spacing: 16) {
+                                    Text("No specialists found")
+                                        .font(DesignTypography.bodyFont())
+                                        .foregroundColor(DesignColors.mutedForeground)
+                                        .padding(.vertical, 32)
                                 }
                             }
                         }
@@ -222,12 +332,17 @@ struct BookingView: View {
                 case .sessionDetail(let sessionId):
                     Text("Session Detail: \(sessionId)")
                 case .history:
-                    Text("Booking History")
+                    BookingHistoryView(selectedTab: $selectedTab)
                 }
             }
             .sheet(isPresented: $showFilters) {
-                Text("Filters")
-                    .presentationDetents([.medium])
+                FilterSheet(
+                    isPresented: $showFilters,
+                    filters: $filters,
+                    specialists: BookingDataService.shared.specialists
+                )
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
             }
         }
     }

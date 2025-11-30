@@ -37,11 +37,15 @@ struct ProfileView: View {
                 
                 ScrollView {
                     VStack(spacing: 32) {
-                        // Header
-                        BaseHeader(
-                            title: "Profile",
-                            subtitle: "Your cosmic journey and personal insights"
-                        )
+                        // Header - matching Home and Discovery page style
+                        HStack {
+                            Text("Profile")
+                                .font(DesignTypography.title2Font(weight: .semibold))
+                                .foregroundColor(DesignColors.foreground)
+                            
+                            Spacer()
+                        }
+                        .padding(.horizontal, DesignSpacing.sm)
                         .padding(.top, max(0, geometry.safeAreaInsets.top - 45))
                         
                         // Main Content

@@ -50,6 +50,15 @@ struct Session: Identifiable, Codable {
     let preparationNotes: String?
 }
 
+struct FilterState {
+    var availability: String?
+    var priceMin: Int?
+    var priceMax: Int?
+    var rating: String?
+    var languages: [String] = []
+    var yearsOfExperience: String?
+}
+
 // Navigation destination enum for NavigationStack
 enum BookingDestination: Hashable {
     case specialist(Specialist)

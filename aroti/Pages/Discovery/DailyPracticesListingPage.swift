@@ -49,7 +49,7 @@ struct DailyPracticesListingPage: View {
                         alignment: .leading,
                         horizontalPadding: 0
                     )
-                    .padding(.top, 12)
+                    .padding(.top, 0)
                     
                     ForEach(practices) { practice in
                         NavigationLink(destination: PracticeDetailPage(practiceId: practice.id)) {

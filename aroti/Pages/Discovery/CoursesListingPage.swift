@@ -52,7 +52,7 @@ struct CoursesListingPage: View {
                         alignment: .leading,
                         horizontalPadding: 0
                     )
-                    .padding(.top, 12)
+                    .padding(.top, 0)
                     
                     ForEach(courses) { course in
                         NavigationLink(destination: CourseDetailPage(courseId: course.id)) {

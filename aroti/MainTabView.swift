@@ -20,41 +20,11 @@ struct MainTabView: View {
                 DiscoveryView(selectedTab: $selectedTab)
                     .tag(TabItem.discovery)
             case .booking:
-                // Placeholder for Booking view
-                GeometryReader { geometry in
-                    ZStack(alignment: .bottom) {
-                        CelestialBackground()
-                        VStack {
-                            Spacer()
-                            Text("Booking")
-                                .font(DesignTypography.title2Font())
-                                .foregroundColor(DesignColors.foreground)
-                            Spacer()
-                            BottomNavigationBar(selectedTab: $selectedTab) { tab in
-                                selectedTab = tab
-                            }
-                        }
-                    }
-                }
-                .tag(TabItem.booking)
+                BookingView(selectedTab: $selectedTab)
+                    .tag(TabItem.booking)
             case .profile:
-                // Placeholder for Profile view
-                GeometryReader { geometry in
-                    ZStack(alignment: .bottom) {
-                        CelestialBackground()
-                        VStack {
-                            Spacer()
-                            Text("Profile")
-                                .font(DesignTypography.title2Font())
-                                .foregroundColor(DesignColors.foreground)
-                            Spacer()
-                            BottomNavigationBar(selectedTab: $selectedTab) { tab in
-                                selectedTab = tab
-                            }
-                        }
-                    }
-                }
-                .tag(TabItem.profile)
+                ProfileView(selectedTab: $selectedTab)
+                    .tag(TabItem.profile)
             case .guidance:
                 GuidanceView(selectedTab: $selectedTab)
                     .tag(TabItem.guidance)

@@ -169,7 +169,10 @@ struct ForYouSection: View {
                         }
                         .buttonStyle(PlainButtonStyle())
                     }
-                    ForYouDailyQuizCard()
+                    NavigationLink(destination: QuizPage()) {
+                        ForYouDailyQuizCard()
+                    }
+                    .buttonStyle(PlainButtonStyle())
                 }
                 .padding(.horizontal, DiscoveryLayout.horizontalPadding)
             }
@@ -190,7 +193,7 @@ struct ForYouCard: View {
     let item: ForYouItem
     
     var body: some View {
-        BaseCard(variant: .interactive, action: {}) {
+        BaseCard {
             VStack(alignment: .leading, spacing: 12) {
                 // Tag
                 Text(item.tag)
@@ -229,7 +232,7 @@ struct ForYouCard: View {
 
 struct ForYouDailyQuizCard: View {
     var body: some View {
-        BaseCard(variant: .interactive, action: {}) {
+        BaseCard {
             VStack(alignment: .leading, spacing: 16) {
                 quizChip
                 
@@ -446,7 +449,7 @@ struct CategoryGridCard: View {
     let item: CategoryGridItem
     
     var body: some View {
-        BaseCard(variant: .interactive, action: {}) {
+        BaseCard {
             VStack(alignment: .leading, spacing: 12) {
                 // Category Tag
                 Text(item.category)
@@ -542,7 +545,7 @@ struct DiscoveryPracticeCard: View {
     let practice: PracticeItem
     
     var body: some View {
-        BaseCard(variant: .interactive, action: {}) {
+        BaseCard {
             VStack(alignment: .leading, spacing: 12) {
                 // Tag
                 Text("Practice")
@@ -612,7 +615,10 @@ struct CoursesSection: View {
             
             VStack(spacing: 12) {
                 ForEach(courses) { course in
-                    CourseCard(course: course)
+                    NavigationLink(destination: CourseDetailPage(courseId: course.id)) {
+                        CourseCard(course: course)
+                    }
+                    .buttonStyle(PlainButtonStyle())
                 }
             }
         }
@@ -632,7 +638,7 @@ struct CourseCard: View {
     let course: DiscoveryCourseItem
     
     var body: some View {
-        BaseCard(variant: .interactive, action: {}) {
+        BaseCard {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(alignment: .center, spacing: 8) {
                     Text(course.title)
@@ -843,7 +849,7 @@ struct RecentlyViewedCard: View {
     let item: RecentlyViewedItem
     
     var body: some View {
-        BaseCard(variant: .interactive, action: {}) {
+        BaseCard {
             VStack(alignment: .leading, spacing: 12) {
                 // Type Tag
                 Text(item.type)

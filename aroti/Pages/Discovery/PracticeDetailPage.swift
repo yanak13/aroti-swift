@@ -184,9 +184,11 @@ struct PracticeDetailPage: View {
                                             .font(DesignTypography.title1Font(weight: .medium))
                                             .foregroundColor(DesignColors.foreground)
                                         
-                                        Text(practice.description)
-                                            .font(DesignTypography.bodyFont())
-                                            .foregroundColor(DesignColors.mutedForeground)
+                                        JustifiedTextView(
+                                            text: practice.description,
+                                            font: DesignTypography.bodyFont(),
+                                            foregroundColor: DesignColors.mutedForeground
+                                        )
                                     }
                                     .frame(maxWidth: .infinity, alignment: .leading)
                                 }
@@ -243,10 +245,11 @@ struct PracticeDetailPage: View {
                                                             .foregroundColor(DesignColors.accent)
                                                     }
                                                     
-                                                    Text(step)
-                                                        .font(DesignTypography.bodyFont())
-                                                        .foregroundColor(DesignColors.foreground)
-                                                        .fixedSize(horizontal: false, vertical: true)
+                                                    JustifiedTextView(
+                                                        text: step,
+                                                        font: DesignTypography.bodyFont(),
+                                                        foregroundColor: DesignColors.foreground
+                                                    )
                                                 }
                                             }
                                         }

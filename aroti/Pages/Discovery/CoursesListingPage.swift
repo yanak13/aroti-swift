@@ -154,16 +154,6 @@ struct CoursesListingPage: View {
     }
 }
 
-// Placeholder for course detail page
-struct CourseDetailPage: View {
-    let courseId: String
-    
-    var body: some View {
-        Text("Course Detail: \(courseId)")
-            .foregroundColor(DesignColors.foreground)
-    }
-}
-
 #Preview {
     NavigationStack {
         CoursesListingPage()

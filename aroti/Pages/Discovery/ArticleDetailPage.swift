@@ -169,9 +169,10 @@ struct ArticleDetailPage: View {
                                     }
                                 }
                             ),
-                            alignment: .leading
+                            alignment: .leading,
+                            horizontalPadding: 0
                         )
-                        .padding(.top, 12)
+                        .padding(.top, 0)
                         
                         // Hero Section
                         BaseCard {
@@ -220,18 +221,23 @@ struct ArticleDetailPage: View {
                         }
                         
                         // Main Content
-                        BaseCard {
-                            VStack(alignment: .leading, spacing: 16) {
-                                ForEach(article.content.components(separatedBy: "\n\n"), id: \.self) { paragraph in
-                                    if !paragraph.isEmpty {
-                                        Text(paragraph)
-                                            .font(DesignTypography.bodyFont())
-                                            .foregroundColor(DesignColors.foreground)
-                                            .lineSpacing(4)
-                                    }
+                        VStack(alignment: .leading, spacing: 20) {
+                            ForEach(Array(article.content.components(separatedBy: "\n\n").enumerated()), id: \.offset) { index, paragraph in
+                                if !paragraph.isEmpty {
+                                    FormattedTextView(
+                                        text: paragraph,
+                                        font: DesignTypography.bodyFont(),
+                                        foregroundColor: DesignColors.foreground,
+                                        highlightColor: DesignColors.accent
+                                    )
+                                    .id("paragraph-\(article.id)-\(index)")
                                 }
                             }
                         }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.horizontal, DesignSpacing.sm)
+                        .frame(maxWidth: .infinity) // Ensure it doesn't exceed screen width
                         
                         // Related Articles
                         if !article.relatedArticles.isEmpty {

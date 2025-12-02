@@ -127,9 +127,11 @@ struct TarotSpreadDetailPage: View {
                                                 .font(DesignTypography.title1Font(weight: .medium))
                                                 .foregroundColor(DesignColors.foreground)
                                             
-                                            Text(spread.description)
-                                                .font(DesignTypography.bodyFont())
-                                                .foregroundColor(DesignColors.mutedForeground)
+                                            JustifiedTextView(
+                                                text: spread.description,
+                                                font: DesignTypography.bodyFont(),
+                                                foregroundColor: DesignColors.mutedForeground
+                                            )
                                             
                                             HStack(spacing: 8) {
                                                 Text(spread.difficulty)
@@ -178,9 +180,11 @@ struct TarotSpreadDetailPage: View {
                                                 .font(DesignTypography.headlineFont(weight: .medium))
                                                 .foregroundColor(DesignColors.foreground)
                                             
-                                            Text(spread.bestFor)
-                                                .font(DesignTypography.bodyFont())
-                                                .foregroundColor(DesignColors.mutedForeground)
+                                            JustifiedTextView(
+                                                text: spread.bestFor,
+                                                font: DesignTypography.bodyFont(),
+                                                foregroundColor: DesignColors.mutedForeground
+                                            )
                                         }
                                     }
                                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -207,10 +211,11 @@ struct TarotSpreadDetailPage: View {
                                                             .foregroundColor(DesignColors.accent)
                                                     }
                                                     
-                                                    Text(instruction)
-                                                        .font(DesignTypography.bodyFont())
-                                                        .foregroundColor(DesignColors.foreground)
-                                                        .fixedSize(horizontal: false, vertical: true)
+                                                    JustifiedTextView(
+                                                        text: instruction,
+                                                        font: DesignTypography.bodyFont(),
+                                                        foregroundColor: DesignColors.foreground
+                                                    )
                                                 }
                                             }
                                         }

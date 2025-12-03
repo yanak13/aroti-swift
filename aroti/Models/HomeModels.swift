@@ -29,6 +29,7 @@ struct TarotCard: Codable, Identifiable {
     let keywords: [String]
     let interpretation: String?
     let guidance: [String]?
+    let imageName: String?  // Maps to asset name in app bundle
 }
 
 struct Ritual: Codable {

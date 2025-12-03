@@ -274,9 +274,9 @@ struct ForYouDailyQuizCard: View {
 // MARK: - Tarot Spreads Section
 struct TarotSpreadsSection: View {
     let spreads = [
-        SpreadItem(id: "1", title: "Celtic Cross", cardCount: 10),
-        SpreadItem(id: "2", title: "Three Card Spread", cardCount: 3),
-        SpreadItem(id: "3", title: "Past Present Future", cardCount: 3)
+        SpreadItem(id: "celtic-cross", title: "Celtic Cross", cardCount: 10),
+        SpreadItem(id: "three-card", title: "Three Card Spread", cardCount: 3),
+        SpreadItem(id: "past-present-future", title: "Past Present Future", cardCount: 3)
     ]
     
     var body: some View {
@@ -312,10 +312,11 @@ struct TarotSpreadsSection: View {
                             TarotSpreadCard(
                                 name: spread.title,
                                 cardCount: spread.cardCount,
-                                action: {}
+                                action: nil
                             )
                         }
                         .buttonStyle(PlainButtonStyle())
+                        .contentShape(Rectangle())
                     }
                 }
                 .padding(.horizontal, DiscoveryLayout.horizontalPadding)

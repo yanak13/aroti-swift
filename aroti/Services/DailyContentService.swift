@@ -14,28 +14,28 @@ class DailyContentService {
     
     // Tarot cards database
     private let tarotCards: [TarotCard] = [
-        TarotCard(id: "fool", name: "The Fool", keywords: ["New beginnings", "Innocence", "Adventure"], interpretation: nil, guidance: nil),
-        TarotCard(id: "magician", name: "The Magician", keywords: ["Manifestation", "Power", "Will"], interpretation: nil, guidance: nil),
-        TarotCard(id: "priestess", name: "The High Priestess", keywords: ["Intuition", "Mystery", "Wisdom"], interpretation: nil, guidance: nil),
-        TarotCard(id: "empress", name: "The Empress", keywords: ["Fertility", "Abundance", "Nature"], interpretation: nil, guidance: nil),
-        TarotCard(id: "emperor", name: "The Emperor", keywords: ["Authority", "Structure", "Control"], interpretation: nil, guidance: nil),
-        TarotCard(id: "hierophant", name: "The Hierophant", keywords: ["Tradition", "Spirituality", "Guidance"], interpretation: nil, guidance: nil),
-        TarotCard(id: "lovers", name: "The Lovers", keywords: ["Love", "Harmony", "Choices"], interpretation: nil, guidance: nil),
-        TarotCard(id: "chariot", name: "The Chariot", keywords: ["Victory", "Willpower", "Control"], interpretation: nil, guidance: nil),
-        TarotCard(id: "strength", name: "Strength", keywords: ["Courage", "Patience", "Inner strength"], interpretation: nil, guidance: nil),
-        TarotCard(id: "hermit", name: "The Hermit", keywords: ["Introspection", "Guidance", "Solitude"], interpretation: nil, guidance: nil),
-        TarotCard(id: "wheel", name: "Wheel of Fortune", keywords: ["Change", "Cycles", "Destiny"], interpretation: nil, guidance: nil),
-        TarotCard(id: "justice", name: "Justice", keywords: ["Balance", "Fairness", "Truth"], interpretation: nil, guidance: nil),
-        TarotCard(id: "hanged", name: "The Hanged Man", keywords: ["Surrender", "Letting go", "New perspective"], interpretation: nil, guidance: nil),
-        TarotCard(id: "death", name: "Death", keywords: ["Transformation", "Endings", "Rebirth"], interpretation: nil, guidance: nil),
-        TarotCard(id: "temperance", name: "Temperance", keywords: ["Balance", "Moderation", "Harmony"], interpretation: nil, guidance: nil),
-        TarotCard(id: "devil", name: "The Devil", keywords: ["Bondage", "Materialism", "Shadow"], interpretation: nil, guidance: nil),
-        TarotCard(id: "tower", name: "The Tower", keywords: ["Sudden change", "Revelation", "Breakthrough"], interpretation: nil, guidance: nil),
-        TarotCard(id: "star", name: "The Star", keywords: ["Hope", "Inspiration", "Healing"], interpretation: nil, guidance: nil),
-        TarotCard(id: "moon", name: "The Moon", keywords: ["Illusion", "Intuition", "Unconscious"], interpretation: nil, guidance: nil),
-        TarotCard(id: "sun", name: "The Sun", keywords: ["Joy", "Success", "Vitality"], interpretation: nil, guidance: nil),
-        TarotCard(id: "judgement", name: "Judgement", keywords: ["Reflection", "Awakening", "Forgiveness"], interpretation: nil, guidance: nil),
-        TarotCard(id: "world", name: "The World", keywords: ["Completion", "Achievement", "Fulfillment"], interpretation: nil, guidance: nil)
+        TarotCard(id: "fool", name: "The Fool", keywords: ["New beginnings", "Innocence", "Adventure"], interpretation: "A new beginning, innocence, spontaneity, and a free spirit. Embrace new opportunities with an open heart.", guidance: ["Trust your instincts", "Take a leap of faith", "Embrace the unknown"], imageName: "tarot-fool"),
+        TarotCard(id: "magician", name: "The Magician", keywords: ["Manifestation", "Power", "Will"], interpretation: "Manifestation, resourcefulness, power, and inspired action. You have all the tools you need to succeed.", guidance: ["Focus your energy", "Use all available resources", "Take decisive action"], imageName: "tarot-magician"),
+        TarotCard(id: "priestess", name: "The High Priestess", keywords: ["Intuition", "Mystery", "Wisdom"], interpretation: "Intuition, mystery, and inner wisdom. Trust your inner voice and look beyond the surface.", guidance: ["Listen to your intuition", "Seek inner knowledge", "Trust the unknown"], imageName: "tarot-priestess"),
+        TarotCard(id: "empress", name: "The Empress", keywords: ["Fertility", "Abundance", "Nature"], interpretation: "Fertility, abundance, and nurturing energy. Connect with nature and embrace your creative power.", guidance: ["Nurture yourself and others", "Embrace abundance", "Connect with nature"], imageName: "tarot-empress"),
+        TarotCard(id: "emperor", name: "The Emperor", keywords: ["Authority", "Structure", "Control"], interpretation: "Authority, structure, and stability. Take control and establish order in your life.", guidance: ["Set clear boundaries", "Take leadership", "Build solid foundations"], imageName: "tarot-emperor"),
+        TarotCard(id: "hierophant", name: "The Hierophant", keywords: ["Tradition", "Spirituality", "Guidance"], interpretation: "Tradition, spirituality, and seeking guidance. Connect with established wisdom and spiritual practices.", guidance: ["Seek spiritual guidance", "Honor traditions", "Find a mentor"], imageName: "tarot-hierophant"),
+        TarotCard(id: "lovers", name: "The Lovers", keywords: ["Love", "Harmony", "Choices"], interpretation: "Love, harmony, and important choices. Balance your heart and mind in decisions.", guidance: ["Follow your heart", "Seek harmony", "Make conscious choices"], imageName: "tarot-lovers"),
+        TarotCard(id: "chariot", name: "The Chariot", keywords: ["Victory", "Willpower", "Control"], interpretation: "Victory, willpower, and determination. Harness opposing forces to move forward.", guidance: ["Stay focused", "Use your willpower", "Overcome obstacles"], imageName: "tarot-chariot"),
+        TarotCard(id: "strength", name: "Strength", keywords: ["Courage", "Patience", "Inner strength"], interpretation: "Courage, patience, and inner strength. True power comes from gentleness and self-control.", guidance: ["Be patient", "Show compassion", "Trust your inner strength"], imageName: "tarot-strength"),
+        TarotCard(id: "hermit", name: "The Hermit", keywords: ["Introspection", "Guidance", "Solitude"], interpretation: "Introspection, guidance, and inner wisdom. Take time for solitude and reflection.", guidance: ["Seek inner guidance", "Take time alone", "Reflect on your path"], imageName: "tarot-hermit"),
+        TarotCard(id: "wheel", name: "Wheel of Fortune", keywords: ["Change", "Cycles", "Destiny"], interpretation: "Change, cycles, and destiny. Life is in constant motion, embrace the turning wheel.", guidance: ["Accept change", "Trust the cycle", "Go with the flow"], imageName: "tarot-wheel"),
+        TarotCard(id: "justice", name: "Justice", keywords: ["Balance", "Fairness", "Truth"], interpretation: "Balance, fairness, and truth. Seek justice and make decisions with integrity.", guidance: ["Seek truth", "Make fair decisions", "Take responsibility"], imageName: "tarot-justice"),
+        TarotCard(id: "hanged", name: "The Hanged Man", keywords: ["Surrender", "Letting go", "New perspective"], interpretation: "Surrender, letting go, and new perspectives. Sometimes you must pause to see clearly.", guidance: ["Let go of control", "See things differently", "Embrace waiting"], imageName: "tarot-hanged"),
+        TarotCard(id: "death", name: "Death", keywords: ["Transformation", "Endings", "Rebirth"], interpretation: "Transformation, endings, and rebirth. Let go of what no longer serves to make room for new growth.", guidance: ["Embrace endings", "Allow transformation", "Release the old"], imageName: "tarot-death"),
+        TarotCard(id: "temperance", name: "Temperance", keywords: ["Balance", "Moderation", "Harmony"], interpretation: "Balance, moderation, and harmony. Find the middle path and blend opposites.", guidance: ["Seek balance", "Practice moderation", "Blend opposites"], imageName: "tarot-temperance"),
+        TarotCard(id: "devil", name: "The Devil", keywords: ["Bondage", "Materialism", "Shadow"], interpretation: "Bondage, materialism, and shadow aspects. Recognize what holds you back and break free.", guidance: ["Examine attachments", "Face your shadows", "Break free from limitations"], imageName: "tarot-devil"),
+        TarotCard(id: "tower", name: "The Tower", keywords: ["Sudden change", "Revelation", "Breakthrough"], interpretation: "Sudden change, revelation, and breakthrough. Sometimes destruction clears the way for truth.", guidance: ["Embrace sudden change", "Let go of false structures", "Welcome revelation"], imageName: "tarot-tower"),
+        TarotCard(id: "star", name: "The Star", keywords: ["Hope", "Inspiration", "Healing"], interpretation: "Hope, inspiration, and healing. After darkness comes light and renewed faith.", guidance: ["Have hope", "Find inspiration", "Heal and renew"], imageName: "tarot-star"),
+        TarotCard(id: "moon", name: "The Moon", keywords: ["Illusion", "Intuition", "Unconscious"], interpretation: "Illusion, intuition, and the unconscious. Trust your intuition but beware of deception.", guidance: ["Trust your intuition", "Face your fears", "Look beyond illusions"], imageName: "tarot-moon"),
+        TarotCard(id: "sun", name: "The Sun", keywords: ["Joy", "Success", "Vitality"], interpretation: "Joy, success, and vitality. Embrace positivity and let your light shine brightly.", guidance: ["Embrace joy", "Celebrate success", "Radiate positivity"], imageName: "tarot-sun"),
+        TarotCard(id: "judgement", name: "Judgement", keywords: ["Reflection", "Awakening", "Forgiveness"], interpretation: "Reflection, awakening, and forgiveness. It's time to evaluate your past and rise to a higher calling.", guidance: ["Reflect on your path", "Awaken to new purpose", "Practice forgiveness"], imageName: "tarot-judgement"),
+        TarotCard(id: "world", name: "The World", keywords: ["Completion", "Achievement", "Fulfillment"], interpretation: "Completion, achievement, and fulfillment. You've reached a milestone and are ready for new beginnings.", guidance: ["Celebrate completion", "Acknowledge achievement", "Prepare for new cycles"], imageName: "tarot-world")
     ]
     
     // Rituals database
@@ -136,6 +136,11 @@ class DailyContentService {
             affirmation: affirmation,
             date: Date()
         )
+    }
+    
+    // Get all tarot cards for reading spreads
+    func getAllTarotCards() -> [TarotCard] {
+        return tarotCards
     }
 }
 

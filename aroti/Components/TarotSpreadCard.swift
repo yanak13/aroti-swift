@@ -28,7 +28,21 @@ struct TarotSpreadCard: View {
     }
     
     var body: some View {
-        Button(action: action ?? {}) {
+        Group {
+            if let action = action {
+                Button(action: action) {
+                    cardContent
+                }
+                .buttonStyle(PlainButtonStyle())
+            } else {
+                cardContent
+            }
+        }
+        .shadow(color: Color.black.opacity(0.45), radius: 8, x: 0, y: 2)
+    }
+    
+    private var cardContent: some View {
+        ZStack {
             ZStack {
                 // Card background with gradient
                 RoundedRectangle(cornerRadius: 12)
@@ -206,8 +220,6 @@ struct TarotSpreadCard: View {
             }
             .frame(width: TarotSpreadCardLayout.width, height: TarotSpreadCardLayout.height)
         }
-        .buttonStyle(PlainButtonStyle())
-        .shadow(color: Color.black.opacity(0.45), radius: 8, x: 0, y: 2)
     }
     
     private var cornerDot: some View {

@@ -124,23 +124,15 @@ struct BookingView: View {
     var body: some View {
         NavigationStack(path: $navigationPath) {
             GeometryReader { geometry in
+                let safeAreaTop = geometry.safeAreaInsets.top
+                
                 ZStack(alignment: .bottom) {
                     CelestialBackground()
+                        .ignoresSafeArea()
                     
-                    ScrollView {
-                        VStack(spacing: 24) {
-                            // Header - matching Home and Discovery page style
-                            HStack {
-                                Text("Find Your Specialist")
-                                    .font(DesignTypography.title2Font(weight: .semibold))
-                                    .foregroundColor(DesignColors.foreground)
-                                
-                                Spacer()
-                            }
-                            .padding(.horizontal, DesignSpacing.sm)
-                            .padding(.top, max(0, geometry.safeAreaInsets.top - 45))
-                            
-                            VStack(spacing:24) {
+                    ZStack(alignment: .top) {
+                        ScrollView {
+                            VStack(spacing: 24) {
                                 
                                 
                                 // Category Filters
@@ -309,7 +301,14 @@ struct BookingView: View {
                             }
                             .padding(.horizontal, DesignSpacing.sm)
                         }
+                        .padding(.top, StickyHeaderBar.totalHeight(for: safeAreaTop))
                         .padding(.bottom, 60) // Space for bottom nav
+                        
+                    StickyHeaderBar(
+                        title: "Find Your Specialist",
+                        subtitle: "Personal guidance starts with the right connection",
+                        safeAreaTop: safeAreaTop
+                    )
                     }
                     
                     // Bottom Navigation Bar - fixed at bottom

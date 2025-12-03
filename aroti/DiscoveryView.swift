@@ -22,39 +22,14 @@ struct DiscoveryView: View {
     var body: some View {
         NavigationStack {
             GeometryReader { geometry in
+                let safeAreaTop = geometry.safeAreaInsets.top
+                
                 ZStack(alignment: .bottom) {
                     CelestialBackground()
+                        .ignoresSafeArea()
                     
-                    ScrollView {
-                        VStack(spacing: 24) {
-                            // Header - matching Home page style
-                            HStack {
-                                Text("Discovery")
-                                    .font(DesignTypography.title2Font(weight: .semibold))
-                                    .foregroundColor(DesignColors.foreground)
-                                
-                                Spacer()
-                                
-                                // Points Badge
-                                HStack(spacing: 4) {
-                                    Image(systemName: "sparkles")
-                                        .font(.system(size: 16))
-                                        .foregroundColor(DesignColors.accent)
-                                    Text("\(points)")
-                                        .font(DesignTypography.subheadFont(weight: .medium))
-                                        .foregroundColor(DesignColors.accent)
-                                }
-                                .padding(.horizontal, DesignSpacing.sm)
-                                
-                                .background(
-                                    Capsule()
-                                        .fill(DesignColors.accent.opacity(0.1))
-                                )
-                            }
-                            .padding(.horizontal, DesignSpacing.sm)
-                            .padding(.top, max(0, geometry.safeAreaInsets.top - 45))
-                            
-                            // Main Content
+                    ZStack(alignment: .top) {
+                        ScrollView {
                             VStack(spacing: 24) {
                                 // 1. For You Section
                                 ForYouSection()
@@ -88,8 +63,32 @@ struct DiscoveryView: View {
                             Spacer()
                                 .frame(height: 60)
                         }
+                        .padding(.top, StickyHeaderBar.totalHeight(for: safeAreaTop))
                         .padding(.bottom, 60) // Space for bottom nav
-
+                        
+                        StickyHeaderBar(
+                            title: "Discovery",
+                            safeAreaTop: safeAreaTop
+                        ) {
+                            HStack(spacing: 6) {
+                                Image(systemName: "sparkles")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(DesignColors.accent)
+                                Text("\(points)")
+                                    .font(DesignTypography.subheadFont(weight: .medium))
+                                    .foregroundColor(DesignColors.accent)
+                            }
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 8)
+                            .background(
+                                Capsule()
+                                    .fill(DesignColors.accent.opacity(0.15))
+                                    .overlay(
+                                        Capsule()
+                                            .stroke(DesignColors.accent.opacity(0.3), lineWidth: 1)
+                                    )
+                            )
+                        }
                     }
                     
                     // Bottom Navigation Bar

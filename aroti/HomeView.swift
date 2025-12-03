@@ -20,46 +20,32 @@ struct HomeView: View {
     
     var body: some View {
         GeometryReader { geometry in
+            let safeAreaTop = geometry.safeAreaInsets.top
+            
             ZStack(alignment: .bottom) {
                 CelestialBackground()
+                    .ignoresSafeArea()
                 
-                ScrollView {
-                    VStack(spacing: 24) {
-                        // Header - positioned right after safe area, left-aligned page title
-                        HStack {
-                            Text("Today's Insights")
-                                .font(DesignTypography.title2Font(weight: .semibold))
-                                .foregroundColor(DesignColors.foreground)
-                            
-                            Spacer()
-                            
-                            Button(action: {}) {
-                                Image(systemName: "bell")
-                                    .font(.system(size: 20))
+                ZStack(alignment: .top) {
+                    ScrollView {
+                        VStack(spacing: 24) {
+                            // Greeting Section
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Hi \(userData.name),")
+                                    .font(DesignTypography.title3Font())
+                                    .foregroundColor(DesignColors.foreground)
+                                
+                                let energyText = generateEnergyDescription()
+                                Text(energyText)
+                                    .font(DesignTypography.subheadFont())
                                     .foregroundColor(DesignColors.accent)
-                                    .frame(width: 24, height: 24)
+                                    .opacity(0.9)
                             }
-                        }
-                        .padding(.horizontal, DesignSpacing.sm)
-                        .padding(.top, max(0, geometry.safeAreaInsets.top - 45))
-                    
-                    // Greeting Section
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Hi \(userData.name),")
-                            .font(DesignTypography.title3Font())
-                            .foregroundColor(DesignColors.foreground)
-                        
-                        let energyText = generateEnergyDescription()
-                        Text(energyText)
-                            .font(DesignTypography.subheadFont())
-                            .foregroundColor(DesignColors.accent)
-                            .opacity(0.9)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, DesignSpacing.sm)
-                    
-                    // Main Content
-                    VStack(spacing: 24) {
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, DesignSpacing.sm)
+                            
+                            // Main Content
+                            VStack(spacing: 24) {
                         // Tarot Card Section
                         if let insight = dailyInsight {
                             TarotCardView(
@@ -261,8 +247,30 @@ struct HomeView: View {
                         .opacity(0.6)
                         .padding(.top, DesignSpacing.md)
                         .padding(.bottom, 60) // Reasonable padding to ensure visibility above nav bar
+                        }
+                        .padding(.bottom, 60) // Reasonable padding to prevent content from going behind nav bar
                     }
-                    .padding(.bottom, 60) // Reasonable padding to prevent content from going behind nav bar
+                    .padding(.top, StickyHeaderBar.totalHeight(for: safeAreaTop))
+                    
+                    StickyHeaderBar(
+                        title: "Today's Insights",
+                        safeAreaTop: safeAreaTop
+                    ) {
+                        Button(action: {}) {
+                            Image(systemName: "bell")
+                                .font(.system(size: 20))
+                                .foregroundColor(DesignColors.accent)
+                                .frame(width: 36, height: 36)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 14)
+                                        .fill(Color.white.opacity(0.06))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 14)
+                                                .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                                        )
+                                )
+                        }
+                    }
                 }
                 
                 // Bottom Navigation Bar - fixed at bottom

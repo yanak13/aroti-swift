@@ -32,23 +32,14 @@ struct ProfileView: View {
     
     var body: some View {
         GeometryReader { geometry in
+            let safeAreaTop = geometry.safeAreaInsets.top
+            
             ZStack(alignment: .bottom) {
                 CelestialBackground()
+                    .ignoresSafeArea()
                 
-                ScrollView {
-                    VStack(spacing: 32) {
-                        // Header - matching Home and Discovery page style
-                        HStack {
-                            Text("Profile")
-                                .font(DesignTypography.title2Font(weight: .semibold))
-                                .foregroundColor(DesignColors.foreground)
-                            
-                            Spacer()
-                        }
-                        .padding(.horizontal, DesignSpacing.sm)
-                        .padding(.top, max(0, geometry.safeAreaInsets.top - 45))
-                        
-                        // Main Content
+                ZStack(alignment: .top) {
+                    ScrollView {
                         VStack(spacing: 32) {
                             // 1. Profile Header
                             profileHeaderSection
@@ -71,6 +62,12 @@ struct ProfileView: View {
                         .padding(.horizontal, DesignSpacing.sm)
                         .padding(.bottom, 100) // Space for bottom nav
                     }
+                    .padding(.top, StickyHeaderBar.totalHeight(for: safeAreaTop))
+                    
+                    StickyHeaderBar(
+                        title: "Profile",
+                        safeAreaTop: safeAreaTop
+                    )
                 }
                 
                 // Bottom Navigation Bar

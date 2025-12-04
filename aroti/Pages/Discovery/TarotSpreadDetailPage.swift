@@ -28,26 +28,32 @@ struct TarotSpreadDetailPage: View {
     @Environment(\.dismiss) private var dismiss
     let spreadId: String
     
-    // Helper function to format instruction text with bold highlights
-    private func formattedInstructionText(_ text: String) -> Text {
-        let parts = text.components(separatedBy: "**")
-        var result = Text("")
-        
-        for (index, part) in parts.enumerated() {
-            if index % 2 == 0 {
-                // Regular text
-                result = result + Text(part)
-                    .font(DesignTypography.bodyFont())
-                    .foregroundColor(DesignColors.foreground)
-            } else {
-                // Bold text (between ** markers)
-                result = result + Text(part)
-                    .font(DesignTypography.bodyFont(weight: .semibold))
-                    .foregroundColor(DesignColors.accent)
-            }
+    // Helper function to get pattern type
+    private func getPatternType(for spreadId: String) -> String {
+        switch spreadId {
+        case "celtic-cross":
+            return "Classic Pattern"
+        case "three-card", "past-present-future":
+            return "Simple Pattern"
+        case "moon-guidance":
+            return "Lunar Pattern"
+        default:
+            return "Traditional Pattern"
         }
-        
-        return result
+    }
+    
+    // Helper function to get duration
+    private func getDuration(for spreadId: String) -> String {
+        switch spreadId {
+        case "celtic-cross":
+            return "5–10 min"
+        case "three-card", "past-present-future":
+            return "2–3 min"
+        case "moon-guidance":
+            return "3–5 min"
+        default:
+            return "5–10 min"
+        }
     }
     
     private var spread: TarotSpreadDetail? {
@@ -175,142 +181,120 @@ struct TarotSpreadDetailPage: View {
                     if let spread = spread {
                         // Content
                         VStack(spacing: 16) {
-                            // Hero Section
-                            BaseCard {
-                                    HStack(spacing: 16) {
-                                        TarotCardBack()
-                                            .frame(width: 96, height: 160)
-                                        
-                                        VStack(alignment: .leading, spacing: 12) {
-                                            Text(spread.name)
-                                                .font(DesignTypography.title1Font(weight: .medium))
-                                                .foregroundColor(DesignColors.foreground)
-                                            
-                                            Text(spread.description)
-                                                .font(DesignTypography.bodyFont())
-                                                .foregroundColor(DesignColors.mutedForeground)
-                                                .multilineTextAlignment(.leading)
-                                                .fixedSize(horizontal: false, vertical: true)
-                                            
-                                            HStack(spacing: 8) {
-                                                Text(spread.difficulty)
-                                                    .font(DesignTypography.footnoteFont(weight: .medium))
-                                                    .foregroundColor(DesignColors.accent)
-                                                    .padding(.horizontal, 12)
-                                                    .padding(.vertical, 6)
-                                                    .background(
-                                                        Capsule()
-                                                            .fill(DesignColors.accent.opacity(0.2))
-                                                            .overlay(
-                                                                Capsule()
-                                                                    .stroke(DesignColors.accent.opacity(0.3), lineWidth: 1)
-                                                            )
-                                                    )
-                                                
-                                                Text("\(spread.cardCount) Cards")
-                                                    .font(DesignTypography.footnoteFont(weight: .medium))
-                                                    .foregroundColor(DesignColors.mutedForeground)
-                                                    .padding(.horizontal, 12)
-                                                    .padding(.vertical, 6)
-                                                    .background(
-                                                        Capsule()
-                                                            .fill(Color.white.opacity(0.05))
-                                                            .overlay(
-                                                                Capsule()
-                                                                    .stroke(Color.white.opacity(0.1), lineWidth: 1)
-                                                            )
-                                                    )
-                                            }
-                                        }
-                                    }
-                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            // Single centered card placeholder (55% width)
+                            GeometryReader { geometry in
+                                TarotCardBack()
+                                    .frame(width: geometry.size.width * 0.55)
+                                    .aspectRatio(3/5, contentMode: .fit)
+                                    .frame(maxWidth: .infinity)
                             }
+                            .frame(height: 340)
                             
-                            // Best For Section
+                            // Combined Spread Summary and How It Works Panel
                             BaseCard {
-                                    HStack(alignment: .top, spacing: 12) {
-                                        Image(systemName: "sparkles")
-                                            .font(.system(size: 20))
-                                            .foregroundColor(DesignColors.accent)
+                                VStack(alignment: .leading, spacing: 20) {
+                                    // Spread Summary Section
+                                    VStack(alignment: .leading, spacing: 12) {
+                                        Text(spread.name)
+                                            .font(DesignTypography.title1Font(weight: .medium))
+                                            .foregroundColor(DesignColors.foreground)
                                         
-                                        VStack(alignment: .leading, spacing: 4) {
-                                            Text("Best For")
-                                                .font(DesignTypography.headlineFont(weight: .medium))
-                                                .foregroundColor(DesignColors.foreground)
-                                            
-                                            Text(spread.bestFor)
-                                                .font(DesignTypography.bodyFont())
-                                                .foregroundColor(DesignColors.mutedForeground)
-                                                .multilineTextAlignment(.leading)
-                                                .fixedSize(horizontal: false, vertical: true)
-                                        }
-                                    }
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                            }
-                            
-                            // Instructions Section
-                            BaseCard {
-                                VStack(alignment: .leading, spacing: 16) {
-                                    Text("How to Perform This Spread")
-                                        .font(DesignTypography.title3Font(weight: .medium))
-                                        .foregroundColor(DesignColors.foreground)
-                                    
-                                    VStack(spacing: 16) {
-                                        ForEach(Array(spread.instructions.enumerated()), id: \.offset) { index, instruction in
-                                            HStack(alignment: .top, spacing: 16) {
-                                                ZStack {
-                                                    Circle()
+                                        Text(spread.bestFor)
+                                            .font(DesignTypography.bodyFont())
+                                            .foregroundColor(DesignColors.mutedForeground)
+                                            .multilineTextAlignment(.leading)
+                                            .fixedSize(horizontal: false, vertical: true)
+                                        
+                                        HStack(spacing: 8) {
+                                            // Intermediate badge
+                                            Text(spread.difficulty)
+                                                .font(DesignTypography.footnoteFont(weight: .medium))
+                                                .foregroundColor(DesignColors.accent)
+                                                .padding(.horizontal, 12)
+                                                .padding(.vertical, 6)
+                                                .background(
+                                                    Capsule()
                                                         .fill(DesignColors.accent.opacity(0.2))
-                                                        .frame(width: 32, height: 32)
                                                         .overlay(
-                                                            Circle()
+                                                            Capsule()
                                                                 .stroke(DesignColors.accent.opacity(0.3), lineWidth: 1)
                                                         )
-                                                    
-                                                    Text("\(index + 1)")
-                                                        .font(DesignTypography.footnoteFont(weight: .medium))
-                                                        .foregroundColor(DesignColors.accent)
-                                                }
-                                                
-                                                formattedInstructionText(instruction)
-                                                    .multilineTextAlignment(.leading)
-                                                    .lineSpacing(4)
-                                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                                    .padding(.top, 2)
-                                            }
+                                                )
+                                            
+                                            // Classic Pattern badge
+                                            Text(getPatternType(for: spread.id))
+                                                .font(DesignTypography.footnoteFont(weight: .medium))
+                                                .foregroundColor(DesignColors.accent)
+                                                .padding(.horizontal, 12)
+                                                .padding(.vertical, 6)
+                                                .background(
+                                                    Capsule()
+                                                        .fill(DesignColors.accent.opacity(0.2))
+                                                        .overlay(
+                                                            Capsule()
+                                                                .stroke(DesignColors.accent.opacity(0.3), lineWidth: 1)
+                                                        )
+                                                )
+                                            
+                                            // Duration badge
+                                            Text(getDuration(for: spread.id))
+                                                .font(DesignTypography.footnoteFont(weight: .medium))
+                                                .foregroundColor(DesignColors.accent)
+                                                .padding(.horizontal, 12)
+                                                .padding(.vertical, 6)
+                                                .background(
+                                                    Capsule()
+                                                        .fill(DesignColors.accent.opacity(0.2))
+                                                        .overlay(
+                                                            Capsule()
+                                                                .stroke(DesignColors.accent.opacity(0.3), lineWidth: 1)
+                                                        )
+                                                )
                                         }
+                                    }
+                                    
+                                    // Divider
+                                    Divider()
+                                        .background(Color.white.opacity(0.1))
+                                    
+                                    // How It Works Section
+                                    VStack(alignment: .leading, spacing: 12) {
+                                        Text("How It Works")
+                                            .font(DesignTypography.title3Font(weight: .medium))
+                                            .foregroundColor(DesignColors.foreground)
+                                        
+                                        Text("Your cards will be automatically drawn and arranged in the traditional \(spread.name) pattern. Focus on your question and begin when you feel ready.")
+                                            .font(DesignTypography.bodyFont())
+                                            .foregroundColor(DesignColors.mutedForeground)
+                                            .multilineTextAlignment(.leading)
+                                            .fixedSize(horizontal: false, vertical: true)
                                     }
                                 }
                                 .frame(maxWidth: .infinity, alignment: .leading)
                             }
-                            
-                            // Start Reading Button
-                            NavigationLink(destination: TarotSpreadIntentionPage(spreadId: spread.id)) {
-                                    HStack(spacing: 12) {
-                                        Image(systemName: "play.fill")
-                                            .font(.system(size: 20))
-                                            .foregroundColor(DesignColors.accent)
-                                        
-                                        Text("Start Reading")
-                                            .font(DesignTypography.subheadFont(weight: .medium))
-                                            .foregroundColor(DesignColors.accent)
-                                        
-                                        Image(systemName: "arrow.right")
-                                            .font(.system(size: 16))
-                                            .foregroundColor(DesignColors.accent)
-                                    }
-                                    .frame(maxWidth: .infinity)
-                                    .padding()
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .fill(DesignColors.accent.opacity(0.1))
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 12)
-                                                    .stroke(DesignColors.accent.opacity(0.5), lineWidth: 1)
-                                            )
-                                    )
-                                }
                         }
+                        
+                        // Start Reading Button (separate, at bottom)
+                        NavigationLink(destination: TarotSpreadIntentionPage(spreadId: spread.id)) {
+                            HStack(spacing: 8) {
+                                Text("Start Reading")
+                                    .font(DesignTypography.subheadFont(weight: .medium))
+                                
+                                Image(systemName: "arrow.right")
+                                    .font(.system(size: 16))
+                            }
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 44)
+                            .padding(.horizontal, 12)
+                            .background(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .fill(DesignColors.accent)
+                                    .shadow(color: DesignColors.accent.opacity(0.35), radius: 10, x: 0, y: 6)
+                            )
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .padding(.top, 4)
                     } else {
                         // Not Found
                         BaseCard {

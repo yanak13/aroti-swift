@@ -12,6 +12,7 @@ struct TarotSpreadIntentionPage: View {
     let spreadId: String
     
     @State private var intention: String = ""
+    @State private var showTextarea: Bool = false
     
     private var spread: TarotSpreadDetail? {
         // Reuse the same spread data structure from TarotSpreadDetailPage
@@ -86,17 +87,11 @@ struct TarotSpreadIntentionPage: View {
                             // Introduction Section
                             BaseCard {
                                 VStack(alignment: .leading, spacing: 12) {
-                                    HStack(spacing: 12) {
-                                        Image(systemName: "sparkles")
-                                            .font(.system(size: 20))
-                                            .foregroundColor(DesignColors.accent)
-                                        
-                                        Text("Set Your Intention")
-                                            .font(DesignTypography.title3Font(weight: .medium))
-                                            .foregroundColor(DesignColors.foreground)
-                                    }
+                                    Text("Take a Pause")
+                                        .font(DesignTypography.title3Font(weight: .medium))
+                                        .foregroundColor(DesignColors.foreground)
                                     
-                                    Text("Take a moment to focus on your question or intention for this reading. This will help guide the cards to provide more meaningful insights.")
+                                    Text("Before we begin, take a moment to focus on what you'd like clarity on. This helps your reading feel more aligned and meaningful.")
                                         .font(DesignTypography.bodyFont())
                                         .foregroundColor(DesignColors.mutedForeground)
                                         .multilineTextAlignment(.leading)
@@ -108,18 +103,21 @@ struct TarotSpreadIntentionPage: View {
                             // Intention Input Section
                             BaseCard {
                                 VStack(alignment: .leading, spacing: 12) {
-                                    Text("Your Question or Intention")
+                                    Text("Your Intention (Optional)")
                                         .font(DesignTypography.headlineFont(weight: .medium))
                                         .foregroundColor(DesignColors.foreground)
                                     
                                     DesignTextarea(
                                         text: $intention,
-                                        placeholder: "What would you like guidance on? What question or situation are you seeking clarity about?"
+                                        placeholder: "What's on your mind today?"
                                     )
                                     .frame(minHeight: 150)
+                                    .opacity(showTextarea ? 1.0 : 0.0)
+                                    .animation(.easeIn(duration: 0.25), value: showTextarea)
                                     
-                                    Text("Optional - You can skip this step if you prefer")
+                                    Text("You can skip this step if you prefer.")
                                         .font(DesignTypography.footnoteFont())
+                                        .italic()
                                         .foregroundColor(DesignColors.mutedForeground)
                                 }
                                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -127,30 +125,25 @@ struct TarotSpreadIntentionPage: View {
                             
                             // Continue Button
                             NavigationLink(destination: TarotSpreadReadingPage(spreadId: spread.id, intention: intention.isEmpty ? nil : intention)) {
-                                HStack(spacing: 12) {
-                                    Image(systemName: "play.fill")
-                                        .font(.system(size: 20))
-                                        .foregroundColor(DesignColors.accent)
-                                    
+                                HStack(spacing: 8) {
                                     Text("Begin Reading")
                                         .font(DesignTypography.subheadFont(weight: .medium))
-                                        .foregroundColor(DesignColors.accent)
                                     
                                     Image(systemName: "arrow.right")
                                         .font(.system(size: 16))
-                                        .foregroundColor(DesignColors.accent)
                                 }
+                                .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)
-                                .padding()
+                                .frame(height: 44)
+                                .padding(.horizontal, 12)
                                 .background(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(DesignColors.accent.opacity(0.1))
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 12)
-                                                .stroke(DesignColors.accent.opacity(0.5), lineWidth: 1)
-                                        )
+                                    RoundedRectangle(cornerRadius: 10)
+                                        .fill(DesignColors.accent)
+                                        .shadow(color: DesignColors.accent.opacity(0.35), radius: 10, x: 0, y: 6)
                                 )
                             }
+                            .buttonStyle(PlainButtonStyle())
+                            .padding(.top, 16)
                         }
                     } else {
                         // Not Found
@@ -170,6 +163,12 @@ struct TarotSpreadIntentionPage: View {
                 .padding(.bottom, 60)
             }
             .navigationBarHidden(true)
+            .onAppear {
+                // Trigger textarea fade-in animation
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    showTextarea = true
+                }
+            }
         }
     }
 }

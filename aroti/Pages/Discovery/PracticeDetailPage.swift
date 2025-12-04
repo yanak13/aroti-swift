@@ -21,6 +21,109 @@ struct PracticeDetailPage: View {
     @Environment(\.dismiss) private var dismiss
     let practiceId: String
     
+    // Generate practice-specific hero image
+    @ViewBuilder
+    private func practiceHeroImage(for practice: PracticeDetail) -> some View {
+        ZStack {
+            // Base gradient - varies by practice type
+            Group {
+                if practice.category.lowercased() == "meditation" {
+                    LinearGradient(
+                        colors: [
+                            Color(hue: 220/360, saturation: 0.30, brightness: 0.14),
+                            Color(hue: 240/360, saturation: 0.25, brightness: 0.12),
+                            Color(hue: 250/360, saturation: 0.20, brightness: 0.10)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                } else if practice.category.lowercased() == "reflection" {
+                    LinearGradient(
+                        colors: [
+                            Color(hue: 260/360, saturation: 0.25, brightness: 0.13),
+                            Color(hue: 270/360, saturation: 0.20, brightness: 0.11),
+                            Color(hue: 280/360, saturation: 0.18, brightness: 0.09)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                } else if practice.title.lowercased().contains("morning") {
+                    LinearGradient(
+                        colors: [
+                            Color(hue: 30/360, saturation: 0.35, brightness: 0.18),
+                            Color(hue: 25/360, saturation: 0.30, brightness: 0.15),
+                            Color(hue: 20/360, saturation: 0.25, brightness: 0.12)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                } else if practice.title.lowercased().contains("gratitude") {
+                    LinearGradient(
+                        colors: [
+                            Color(hue: 45/360, saturation: 0.30, brightness: 0.16),
+                            Color(hue: 40/360, saturation: 0.25, brightness: 0.14),
+                            Color(hue: 35/360, saturation: 0.20, brightness: 0.12)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                } else {
+                    LinearGradient(
+                        colors: [
+                            Color(hue: 240/360, saturation: 0.25, brightness: 0.15),
+                            Color(hue: 235/360, saturation: 0.20, brightness: 0.12),
+                            Color(hue: 245/360, saturation: 0.18, brightness: 0.10)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                }
+            }
+            
+            // Subtle overlay pattern
+            RadialGradient(
+                colors: [
+                    DesignColors.accent.opacity(0.15),
+                    Color.clear
+                ],
+                center: .topTrailing,
+                startRadius: 0,
+                endRadius: 200
+            )
+            
+            // Practice-specific decorative icon
+            Group {
+                if practice.category.lowercased() == "meditation" {
+                    Image(systemName: "circle.hexagongrid.fill")
+                        .font(.system(size: 64))
+                        .foregroundColor(DesignColors.accent.opacity(0.4))
+                        .offset(x: 0, y: 0)
+                } else if practice.category.lowercased() == "reflection" {
+                    Image(systemName: "moon.stars.fill")
+                        .font(.system(size: 64))
+                        .foregroundColor(DesignColors.accent.opacity(0.4))
+                        .offset(x: 20, y: -10)
+                } else if practice.title.lowercased().contains("morning") {
+                    Image(systemName: "sunrise.fill")
+                        .font(.system(size: 64))
+                        .foregroundColor(DesignColors.accent.opacity(0.4))
+                        .offset(x: -20, y: 20)
+                } else if practice.title.lowercased().contains("gratitude") {
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 64))
+                        .foregroundColor(DesignColors.accent.opacity(0.4))
+                        .offset(x: 15, y: -15)
+                } else {
+                    Image(systemName: "leaf.fill")
+                        .font(.system(size: 64))
+                        .foregroundColor(DesignColors.accent.opacity(0.4))
+                        .offset(x: 0, y: 0)
+                }
+            }
+        }
+        .frame(height: 200)
+    }
+    
     private var practice: PracticeDetail? {
         let practices: [String: PracticeDetail] = [
             "1": PracticeDetail(
@@ -132,164 +235,106 @@ struct PracticeDetailPage: View {
                                 icon: Image(systemName: "chevron.left"),
                                 label: "Back",
                                 action: { dismiss() }
-                            )
+                            ),
+                            alignment: .leading
                         )
-                        .padding(.top, max(0, geometry.safeAreaInsets.top - 45))
+                        .padding(.top, 0)
                         
                         if let practice = practice {
                             // Content
-                            VStack(spacing: 16) {
-                                // Hero Section
+                            VStack(spacing: 24) {
+                                // Hero Card with Image, Description, and Benefits
                                 BaseCard {
-                                    VStack(alignment: .leading, spacing: 16) {
-                                        HStack(spacing: 12) {
-                                            ZStack {
-                                                Circle()
-                                                    .fill(DesignColors.accent.opacity(0.2))
-                                                    .frame(width: 48, height: 48)
-                                                
-                                                Image(systemName: "clock.fill")
-                                                    .font(.system(size: 24))
-                                                    .foregroundColor(DesignColors.accent)
-                                            }
-                                            
-                                            VStack(alignment: .leading, spacing: 4) {
-                                                HStack(spacing: 8) {
-                                                    Text(practice.duration)
-                                                        .font(DesignTypography.footnoteFont())
-                                                        .foregroundColor(DesignColors.mutedForeground)
-                                                    
-                                                    Text("•")
-                                                        .font(DesignTypography.footnoteFont())
-                                                        .foregroundColor(DesignColors.mutedForeground)
-                                                    
-                                                    Text(practice.category)
-                                                        .font(DesignTypography.footnoteFont(weight: .medium))
-                                                        .foregroundColor(DesignColors.mutedForeground)
-                                                        .padding(.horizontal, 12)
-                                                        .padding(.vertical, 6)
-                                                        .background(
-                                                            Capsule()
-                                                                .fill(Color.white.opacity(0.05))
-                                                                .overlay(
-                                                                    Capsule()
-                                                                        .stroke(Color.white.opacity(0.1), lineWidth: 1)
-                                                                )
-                                                        )
-                                                }
-                                            }
-                                        }
-                                        
-                                        Text(practice.title)
-                                            .font(DesignTypography.title1Font(weight: .medium))
-                                            .foregroundColor(DesignColors.foreground)
-                                        
-                                        JustifiedTextView(
-                                            text: practice.description,
-                                            font: DesignTypography.bodyFont(),
-                                            foregroundColor: DesignColors.mutedForeground
-                                        )
-                                    }
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                }
-                                .padding(.horizontal, DesignSpacing.sm)
-                                
-                                // Benefits Section
-                                BaseCard {
-                                    HStack(alignment: .top, spacing: 12) {
-                                        Image(systemName: "sparkles")
-                                            .font(.system(size: 20))
-                                            .foregroundColor(DesignColors.accent)
-                                        
-                                        VStack(alignment: .leading, spacing: 12) {
-                                            Text("Benefits")
-                                                .font(DesignTypography.headlineFont(weight: .medium))
-                                                .foregroundColor(DesignColors.foreground)
-                                            
-                                            VStack(alignment: .leading, spacing: 8) {
-                                                ForEach(practice.benefits, id: \.self) { benefit in
-                                                    HStack(alignment: .top, spacing: 8) {
-                                                        Text("•")
-                                                            .font(DesignTypography.bodyFont())
-                                                            .foregroundColor(DesignColors.accent)
-                                                        
-                                                        Text(benefit)
-                                                            .font(DesignTypography.bodyFont())
-                                                            .foregroundColor(DesignColors.foreground)
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                }
-                                .padding(.horizontal, DesignSpacing.sm)
-                                
-                                // Steps Section
-                                BaseCard {
-                                    VStack(alignment: .leading, spacing: 16) {
-                                        Text("Step-by-Step Guide")
-                                            .font(DesignTypography.title3Font(weight: .medium))
-                                            .foregroundColor(DesignColors.foreground)
-                                        
-                                        VStack(spacing: 16) {
-                                            ForEach(Array(practice.steps.enumerated()), id: \.offset) { index, step in
-                                                HStack(alignment: .top, spacing: 16) {
-                                                    ZStack {
-                                                        Circle()
-                                                            .fill(DesignColors.accent.opacity(0.2))
-                                                            .frame(width: 32, height: 32)
-                                                        
-                                                        Text("\(index + 1)")
-                                                            .font(DesignTypography.footnoteFont(weight: .medium))
-                                                            .foregroundColor(DesignColors.accent)
-                                                    }
-                                                    
-                                                    JustifiedTextView(
-                                                        text: step,
-                                                        font: DesignTypography.bodyFont(),
-                                                        foregroundColor: DesignColors.foreground
-                                                    )
-                                                }
-                                            }
-                                        }
-                                    }
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                }
-                                .padding(.horizontal, DesignSpacing.sm)
-                                
-                                // Start Practice Button
-                                Button(action: {
-                                    // TODO: Navigate to guided practice interface
-                                }) {
-                                    HStack(spacing: 12) {
-                                        Image(systemName: "play.fill")
-                                            .font(.system(size: 20))
-                                            .foregroundColor(DesignColors.accent)
-                                        
-                                        Text("Start Practice")
-                                            .font(DesignTypography.subheadFont(weight: .medium))
-                                            .foregroundColor(DesignColors.accent)
-                                        
-                                        Image(systemName: "arrow.right")
-                                            .font(.system(size: 16))
-                                            .foregroundColor(DesignColors.accent)
-                                    }
-                                    .frame(maxWidth: .infinity)
-                                    .padding()
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .fill(DesignColors.accent.opacity(0.1))
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 12)
-                                                    .stroke(DesignColors.accent.opacity(0.5), lineWidth: 1)
+                                    VStack(alignment: .leading, spacing: 0) {
+                                        // Hero Image/Illustration - Inside Card
+                                        practiceHeroImage(for: practice)
+                                            .clipShape(
+                                                .rect(
+                                                    topLeadingRadius: ArotiRadius.md,
+                                                    topTrailingRadius: ArotiRadius.md
+                                                )
                                             )
-                                    )
+                                            .padding(.horizontal, -16)
+                                            .padding(.top, -16)
+                                            .padding(.bottom, 20)
+                                        
+                                        VStack(alignment: .leading, spacing: 20) {
+                                            // Icon, Duration, Category Row
+                                            HStack(spacing: 12) {
+                                                ZStack {
+                                                    Circle()
+                                                        .fill(DesignColors.accent.opacity(0.2))
+                                                        .frame(width: 40, height: 40)
+                                                    
+                                                    Image(systemName: "clock.fill")
+                                                        .font(.system(size: 20))
+                                                        .foregroundColor(DesignColors.accent)
+                                                }
+                                                
+                                                Text(practice.duration)
+                                                    .font(DesignTypography.footnoteFont())
+                                                    .foregroundColor(DesignColors.mutedForeground)
+                                                
+                                                Text("•")
+                                                    .font(DesignTypography.footnoteFont())
+                                                    .foregroundColor(DesignColors.mutedForeground)
+                                                
+                                                Text(practice.category)
+                                                    .font(DesignTypography.footnoteFont(weight: .medium))
+                                                    .foregroundColor(DesignColors.mutedForeground)
+                                                    .padding(.horizontal, 10)
+                                                    .padding(.vertical, 4)
+                                                    .background(
+                                                        Capsule()
+                                                            .fill(Color.white.opacity(0.05))
+                                                            .overlay(
+                                                                Capsule()
+                                                                    .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                                                            )
+                                                    )
+                                                
+                                                Spacer()
+                                            }
+                                            
+                                            // Description
+                                            Text(practice.description)
+                                                .font(DesignTypography.bodyFont())
+                                                .foregroundColor(DesignColors.mutedForeground)
+                                                .fixedSize(horizontal: false, vertical: true)
+                                            
+                                            // Divider
+                                            Divider()
+                                                .background(Color.white.opacity(0.1))
+                                            
+                                            // Benefits Section
+                                            VStack(alignment: .leading, spacing: 12) {
+                                                Text("Benefits")
+                                                    .font(DesignTypography.title3Font(weight: .medium))
+                                                    .foregroundColor(DesignColors.foreground)
+                                                
+                                                VStack(alignment: .leading, spacing: 12) {
+                                                    ForEach(practice.benefits, id: \.self) { benefit in
+                                                        HStack(alignment: .top, spacing: 12) {
+                                                            Image(systemName: "checkmark.circle.fill")
+                                                                .font(.system(size: 20))
+                                                                .foregroundColor(DesignColors.accent)
+                                                            
+                                                            Text(benefit)
+                                                                .font(DesignTypography.bodyFont())
+                                                                .foregroundColor(DesignColors.foreground)
+                                                                .fixedSize(horizontal: false, vertical: true)
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                    }
                                 }
-                                .padding(.horizontal, DesignSpacing.sm)
                             }
+                            .padding(.horizontal, DesignSpacing.sm)
                             .padding(.top, 16)
-                            .padding(.bottom, 60)
+                            .padding(.bottom, 120) // Space for fixed button at bottom
                         } else {
                             // Not Found
                             BaseCard {
@@ -305,6 +350,34 @@ struct PracticeDetailPage: View {
                             .padding(.top, 16)
                         }
                     }
+                }
+                
+                // Fixed button at bottom (same position as Next button)
+                if let practice = practice {
+                    VStack(spacing: 12) {
+                        NavigationLink(destination: GuidedPracticeView(practice: practice)) {
+                            Text("Start Practice")
+                                .font(DesignTypography.subheadFont(weight: .medium))
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 52)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(DesignColors.accent)
+                                        .shadow(color: DesignColors.accent.opacity(0.35), radius: 10, x: 0, y: 6)
+                                )
+                        }
+                        .simultaneousGesture(TapGesture().onEnded {
+                            HapticFeedback.impactOccurred(.medium)
+                        })
+                        .buttonStyle(PlainButtonStyle())
+                        
+                        // Invisible spacer to match Back button space (keeps button at same position as Next)
+                        Spacer()
+                            .frame(height: 44)
+                    }
+                    .padding(.horizontal, DesignSpacing.sm)
+                    .padding(.bottom, 48)
                 }
             }
             .navigationBarHidden(true)

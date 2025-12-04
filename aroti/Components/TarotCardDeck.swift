@@ -2,7 +2,7 @@
 //  TarotCardDeck.swift
 //  Aroti
 //
-//  Interactive tarot card deck for selecting cards one-by-one
+//  Interactive tarot card deck with fanned deck and draw animations
 //
 
 import SwiftUI
@@ -12,234 +12,136 @@ struct TarotCardDeck: View {
     let cardCount: Int
     let onCardsSelected: ([TarotCard]) -> Void
     
+    // State model
+    @State private var currentCardIndex: Int = 1
+    @State private var isDrawing: Bool = false
+    @State private var showActiveCard: Bool = false
+    
+    // Active card animation properties
+    @State private var activeCardOffset: CGSize = .zero
+    @State private var activeCardRotation: Double = 0
+    @State private var activeCardScale: CGFloat = 1.0
+    @State private var activeCardOpacity: Double = 1.0
+    
+    // Deck subtle animation
+    @State private var deckScale: CGFloat = 1.0
+    @State private var deckOpacity: Double = 1.0
+    @State private var deckShift: Int = 0 // Track how many cards drawn (for deck shift)
+    
+    // Navigation control
+    @State private var shouldNavigateToReading: Bool = false
+    
+    // Progress text animation
+    @State private var progressOpacity: Double = 1.0
+    @State private var progressOffset: CGFloat = 0
+    
+    // Card data
     @State private var availableCards: [TarotCard] = []
     @State private var selectedCards: [TarotCard] = []
-    @State private var currentDrawnCard: TarotCard? = nil
-    @State private var isDrawing: Bool = false
-    @State private var showDrawnCard: Bool = false
-    @State private var isShuffling: Bool = false
-    @State private var deckRotation: Double = 0
     
     private var allCards: [TarotCard] {
         DailyContentService.shared.getAllTarotCards()
     }
     
     private var progressText: String {
-        "Card \(selectedCards.count + 1) of \(cardCount)"
+        return "Card \(min(currentCardIndex, cardCount)) of \(cardCount)"
+    }
+    
+    private var helperText: String {
+        if currentCardIndex > cardCount {
+            return "Your cards are ready"
+        } else if currentCardIndex == 1 {
+            return "Tap the deck to draw Card 1 of \(cardCount)"
+        } else {
+            return "Tap again to draw Card \(currentCardIndex) of \(cardCount)"
+        }
+    }
+    
+    // Get starting transform for card from front of fan
+    private var topCardInitialTransform: (offset: CGSize, rotation: Double) {
+        return FannedDeckView.topCardInitialTransform(deckShift: deckShift)
     }
     
     var body: some View {
-        VStack(spacing: 20) {
-            if selectedCards.count < cardCount {
-                // Card selection in progress
-                VStack(spacing: 16) {
-                    // Progress indicator
-                    Text(progressText)
-                        .font(DesignTypography.subheadFont(weight: .medium))
-                        .foregroundColor(DesignColors.mutedForeground)
-                    
-                    // Deck or drawn card
-                    if showDrawnCard, let drawnCard = currentDrawnCard {
-                        // Show drawn card with accept/reject
-                        VStack(spacing: 20) {
-                            // Drawn card
-                            ZStack {
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(
-                                        LinearGradient(
-                                            colors: [
-                                                Color(hue: 235/360, saturation: 0.30, brightness: 0.11),
-                                                Color(hue: 240/360, saturation: 0.28, brightness: 0.13)
-                                            ],
-                                            startPoint: .topLeading,
-                                            endPoint: .bottomTrailing
-                                        )
-                                    )
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .stroke(DesignColors.accent.opacity(0.3), lineWidth: 1)
-                                    )
-                                
-                                // Decorative border patterns
-                                RoundedRectangle(cornerRadius: 10)
-                                    .stroke(DesignColors.accent.opacity(0.2), lineWidth: 1)
-                                    .padding(8)
-                                
-                                RoundedRectangle(cornerRadius: 8)
-                                    .stroke(DesignColors.accent.opacity(0.1), lineWidth: 1)
-                                    .padding(12)
-                                
-                                // Card image or placeholder
-                                if let imageName = drawnCard.imageName,
-                                   let image = UIImage(named: imageName) {
-                                    Image(uiImage: image)
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fit)
-                                        .padding(16)
-                                } else {
-                                    Image(systemName: "sparkles")
-                                        .font(.system(size: 60))
-                                        .foregroundColor(DesignColors.accent)
-                                }
-                            }
-                            .frame(width: 220, height: 367)
-                            .aspectRatio(3/5, contentMode: .fit)
-                            
-                            // Card name
-                            Text(drawnCard.name)
-                                .font(DesignTypography.headlineFont(weight: .semibold))
-                                .foregroundColor(DesignColors.foreground)
-                            
-                            // Action buttons
-                            HStack(spacing: 16) {
-                                // Reject button
-                                Button(action: {
-                                    withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
-                                        showDrawnCard = false
-                                        currentDrawnCard = nil
-                                        isDrawing = false
-                                    }
-                                }) {
-                                    Text("Draw Another")
-                                        .font(DesignTypography.subheadFont(weight: .medium))
-                                        .foregroundColor(DesignColors.foreground)
-                                        .padding(.horizontal, DesignSpacing.md)
-                                        .padding(.vertical, DesignSpacing.sm)
-                                        .background(
-                                            RoundedRectangle(cornerRadius: 8)
-                                                .fill(Color.white.opacity(0.05))
-                                                .overlay(
-                                                    RoundedRectangle(cornerRadius: 8)
-                                                        .stroke(Color.white.opacity(0.1), lineWidth: 1)
-                                                )
-                                        )
-                                }
-                                
-                                // Accept button
-                                Button(action: {
-                                    acceptCard()
-                                }) {
-                                    Text("Accept")
-                                        .font(DesignTypography.subheadFont(weight: .medium))
-                                        .foregroundColor(DesignColors.accent)
-                                        .padding(.horizontal, DesignSpacing.md)
-                                        .padding(.vertical, DesignSpacing.sm)
-                                        .background(
-                                            RoundedRectangle(cornerRadius: 8)
-                                                .fill(DesignColors.accent.opacity(0.1))
-                                                .overlay(
-                                                    RoundedRectangle(cornerRadius: 8)
-                                                        .stroke(DesignColors.accent.opacity(0.3), lineWidth: 1)
-                                                )
-                                        )
-                                }
-                            }
-                        }
-                        .transition(.scale.combined(with: .opacity))
-                    } else {
-                        // Deck view
-                        VStack(spacing: 20) {
-                            Button(action: {
-                                drawCard()
-                            }) {
-                                VStack(spacing: 16) {
-                                    // Stacked deck effect - showing full deck
-                                    ZStack {
-                                        // Multiple card backs for stack effect (8-10 cards)
-                                        ForEach(0..<10, id: \.self) { index in
-                                            TarotCardBack()
-                                                .frame(width: 220, height: 367)
-                                                .aspectRatio(3/5, contentMode: .fit)
-                                                .offset(
-                                                    x: CGFloat(index) * 2.5,
-                                                    y: CGFloat(index) * 2.5
-                                                )
-                                                .opacity(1.0 - Double(index) * 0.1)
-                                                .rotationEffect(.degrees(isShuffling ? deckRotation : 0))
-                                                .shadow(
-                                                    color: Color.black.opacity(0.3 - Double(index) * 0.03),
-                                                    radius: CGFloat(8 - index),
-                                                    x: CGFloat(index) * 1.5,
-                                                    y: CGFloat(index) * 1.5
-                                                )
-                                        }
-                                    }
-                                    .frame(width: 220, height: 367)
-                                    .aspectRatio(3/5, contentMode: .fit)
-                                    
-                                    Text("Tap to Draw a Card")
-                                        .font(DesignTypography.headlineFont(weight: .medium))
-                                        .foregroundColor(DesignColors.foreground)
-                                }
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                            .disabled(isDrawing || isShuffling)
-                            .opacity((isDrawing || isShuffling) ? 0.6 : 1.0)
-                            
-                            // Action buttons
-                            HStack(spacing: 16) {
-                                // Shuffle button
-                                Button(action: {
-                                    shuffleDeck()
-                                }) {
-                                    HStack(spacing: 8) {
-                                        Image(systemName: "arrow.2.squarepath")
-                                            .font(.system(size: 16))
-                                        Text("Shuffle")
-                                            .font(DesignTypography.subheadFont(weight: .medium))
-                                    }
-                                    .foregroundColor(DesignColors.foreground)
-                                    .padding(.horizontal, DesignSpacing.md)
-                                    .padding(.vertical, DesignSpacing.sm)
-                                    .frame(maxWidth: .infinity)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 8)
-                                            .fill(Color.white.opacity(0.05))
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 8)
-                                                    .stroke(Color.white.opacity(0.1), lineWidth: 1)
-                                            )
-                                    )
-                                }
-                                .disabled(isDrawing || isShuffling || showDrawnCard)
-                                
-                                // Draw All button
-                                Button(action: {
-                                    drawAllCards()
-                                }) {
-                                    HStack(spacing: 8) {
-                                        Image(systemName: "play.fill")
-                                            .font(.system(size: 16))
-                                        Text("Draw All")
-                                            .font(DesignTypography.subheadFont(weight: .medium))
-                                    }
-                                    .foregroundColor(DesignColors.accent)
-                                    .padding(.horizontal, DesignSpacing.md)
-                                    .padding(.vertical, DesignSpacing.sm)
-                                    .frame(maxWidth: .infinity)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 8)
-                                            .fill(DesignColors.accent.opacity(0.1))
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 8)
-                                                    .stroke(DesignColors.accent.opacity(0.3), lineWidth: 1)
-                                            )
-                                    )
-                                }
-                                .disabled(isDrawing || isShuffling || showDrawnCard)
-                            }
-                        }
-                    }
-                }
-            } else {
-                // All cards selected - show completion message briefly
-                Text("All cards selected!")
-                    .font(DesignTypography.headlineFont(weight: .medium))
+        VStack(spacing: 0) {
+            // Main heading
+            Text("Draw your cards")
+                .font(DesignTypography.title2Font(weight: .semibold))
+                .foregroundColor(DesignColors.foreground)
+                .frame(maxWidth: .infinity)
+                .multilineTextAlignment(.center)
+                .padding(.top, 24)
+            
+            Spacer()
+            
+            // Deck area (centered, slightly above middle)
+            AnimatedDeckCard(
+                showActiveCard: showActiveCard,
+                activeCardOffset: activeCardOffset,
+                activeCardRotation: activeCardRotation,
+                activeCardScale: activeCardScale,
+                activeCardOpacity: activeCardOpacity,
+                deckScale: deckScale,
+                deckOpacity: deckOpacity,
+                deckShift: deckShift
+            ) {
+                handleDeckTap()
+            }
+            .padding(.vertical, 32)
+            
+            Spacer()
+            
+            // Progress pill + helper text (below deck)
+            VStack(spacing: 12) {
+                // Card counter chip
+                Text(progressText)
+                    .font(DesignTypography.footnoteFont(weight: .medium))
                     .foregroundColor(DesignColors.accent)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(
+                        Capsule()
+                            .fill(DesignColors.accent.opacity(0.2))
+                            .overlay(
+                                Capsule()
+                                    .stroke(DesignColors.accent.opacity(0.3), lineWidth: 1)
+                            )
+                    )
+                    .opacity(progressOpacity)
+                    .offset(y: progressOffset)
+                    .animation(.easeOut(duration: 0.25), value: progressOpacity)
+                    .animation(.easeOut(duration: 0.25), value: progressOffset)
+                
+                // Helper text
+                Text(helperText)
+                    .font(DesignTypography.bodyFont())
+                    .foregroundColor(DesignColors.mutedForeground)
+                    .multilineTextAlignment(.center)
+            }
+            .padding(.top, 24)
+            .padding(.bottom, 24)
+            
+            // Single primary button (Draw All) - ~85% width via padding
+            if currentCardIndex <= cardCount {
+                ArotiButton(
+                    kind: .custom(.accentCard()),
+                    title: "Draw All",
+                    icon: Image(systemName: "play.fill"),
+                    isDisabled: isDrawing,
+                    action: handleDrawAll
+                )
+                .padding(.horizontal, 32) // Creates ~85% width effect
+                .padding(.bottom, 32)
             }
         }
+        .padding(.horizontal, 24)
         .onAppear {
             initializeDeck()
+        }
+        .onChange(of: shouldNavigateToReading) { shouldNavigate in
+            if shouldNavigate {
+                onCardsSelected(selectedCards)
+            }
         }
     }
     
@@ -247,98 +149,141 @@ struct TarotCardDeck: View {
         availableCards = allCards.shuffled()
     }
     
-    private func drawCard() {
-        guard !availableCards.isEmpty, !isDrawing else { return }
+    private func handleDeckTap() {
+        guard !isDrawing else { return }
+        guard currentCardIndex <= cardCount else { return }
         
         isDrawing = true
         
-        withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
-            // Draw a random card from available deck
-            let randomIndex = Int.random(in: 0..<availableCards.count)
-            currentDrawnCard = availableCards[randomIndex]
-            showDrawnCard = true
-        }
-    }
-    
-    private func acceptCard() {
-        guard let card = currentDrawnCard else { return }
+        // Trigger haptic
+        HapticFeedback.impactOccurred(.medium)
         
-        withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
-            // Add to selected cards
-            selectedCards.append(card)
-            
-            // Remove from available cards
-            if let index = availableCards.firstIndex(where: { $0.id == card.id }) {
-                availableCards.remove(at: index)
+        // Draw a random card
+        let randomIndex = Int.random(in: 0..<availableCards.count)
+        let drawnCard = availableCards[randomIndex]
+        availableCards.remove(at: randomIndex)
+        selectedCards.append(drawnCard)
+        
+        // 2) Prepare active card at same transform as top card in fan
+        let start = topCardInitialTransform
+        activeCardOffset = start.offset
+        activeCardRotation = start.rotation
+        activeCardScale = 1.0
+        activeCardOpacity = 1.0
+        showActiveCard = true
+        
+        // 1) Small press-down feedback on deck
+        withAnimation(.easeOut(duration: 0.08)) {
+            deckScale = 0.98
+        }
+        
+        // Return deck scale and start lift animation
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
+            withAnimation(.easeOut(duration: 0.08)) {
+                deckScale = 1.0
             }
             
-            // Reset drawn card state
-            currentDrawnCard = nil
-            showDrawnCard = false
-            isDrawing = false
+            // 3) Animate card lifting slightly (8-12pt upward) and fading out
+            withAnimation(.easeOut(duration: 0.3)) {
+                activeCardOffset = CGSize(
+                    width: start.offset.width,
+                    height: start.offset.height - 10 // Lift 10pt upward
+                )
+                activeCardRotation = start.rotation
+                activeCardScale = 1.0 // No scaling
+                activeCardOpacity = 0.0 // Fade out
+                deckOpacity = 0.9 // Deck slightly dims
+            }
             
-            // Check if all cards are selected
-            if selectedCards.count >= cardCount {
-                // Call completion callback
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                    onCardsSelected(selectedCards)
+            // 4) After fade completes, hide card and shift deck forward
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                showActiveCard = false
+                deckOpacity = 1.0
+                
+                // Shift deck forward by one layer
+                withAnimation(.easeOut(duration: 0.25)) {
+                    deckShift += 1
+                }
+                
+                // Update progress with cross-fade
+                progressOpacity = 0.0
+                progressOffset = 8
+                
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    currentCardIndex += 1
+                    
+                    // Animate progress update (cross-fade)
+                    progressOpacity = 1.0
+                    progressOffset = 0
+                    
+                    // Reset active card state
+                    activeCardOffset = .zero
+                    activeCardRotation = 0
+                    activeCardScale = 1.0
+                    activeCardOpacity = 1.0
+                    
+                    isDrawing = false
+                    
+                    if currentCardIndex > cardCount {
+                        handleFinishedDrawing()
+                    }
                 }
             }
         }
     }
     
-    private func shuffleDeck() {
-        guard !isShuffling else { return }
-        
-        isShuffling = true
-        
-        // Visual shuffle animation
-        withAnimation(.easeInOut(duration: 0.4)) {
-            deckRotation = 360
+    private func handleFinishedDrawing() {
+        // 1) Fade & slightly scale down deck
+        withAnimation(.easeOut(duration: 0.25)) {
+            deckScale = 0.93
+            deckOpacity = 0.0
         }
         
-        // Shuffle the available cards array
-        availableCards.shuffle()
+        // 2) Helper text should now say "Your cards are ready" (handled by computed property)
         
-        // Reset rotation and finish animation
+        // 3) After a short pause, navigate to Reading screen
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-            withAnimation(.easeInOut(duration: 0.1)) {
-                deckRotation = 0
-            }
-            isShuffling = false
+            shouldNavigateToReading = true
         }
     }
     
-    private func drawAllCards() {
-        guard !availableCards.isEmpty, selectedCards.count < cardCount else { return }
+    private func handleDrawAll() {
+        guard !isDrawing else { return }
         
-        // Randomly select the remaining cards needed
+        isDrawing = true
+        
+        // Calculate remaining cards needed
         let remainingCount = cardCount - selectedCards.count
-        let shuffledCards = availableCards.shuffled()
-        let cardsToAdd = Array(shuffledCards.prefix(remainingCount))
         
-        // Add all cards to selected
+        // Take remaining cards from available deck
+        let cardsToAdd = Array(availableCards.prefix(remainingCount))
         selectedCards.append(contentsOf: cardsToAdd)
         
-        // Remove selected cards from available
+        // Remove from available
         for card in cardsToAdd {
             if let index = availableCards.firstIndex(where: { $0.id == card.id }) {
                 availableCards.remove(at: index)
             }
         }
         
-        // Immediately trigger completion
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-            onCardsSelected(selectedCards)
+        // Quick "whoosh" animation
+        withAnimation(.easeOut(duration: 0.18)) {
+            deckScale = 1.05
+            deckOpacity = 0.0
+        }
+        
+        currentCardIndex = cardCount + 1
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+            shouldNavigateToReading = true
         }
     }
 }
 
 #Preview {
-    TarotCardDeck(cardCount: 3) { cards in
+    TarotCardDeck(cardCount: 10) { cards in
         print("Selected \(cards.count) cards")
     }
     .padding()
     .background(CelestialBackground())
 }
-

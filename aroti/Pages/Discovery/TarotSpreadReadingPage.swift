@@ -131,19 +131,10 @@ struct TarotSpreadReadingPage: View {
                         VStack(spacing: 20) {
                             if isSelectingCards {
                                 // Card Selection Section
-                                VStack(spacing: 16) {
-                                    Text("Select Your Cards")
-                                        .font(DesignTypography.title3Font(weight: .medium))
-                                        .foregroundColor(DesignColors.foreground)
-                                    
-                                    Text("Draw cards one by one from the deck")
-                                        .font(DesignTypography.bodyFont())
-                                        .foregroundColor(DesignColors.mutedForeground)
-                                    
-                                    TarotCardDeck(cardCount: spread.cardCount) { cards in
-                                        handleCardsSelected(cards)
-                                    }
+                                TarotCardDeck(cardCount: spread.cardCount) { cards in
+                                    handleCardsSelected(cards)
                                 }
+                                .padding(.horizontal, DesignSpacing.sm)
                             } else {
                                 // Reading Section (shown after cards are selected)
                                 // Reveal All Button

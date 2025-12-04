@@ -53,7 +53,7 @@ struct DailyPracticesListingPage: View {
                     
                     ForEach(practices) { practice in
                         NavigationLink(destination: PracticeDetailPage(practiceId: practice.id)) {
-                            BaseCard(variant: .interactive, action: {}) {
+                            BaseCard {
                                 HStack(spacing: 16) {
                                     ZStack {
                                         Circle()

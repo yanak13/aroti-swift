@@ -215,6 +215,156 @@ struct PracticeDetailPage: View {
                     "Reduces negative thinking",
                     "Strengthens relationships"
                 ]
+            ),
+            "5": PracticeDetail(
+                id: "5",
+                title: "Body Scan Meditation",
+                duration: "15 min",
+                category: "Meditation",
+                description: "Progressive relaxation technique to release tension and increase awareness.",
+                steps: [
+                    "Lie down or sit comfortably with your eyes closed.",
+                    "Take a few deep breaths to center yourself.",
+                    "Bring your attention to your toes and notice any sensations.",
+                    "Slowly move your awareness up through your feet, ankles, and calves.",
+                    "Continue scanning up through your knees, thighs, and hips.",
+                    "Notice your abdomen, chest, and back with gentle awareness.",
+                    "Move through your shoulders, arms, hands, and fingers.",
+                    "Finally, bring attention to your neck, face, and the crown of your head.",
+                    "Take a moment to feel your whole body as one complete unit.",
+                    "When ready, slowly open your eyes and return to the present moment."
+                ],
+                benefits: [
+                    "Reduces physical tension",
+                    "Increases body awareness",
+                    "Promotes deep relaxation",
+                    "Improves sleep quality"
+                ]
+            ),
+            "6": PracticeDetail(
+                id: "6",
+                title: "Loving Kindness",
+                duration: "12 min",
+                category: "Meditation",
+                description: "Cultivate compassion for yourself and others through guided meditation.",
+                steps: [
+                    "Find a comfortable seated position and close your eyes.",
+                    "Take three deep, calming breaths.",
+                    "Begin by directing loving kindness toward yourself: 'May I be happy, may I be healthy, may I be safe, may I live with ease.'",
+                    "Visualize someone you love and send them the same wishes: 'May you be happy, may you be healthy, may you be safe, may you live with ease.'",
+                    "Think of a neutral person and extend the same compassion to them.",
+                    "If you're ready, bring to mind someone you have difficulty with and wish them well.",
+                    "Finally, extend these wishes to all beings everywhere.",
+                    "Take a moment to feel the warmth and compassion in your heart.",
+                    "Slowly open your eyes and carry this feeling with you."
+                ],
+                benefits: [
+                    "Increases compassion",
+                    "Reduces negative emotions",
+                    "Improves relationships",
+                    "Enhances emotional well-being"
+                ]
+            ),
+            "7": PracticeDetail(
+                id: "7",
+                title: "Journaling Session",
+                duration: "10 min",
+                category: "Reflection",
+                description: "Express your thoughts and emotions through guided writing prompts.",
+                steps: [
+                    "Find a quiet space with a journal and pen.",
+                    "Take three deep breaths to center yourself.",
+                    "Begin with a gratitude entry: write three things you're grateful for today.",
+                    "Reflect on your day: what went well? What challenged you?",
+                    "Explore your emotions: how are you feeling right now?",
+                    "Write about one thing you learned or discovered about yourself today.",
+                    "Set an intention or goal for tomorrow.",
+                    "Close by writing one affirmation or positive statement about yourself.",
+                    "Take a moment to read back what you've written.",
+                    "Close your journal with a sense of completion and clarity."
+                ],
+                benefits: [
+                    "Enhances self-awareness",
+                    "Reduces stress and anxiety",
+                    "Improves emotional processing",
+                    "Tracks personal growth"
+                ]
+            ),
+            "8": PracticeDetail(
+                id: "8",
+                title: "Energy Clearing",
+                duration: "7 min",
+                category: "Energy Work",
+                description: "Release negative energy and restore your natural energetic balance.",
+                steps: [
+                    "Stand or sit comfortably with your feet flat on the ground.",
+                    "Close your eyes and take three deep, cleansing breaths.",
+                    "Visualize a bright white light entering through the crown of your head.",
+                    "Feel this light flowing down through your body, clearing any stagnant energy.",
+                    "Imagine any negative or heavy energy being released through your feet into the earth.",
+                    "Continue breathing and visualizing the light cleansing your entire energy field.",
+                    "Focus on areas that feel tense or blocked, allowing the light to flow there.",
+                    "When you feel clear, visualize a protective bubble of light surrounding you.",
+                    "Take a final deep breath and feel your renewed energy.",
+                    "Slowly open your eyes and notice how you feel."
+                ],
+                benefits: [
+                    "Releases energetic blocks",
+                    "Restores natural balance",
+                    "Increases vitality",
+                    "Promotes emotional clarity"
+                ]
+            ),
+            "9": PracticeDetail(
+                id: "9",
+                title: "Chakra Alignment",
+                duration: "20 min",
+                category: "Energy Work",
+                description: "Balance and align your seven chakras through visualization and breathwork.",
+                steps: [
+                    "Sit comfortably with your spine straight and eyes closed.",
+                    "Take several deep breaths to center yourself.",
+                    "Begin at the root chakra: visualize a red spinning wheel at the base of your spine.",
+                    "Move to the sacral chakra: see an orange light in your lower abdomen.",
+                    "Focus on the solar plexus: visualize a bright yellow light in your stomach area.",
+                    "Bring attention to your heart chakra: feel a green light radiating from your chest.",
+                    "Move to the throat chakra: see a blue light at your throat.",
+                    "Focus on the third eye: visualize an indigo light between your eyebrows.",
+                    "Finally, connect with the crown chakra: see a violet or white light above your head.",
+                    "Take a moment to feel all seven chakras aligned and balanced.",
+                    "Slowly return your awareness to the present moment."
+                ],
+                benefits: [
+                    "Balances energy centers",
+                    "Enhances spiritual connection",
+                    "Promotes overall well-being",
+                    "Increases inner harmony"
+                ]
+            ),
+            "10": PracticeDetail(
+                id: "10",
+                title: "Mindful Walking",
+                duration: "15 min",
+                category: "Mindfulness",
+                description: "Practice presence and awareness through intentional movement.",
+                steps: [
+                    "Find a quiet path or space where you can walk slowly.",
+                    "Stand still for a moment and take three deep breaths.",
+                    "Begin walking at a slower pace than usual.",
+                    "Notice the sensation of your feet touching the ground with each step.",
+                    "Pay attention to the movement of your legs and the rhythm of your walk.",
+                    "Observe your surroundings: what do you see, hear, and feel?",
+                    "If your mind wanders, gently bring it back to the sensation of walking.",
+                    "Continue walking mindfully, staying present with each step.",
+                    "After your walk, pause and take three deep breaths.",
+                    "Notice how you feel after this mindful movement practice."
+                ],
+                benefits: [
+                    "Increases present-moment awareness",
+                    "Reduces mental chatter",
+                    "Improves focus and concentration",
+                    "Connects body and mind"
+                ]
             )
         ]
         return practices[practiceId]

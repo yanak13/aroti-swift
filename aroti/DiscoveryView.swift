@@ -811,6 +811,11 @@ struct RecentlyViewedSection: View {
                 .font(DesignTypography.headlineFont(weight: .semibold))
                 .foregroundColor(DesignColors.foreground)
             
+            // Separator line
+            Divider()
+                .overlay(Color.white.opacity(0.2))
+                .padding(.bottom, 4)
+            
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: DiscoveryLayout.interCardSpacing) {
                     ForEach(items) { item in

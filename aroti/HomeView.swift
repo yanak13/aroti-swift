@@ -15,12 +15,21 @@ struct HomeView: View {
     @State private var currentAffirmation: String = ""
     @State private var canShuffleAffirmation: Bool = true
     
+    // Sheet presentation states
+    @State private var showTarotSheet: Bool = false
+    @State private var showHoroscopeSheet: Bool = false
+    @State private var showNumerologySheet: Bool = false
+    @State private var showRitualDetail: Bool = false
+    @State private var showReflectionSheet: Bool = false
+    @State private var reflectionText: String = ""
+    
     private let stateManager = DailyStateManager.shared
     private let contentService = DailyContentService.shared
     
     var body: some View {
-        GeometryReader { geometry in
-            let safeAreaTop = geometry.safeAreaInsets.top
+        NavigationStack {
+            GeometryReader { geometry in
+                let safeAreaTop = geometry.safeAreaInsets.top
             
             ZStack(alignment: .bottom) {
                 CelestialBackground()
@@ -47,82 +56,104 @@ struct HomeView: View {
                             // Main Content
                             VStack(spacing: 24) {
                         // Tarot Card Section
-                        if let insight = dailyInsight {
-                            TarotCardView(
-                                card: insight.tarotCard,
-                                isFlipped: tarotCardFlipped,
-                                onFlip: {
-                                    tarotCardFlipped = true
-                                    stateManager.markCardFlipped()
-                                },
-                                canFlip: !stateManager.hasFlippedCardToday()
-                            )
+                        if let insight = dailyInsight, let tarotCard = insight.tarotCard {
+                            Button(action: {
+                                if tarotCardFlipped {
+                                    showTarotSheet = true
+                                }
+                            }) {
+                                TarotCardView(
+                                    card: tarotCard,
+                                    isFlipped: tarotCardFlipped,
+                                    onFlip: {
+                                        tarotCardFlipped = true
+                                        stateManager.markCardFlipped()
+                                        // Show sheet after flip animation
+                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                            showTarotSheet = true
+                                        }
+                                    },
+                                    canFlip: !stateManager.hasFlippedCardToday()
+                                )
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            .disabled(!tarotCardFlipped)
                         }
                         
                         // Horoscope Section
                         if let insight = dailyInsight {
-                            BaseCard {
-                                HStack(spacing: 12) {
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text("Daily Horoscope")
-                                            .font(DesignTypography.headlineFont(weight: .semibold))
-                                            .foregroundColor(DesignColors.foreground)
-                                        Text(insight.horoscope)
-                                            .font(DesignTypography.footnoteFont())
-                                            .foregroundColor(DesignColors.mutedForeground)
+                            Button(action: {
+                                showHoroscopeSheet = true
+                            }) {
+                                BaseCard {
+                                    HStack(spacing: 12) {
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            Text("Daily Horoscope")
+                                                .font(DesignTypography.headlineFont(weight: .semibold))
+                                                .foregroundColor(DesignColors.foreground)
+                                            Text(insight.horoscope)
+                                                .font(DesignTypography.footnoteFont())
+                                                .foregroundColor(DesignColors.mutedForeground)
+                                        }
+                                        
+                                        Spacer()
+                                        
+                                        // Zodiac symbol in square with glow
+                                        Text(getZodiacSymbol(userData.sunSign))
+                                            .font(.system(size: 32))
+                                            .foregroundColor(.white)
+                                            .frame(width: 48, height: 48)
+                                            .background(
+                                                RoundedRectangle(cornerRadius: 8)
+                                                    .fill(getZodiacColor(userData.sunSign).opacity(0.3))
+                                                    .overlay(
+                                                        RoundedRectangle(cornerRadius: 8)
+                                                            .stroke(getZodiacColor(userData.sunSign).opacity(0.5), lineWidth: 1)
+                                                    )
+                                            )
                                     }
-                                    
-                                    Spacer()
-                                    
-                                    // Zodiac symbol in square with glow
-                                    Text(getZodiacSymbol(userData.sunSign))
-                                        .font(.system(size: 32))
-                                        .foregroundColor(.white)
-                                        .frame(width: 48, height: 48)
-                                        .background(
-                                            RoundedRectangle(cornerRadius: 8)
-                                                .fill(getZodiacColor(userData.sunSign).opacity(0.3))
-                                                .overlay(
-                                                    RoundedRectangle(cornerRadius: 8)
-                                                        .stroke(getZodiacColor(userData.sunSign).opacity(0.5), lineWidth: 1)
-                                                )
-                                        )
+                                    .frame(minHeight: 80)
                                 }
-                                .frame(minHeight: 80)
                             }
+                            .buttonStyle(PlainButtonStyle())
                         }
                         
                         // Numerology Section
                         if let insight = dailyInsight {
-                            BaseCard {
-                                HStack(spacing: 12) {
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text("Numerology")
-                                            .font(DesignTypography.headlineFont(weight: .semibold))
-                                            .foregroundColor(DesignColors.foreground)
-                                        Text(insight.numerology.preview)
-                                            .font(DesignTypography.footnoteFont())
-                                            .foregroundColor(DesignColors.mutedForeground)
+                            Button(action: {
+                                showNumerologySheet = true
+                            }) {
+                                BaseCard {
+                                    HStack(spacing: 12) {
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            Text("Numerology")
+                                                .font(DesignTypography.headlineFont(weight: .semibold))
+                                                .foregroundColor(DesignColors.foreground)
+                                            Text(insight.numerology.preview)
+                                                .font(DesignTypography.footnoteFont())
+                                                .foregroundColor(DesignColors.mutedForeground)
+                                        }
+                                        
+                                        Spacer()
+                                        
+                                        // Number badge with orange glow
+                                        Text("\(insight.numerology.number)")
+                                            .font(.system(size: 32, weight: .bold))
+                                            .foregroundColor(.white)
+                                            .frame(width: 48, height: 48)
+                                            .background(
+                                                Circle()
+                                                    .fill(DesignColors.accent.opacity(0.3))
+                                                    .overlay(
+                                                        Circle()
+                                                            .stroke(DesignColors.accent.opacity(0.5), lineWidth: 1)
+                                                    )
+                                            )
                                     }
-                                    
-                                    Spacer()
-                                    
-                                    // Number badge with orange glow
-                                    Text("\(insight.numerology.number)")
-                                        .font(.system(size: 32, weight: .bold))
-                                        .foregroundColor(.white)
-                                        .frame(width: 48, height: 48)
-                                        .background(
-                                            Circle()
-                                                .fill(DesignColors.accent.opacity(0.3))
-                                                .overlay(
-                                                    Circle()
-                                                        .stroke(DesignColors.accent.opacity(0.5), lineWidth: 1)
-                                                )
-                                        )
+                                    .frame(minHeight: 80)
                                 }
-                                .frame(minHeight: 80)
                             }
+                            .buttonStyle(PlainButtonStyle())
                         }
                         
                         // Today's Ritual
@@ -151,7 +182,9 @@ struct HomeView: View {
                                     ArotiButton(
                                         kind: .custom(.accentCard(height: 48)),
                                         title: "Begin Practice",
-                                        action: {}
+                                        action: {
+                                            showRitualDetail = true
+                                        }
                                     )
                                 }
                             }
@@ -164,18 +197,28 @@ struct HomeView: View {
                                     .font(DesignTypography.headlineFont(weight: .semibold))
                                     .foregroundColor(DesignColors.foreground)
                                 
-                                Text("Write something small about your day or energy.")
-                                    .font(DesignTypography.footnoteFont())
-                                    .foregroundColor(DesignColors.mutedForeground)
+                                if reflectionText.isEmpty {
+                                    Text("Write something small about your day or energy.")
+                                        .font(DesignTypography.footnoteFont())
+                                        .foregroundColor(DesignColors.mutedForeground)
+                                } else {
+                                    Text(reflectionText)
+                                        .font(DesignTypography.bodyFont())
+                                        .foregroundColor(DesignColors.mutedForeground)
+                                        .lineLimit(3)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                }
                                 
                                 ArotiButton(
                                     kind: .custom(.accentCard(height: 48)),
-                                    action: {},
+                                    action: {
+                                        showReflectionSheet = true
+                                    },
                                     label: {
                                         HStack(spacing: 8) {
-                                            Image(systemName: "plus")
+                                            Image(systemName: reflectionText.isEmpty ? "plus" : "pencil")
                                                 .font(.system(size: 16))
-                                            Text("Add Reflection")
+                                            Text(reflectionText.isEmpty ? "Add Reflection" : "Edit Reflection")
                                                 .font(DesignTypography.subheadFont(weight: .medium))
                                         }
                                     }
@@ -282,10 +325,42 @@ struct HomeView: View {
                     }
                 }
                 .ignoresSafeArea(edges: .bottom)
-            }
-            .navigationBarHidden(true)
-            .onAppear {
-                loadData()
+                }
+                .navigationBarHidden(true)
+                .onAppear {
+                    loadData()
+                }
+                .sheet(isPresented: $showTarotSheet) {
+                    if let insight = dailyInsight, let card = insight.tarotCard {
+                        TarotDetailSheet(card: card)
+                            .presentationDetents([.large]) // full-height popup for Tarot
+                            .presentationDragIndicator(.visible)
+                    }
+                }
+                .sheet(isPresented: $showHoroscopeSheet) {
+                    if let insight = dailyInsight {
+                        HoroscopeDetailSheet(horoscope: insight.horoscope, sign: userData.sunSign)
+                            .presentationDetents([.large]) // full-height for Astrology
+                            .presentationDragIndicator(.visible)
+                    }
+                }
+                .sheet(isPresented: $showNumerologySheet) {
+                    if let insight = dailyInsight {
+                        HomeNumerologyDetailSheet(numerology: insight.numerology)
+                            .presentationDetents([.large]) // full-height for Numerology
+                            .presentationDragIndicator(.visible)
+                    }
+                }
+                .sheet(isPresented: $showReflectionSheet) {
+                    ReflectionSheet(reflectionText: $reflectionText)
+                        .presentationDetents([.medium, .large])
+                        .presentationDragIndicator(.visible)
+                }
+                .navigationDestination(isPresented: $showRitualDetail) {
+                    if let insight = dailyInsight {
+                        RitualDetailPage(ritual: insight.ritual)
+                    }
+                }
             }
         }
     }

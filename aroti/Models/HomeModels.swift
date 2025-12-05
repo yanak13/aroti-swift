@@ -41,6 +41,7 @@ struct Ritual: Codable {
     let intention: String?
     let steps: [String]?
     let affirmation: String?
+    let benefits: [String]?
 }
 
 struct NumerologyInsight: Codable {

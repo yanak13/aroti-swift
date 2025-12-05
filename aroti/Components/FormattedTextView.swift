@@ -99,19 +99,20 @@ struct FormattedTextView: View {
         let fontSize = DesignTypography.body
         let baseFont = UIFont.systemFont(ofSize: fontSize, weight: .regular)
         
-        // Set paragraph style first
+        // Set paragraph style first - left aligned with relaxed line height (matching React's leading-relaxed: 1.4)
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.alignment = .left
-        paragraphStyle.lineSpacing = 2
-        paragraphStyle.lineHeightMultiple = 1.0
+        paragraphStyle.lineSpacing = 0  // Don't add extra spacing when using lineHeightMultiple
+        paragraphStyle.lineHeightMultiple = 1.4  // Matches React's --line-height-relaxed: 1.4
         paragraphStyle.paragraphSpacing = 0
         paragraphStyle.paragraphSpacingBefore = 0
         
-        // Set base attributes
+        // Set base attributes with letter spacing matching React (-0.408px for body text)
         let baseAttributes: [NSAttributedString.Key: Any] = [
             .foregroundColor: UIColor(foregroundColor),
             .font: baseFont,
-            .paragraphStyle: paragraphStyle
+            .paragraphStyle: paragraphStyle,
+            .kern: -0.408  // Letter spacing matching React's text-body
         ]
         attributedString.addAttributes(baseAttributes, range: NSRange(location: 0, length: text.count))
         
@@ -202,11 +203,11 @@ struct JustifiedTextRepresentable: UIViewRepresentable {
         textView.textContainer.size = CGSize(width: width, height: .greatestFiniteMagnitude)
         textView.clipsToBounds = false // Don't clip to allow text to render fully
         
-        // Set paragraph style for left alignment with reduced line spacing
+        // Set paragraph style for left alignment with relaxed line height (matching React's leading-relaxed: 1.4)
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.alignment = .left
-        paragraphStyle.lineSpacing = 2
-        paragraphStyle.lineHeightMultiple = 1.0
+        paragraphStyle.lineSpacing = 0  // Don't add extra spacing when using lineHeightMultiple
+        paragraphStyle.lineHeightMultiple = 1.4  // Matches React's --line-height-relaxed: 1.4
         paragraphStyle.paragraphSpacing = 0
         paragraphStyle.paragraphSpacingBefore = 0
         
@@ -237,13 +238,15 @@ struct JustifiedTextRepresentable: UIViewRepresentable {
         
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.alignment = .left
-        paragraphStyle.lineSpacing = 2
-        paragraphStyle.lineHeightMultiple = 1.0
+        paragraphStyle.lineSpacing = 0  // Don't add extra spacing when using lineHeightMultiple
+        paragraphStyle.lineHeightMultiple = 1.4  // Matches React's --line-height-relaxed: 1.4
         paragraphStyle.paragraphSpacing = 0
         paragraphStyle.paragraphSpacingBefore = 0
         
         let mutableText = NSMutableAttributedString(attributedString: text)
         mutableText.addAttribute(.paragraphStyle, value: paragraphStyle, range: NSRange(location: 0, length: mutableText.length))
+        // Add letter spacing matching React (-0.408px for body text)
+        mutableText.addAttribute(.kern, value: -0.408, range: NSRange(location: 0, length: mutableText.length))
         
         uiView.attributedText = mutableText
         
@@ -304,8 +307,8 @@ struct JustifiedTextView: View {
     private func textView(for width: CGFloat) -> some View {
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.alignment = .left
-        paragraphStyle.lineSpacing = 2
-        paragraphStyle.lineHeightMultiple = 1.0
+        paragraphStyle.lineSpacing = 0  // Don't add extra spacing when using lineHeightMultiple
+        paragraphStyle.lineHeightMultiple = 1.4  // Matches React's --line-height-relaxed: 1.4
         paragraphStyle.paragraphSpacing = 0
         paragraphStyle.paragraphSpacingBefore = 0
         
@@ -314,7 +317,8 @@ struct JustifiedTextView: View {
             attributes: [
                 .foregroundColor: UIColor(foregroundColor),
                 .font: UIFont.systemFont(ofSize: DesignTypography.body, weight: .regular),
-                .paragraphStyle: paragraphStyle
+                .paragraphStyle: paragraphStyle,
+                .kern: -0.408  // Letter spacing matching React's text-body
             ]
         )
         

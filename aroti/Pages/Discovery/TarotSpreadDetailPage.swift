@@ -31,12 +31,16 @@ struct TarotSpreadDetailPage: View {
     // Helper function to get pattern type
     private func getPatternType(for spreadId: String) -> String {
         switch spreadId {
-        case "celtic-cross":
+        case "celtic-cross", "tree-of-life":
             return "Classic Pattern"
-        case "three-card", "past-present-future":
+        case "three-card", "past-present-future", "one-card":
             return "Simple Pattern"
         case "moon-guidance":
             return "Lunar Pattern"
+        case "relationship", "career-path", "horseshoe", "pentagram":
+            return "Intermediate Pattern"
+        case "wheel-of-fortune", "celtic-knot":
+            return "Advanced Pattern"
         default:
             return "Traditional Pattern"
         }
@@ -45,12 +49,16 @@ struct TarotSpreadDetailPage: View {
     // Helper function to get duration
     private func getDuration(for spreadId: String) -> String {
         switch spreadId {
-        case "celtic-cross":
+        case "celtic-cross", "tree-of-life":
             return "5–10 min"
-        case "three-card", "past-present-future":
+        case "three-card", "past-present-future", "one-card":
             return "2–3 min"
-        case "moon-guidance":
+        case "moon-guidance", "pentagram":
             return "3–5 min"
+        case "relationship", "career-path", "horseshoe":
+            return "4–7 min"
+        case "wheel-of-fortune", "celtic-knot":
+            return "7–12 min"
         default:
             return "5–10 min"
         }
@@ -151,6 +159,218 @@ struct TarotSpreadDetailPage: View {
                     SpreadPosition(id: 3, title: "Waxing Moon", description: "What to nurture during the waxing moon"),
                     SpreadPosition(id: 4, title: "Full Moon", description: "What to celebrate during the full moon"),
                     SpreadPosition(id: 5, title: "Overall Guidance", description: "Overall lunar guidance for this cycle")
+                ]
+            ),
+            "relationship": TarotSpreadDetail(
+                id: "relationship",
+                name: "Relationship Spread",
+                cardCount: 7,
+                description: "Connection dynamics",
+                instructions: [
+                    "Focus on a specific relationship. Shuffle your deck with intention.",
+                    "Place **Card 1 (You)** on the left, representing your perspective.",
+                    "Place **Card 2 (Them)** on the right, representing their perspective.",
+                    "Place **Card 3 (Connection)** in the center, showing the bond between you.",
+                    "Place **Card 4 (Past)** below, showing what brought you together.",
+                    "Place **Card 5 (Present)** above, showing the current state.",
+                    "Place **Card 6 (Challenges)** to the left, showing obstacles.",
+                    "Place **Card 7 (Future)** to the right, showing potential outcomes."
+                ],
+                difficulty: "Intermediate",
+                bestFor: "Understanding partnerships and connections",
+                positions: [
+                    SpreadPosition(id: 1, title: "You", description: "Your perspective and energy in this relationship"),
+                    SpreadPosition(id: 2, title: "Them", description: "Their perspective and energy in this relationship"),
+                    SpreadPosition(id: 3, title: "Connection", description: "The bond and dynamic between you both"),
+                    SpreadPosition(id: 4, title: "Past", description: "What brought you together or past influences"),
+                    SpreadPosition(id: 5, title: "Present", description: "The current state of the relationship"),
+                    SpreadPosition(id: 6, title: "Challenges", description: "Obstacles or areas needing attention"),
+                    SpreadPosition(id: 7, title: "Future", description: "Potential outcomes and direction")
+                ]
+            ),
+            "career-path": TarotSpreadDetail(
+                id: "career-path",
+                name: "Career Path Spread",
+                cardCount: 6,
+                description: "Professional guidance and direction",
+                instructions: [
+                    "Focus on your career or professional life. Shuffle your deck with intention.",
+                    "Place **Card 1 (Current Role)** in the center, showing where you are now.",
+                    "Place **Card 2 (Skills & Strengths)** to the left, showing your abilities.",
+                    "Place **Card 3 (Opportunities)** to the right, showing potential paths.",
+                    "Place **Card 4 (Challenges)** below, showing obstacles to overcome.",
+                    "Place **Card 5 (Advice)** above, showing guidance for your path.",
+                    "Place **Card 6 (Outcome)** at the top, showing potential career direction."
+                ],
+                difficulty: "Intermediate",
+                bestFor: "Career decisions and professional growth",
+                positions: [
+                    SpreadPosition(id: 1, title: "Current Role", description: "Your present professional situation"),
+                    SpreadPosition(id: 2, title: "Skills & Strengths", description: "Your abilities and talents"),
+                    SpreadPosition(id: 3, title: "Opportunities", description: "Potential career paths and options"),
+                    SpreadPosition(id: 4, title: "Challenges", description: "Obstacles or areas needing development"),
+                    SpreadPosition(id: 5, title: "Advice", description: "Guidance for your career journey"),
+                    SpreadPosition(id: 6, title: "Outcome", description: "Potential career direction and future")
+                ]
+            ),
+            "wheel-of-fortune": TarotSpreadDetail(
+                id: "wheel-of-fortune",
+                name: "Wheel of Fortune",
+                cardCount: 8,
+                description: "Life cycles and turning points",
+                instructions: [
+                    "Focus on the cycles in your life. Shuffle your deck with intention.",
+                    "Place **Card 1 (Center)** in the middle, representing the current cycle.",
+                    "Place **Card 2 (Ascending)** above, showing what's rising.",
+                    "Place **Card 3 (Peak)** to the top-right, showing the highest point.",
+                    "Place **Card 4 (Descending)** to the right, showing what's declining.",
+                    "Place **Card 5 (Bottom)** below, showing the lowest point.",
+                    "Place **Card 6 (Rising)** to the left, showing what's emerging.",
+                    "Place **Card 7 (Past Cycle)** to the top-left, showing previous patterns.",
+                    "Place **Card 8 (Future Cycle)** to the bottom-right, showing upcoming patterns."
+                ],
+                difficulty: "Advanced",
+                bestFor: "Understanding life patterns and cycles",
+                positions: [
+                    SpreadPosition(id: 1, title: "Center", description: "The current cycle you're in"),
+                    SpreadPosition(id: 2, title: "Ascending", description: "What's rising and growing in your life"),
+                    SpreadPosition(id: 3, title: "Peak", description: "The highest point or greatest opportunity"),
+                    SpreadPosition(id: 4, title: "Descending", description: "What's declining or ending"),
+                    SpreadPosition(id: 5, title: "Bottom", description: "The lowest point or greatest challenge"),
+                    SpreadPosition(id: 6, title: "Rising", description: "What's emerging or beginning to grow"),
+                    SpreadPosition(id: 7, title: "Past Cycle", description: "Previous patterns and cycles"),
+                    SpreadPosition(id: 8, title: "Future Cycle", description: "Upcoming patterns and cycles")
+                ]
+            ),
+            "horseshoe": TarotSpreadDetail(
+                id: "horseshoe",
+                name: "Horseshoe Spread",
+                cardCount: 7,
+                description: "Seven-card arc for comprehensive reading",
+                instructions: [
+                    "Focus on your question. Shuffle your deck with intention.",
+                    "Place **Card 1 (Past)** on the far left, showing past influences.",
+                    "Place **Card 2 (Present)** to the left of center, showing current situation.",
+                    "Place **Card 3 (Near Future)** in the center, showing immediate future.",
+                    "Place **Card 4 (Distant Future)** to the right of center, showing long-term future.",
+                    "Place **Card 5 (Your Approach)** above center, showing your attitude.",
+                    "Place **Card 6 (External Influences)** below center, showing outside factors.",
+                    "Place **Card 7 (Outcome)** on the far right, showing the final outcome."
+                ],
+                difficulty: "Intermediate",
+                bestFor: "Detailed situation analysis",
+                positions: [
+                    SpreadPosition(id: 1, title: "Past", description: "Past influences affecting the situation"),
+                    SpreadPosition(id: 2, title: "Present", description: "Your current situation"),
+                    SpreadPosition(id: 3, title: "Near Future", description: "What's likely to happen soon"),
+                    SpreadPosition(id: 4, title: "Distant Future", description: "Long-term potential outcomes"),
+                    SpreadPosition(id: 5, title: "Your Approach", description: "Your attitude and approach to the situation"),
+                    SpreadPosition(id: 6, title: "External Influences", description: "Outside factors affecting you"),
+                    SpreadPosition(id: 7, title: "Outcome", description: "The final outcome or resolution")
+                ]
+            ),
+            "one-card": TarotSpreadDetail(
+                id: "one-card",
+                name: "Daily Card",
+                cardCount: 1,
+                description: "Single card for daily guidance",
+                instructions: [
+                    "Focus on your day ahead. Shuffle your deck with intention.",
+                    "Draw **Card 1 (Daily Guidance)** and place it in the center.",
+                    "Reflect on how this card's energy relates to your day.",
+                    "Use it as a focus point for meditation or intention setting."
+                ],
+                difficulty: "Beginner",
+                bestFor: "Quick daily insights and reflection",
+                positions: [
+                    SpreadPosition(id: 1, title: "Daily Guidance", description: "The card's message for your day")
+                ]
+            ),
+            "pentagram": TarotSpreadDetail(
+                id: "pentagram",
+                name: "Pentagram Spread",
+                cardCount: 5,
+                description: "Five elements alignment",
+                instructions: [
+                    "Focus on balancing different aspects of your life. Shuffle your deck with intention.",
+                    "Place **Card 1 (Spirit)** at the top point, representing your spiritual self.",
+                    "Place **Card 2 (Air)** at the top-left, representing thoughts and communication.",
+                    "Place **Card 3 (Fire)** at the top-right, representing passion and action.",
+                    "Place **Card 4 (Water)** at the bottom-left, representing emotions and intuition.",
+                    "Place **Card 5 (Earth)** at the bottom-right, representing material and physical aspects."
+                ],
+                difficulty: "Intermediate",
+                bestFor: "Balancing different aspects of life",
+                positions: [
+                    SpreadPosition(id: 1, title: "Spirit", description: "Your spiritual self and higher purpose"),
+                    SpreadPosition(id: 2, title: "Air", description: "Thoughts, communication, and mental clarity"),
+                    SpreadPosition(id: 3, title: "Fire", description: "Passion, action, and creative energy"),
+                    SpreadPosition(id: 4, title: "Water", description: "Emotions, intuition, and relationships"),
+                    SpreadPosition(id: 5, title: "Earth", description: "Material world, physical health, and stability")
+                ]
+            ),
+            "tree-of-life": TarotSpreadDetail(
+                id: "tree-of-life",
+                name: "Tree of Life",
+                cardCount: 10,
+                description: "Kabbalistic wisdom spread",
+                instructions: [
+                    "Focus on spiritual growth. Shuffle your deck with intention.",
+                    "Place **Card 1 (Kether - Crown)** at the top, representing divine will.",
+                    "Place **Card 2 (Chokmah - Wisdom)** to the top-right, representing wisdom.",
+                    "Place **Card 3 (Binah - Understanding)** to the top-left, representing understanding.",
+                    "Place **Card 4 (Chesed - Mercy)** to the right, representing mercy and expansion.",
+                    "Place **Card 5 (Geburah - Severity)** to the left, representing strength and discipline.",
+                    "Place **Card 6 (Tiphareth - Beauty)** in the center, representing balance and harmony.",
+                    "Place **Card 7 (Netzach - Victory)** to the bottom-right, representing victory and persistence.",
+                    "Place **Card 8 (Hod - Glory)** to the bottom-left, representing glory and splendor.",
+                    "Place **Card 9 (Yesod - Foundation)** below center, representing foundation and stability.",
+                    "Place **Card 10 (Malkuth - Kingdom)** at the bottom, representing the material world."
+                ],
+                difficulty: "Advanced",
+                bestFor: "Spiritual growth and enlightenment",
+                positions: [
+                    SpreadPosition(id: 1, title: "Kether - Crown", description: "Divine will and highest purpose"),
+                    SpreadPosition(id: 2, title: "Chokmah - Wisdom", description: "Wisdom and pure thought"),
+                    SpreadPosition(id: 3, title: "Binah - Understanding", description: "Understanding and comprehension"),
+                    SpreadPosition(id: 4, title: "Chesed - Mercy", description: "Mercy, love, and expansion"),
+                    SpreadPosition(id: 5, title: "Geburah - Severity", description: "Strength, discipline, and justice"),
+                    SpreadPosition(id: 6, title: "Tiphareth - Beauty", description: "Balance, harmony, and beauty"),
+                    SpreadPosition(id: 7, title: "Netzach - Victory", description: "Victory, persistence, and endurance"),
+                    SpreadPosition(id: 8, title: "Hod - Glory", description: "Glory, splendor, and form"),
+                    SpreadPosition(id: 9, title: "Yesod - Foundation", description: "Foundation, stability, and connection"),
+                    SpreadPosition(id: 10, title: "Malkuth - Kingdom", description: "The material world and manifestation")
+                ]
+            ),
+            "celtic-knot": TarotSpreadDetail(
+                id: "celtic-knot",
+                name: "Celtic Knot",
+                cardCount: 9,
+                description: "Interconnected paths and choices",
+                instructions: [
+                    "Focus on a complex decision or situation. Shuffle your deck with intention.",
+                    "Place **Card 1 (Center)** in the middle, representing the core issue.",
+                    "Place **Card 2 (Path A)** to the top-left, showing one possible path.",
+                    "Place **Card 3 (Path B)** to the top-right, showing another possible path.",
+                    "Place **Card 4 (Path C)** to the bottom-right, showing a third path.",
+                    "Place **Card 5 (Path D)** to the bottom-left, showing a fourth path.",
+                    "Place **Card 6 (Connection AB)** between paths A and B, showing their relationship.",
+                    "Place **Card 7 (Connection BC)** between paths B and C, showing their relationship.",
+                    "Place **Card 8 (Connection CD)** between paths C and D, showing their relationship.",
+                    "Place **Card 9 (Connection DA)** between paths D and A, showing their relationship."
+                ],
+                difficulty: "Advanced",
+                bestFor: "Complex decision-making",
+                positions: [
+                    SpreadPosition(id: 1, title: "Center", description: "The core issue or question"),
+                    SpreadPosition(id: 2, title: "Path A", description: "One possible path or choice"),
+                    SpreadPosition(id: 3, title: "Path B", description: "Another possible path or choice"),
+                    SpreadPosition(id: 4, title: "Path C", description: "A third possible path or choice"),
+                    SpreadPosition(id: 5, title: "Path D", description: "A fourth possible path or choice"),
+                    SpreadPosition(id: 6, title: "Connection AB", description: "The relationship between paths A and B"),
+                    SpreadPosition(id: 7, title: "Connection BC", description: "The relationship between paths B and C"),
+                    SpreadPosition(id: 8, title: "Connection CD", description: "The relationship between paths C and D"),
+                    SpreadPosition(id: 9, title: "Connection DA", description: "The relationship between paths D and A")
                 ]
             )
         ]
@@ -273,28 +493,6 @@ struct TarotSpreadDetailPage: View {
                                 .frame(maxWidth: .infinity, alignment: .leading)
                             }
                         }
-                        
-                        // Start Reading Button (separate, at bottom)
-                        NavigationLink(destination: TarotSpreadIntentionPage(spreadId: spread.id)) {
-                            HStack(spacing: 8) {
-                                Text("Start Reading")
-                                    .font(DesignTypography.subheadFont(weight: .medium))
-                                
-                                Image(systemName: "arrow.right")
-                                    .font(.system(size: 16))
-                            }
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 44)
-                            .padding(.horizontal, 12)
-                            .background(
-                                RoundedRectangle(cornerRadius: 10)
-                                    .fill(DesignColors.accent)
-                                    .shadow(color: DesignColors.accent.opacity(0.35), radius: 10, x: 0, y: 6)
-                            )
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        .padding(.top, 4)
                     } else {
                         // Not Found
                         BaseCard {
@@ -310,9 +508,28 @@ struct TarotSpreadDetailPage: View {
                 }
                 .padding(.horizontal, DesignSpacing.sm)
                 .padding(.top, 16)
-                .padding(.bottom, 60)
             }
             .navigationBarHidden(true)
+            .safeAreaInset(edge: .bottom) {
+                if let spread = spread {
+                    NavigationLink(destination: TarotSpreadIntentionPage(spreadId: spread.id)) {
+                        Text("Start Reading")
+                            .font(ArotiTextStyle.subhead)
+                            .foregroundColor(ArotiColor.accentText)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: ArotiButtonHeight.compact)
+                            .padding(.horizontal, 12)
+                            .background(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .fill(ArotiColor.accent)
+                                    .shadow(color: ArotiColor.accent.opacity(0.35), radius: 10, x: 0, y: 6)
+                            )
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .padding(.horizontal, DesignSpacing.sm)
+                    .padding(.bottom, 32)
+                }
+            }
         }
     }
 }

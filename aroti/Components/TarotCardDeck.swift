@@ -2,7 +2,7 @@
 //  TarotCardDeck.swift
 //  Aroti
 //
-//  Interactive tarot card deck with fanned deck and draw animations
+//  Interactive tarot card deck with static deck and reveal card animations
 //
 
 import SwiftUI
@@ -15,25 +15,24 @@ struct TarotCardDeck: View {
     // State model
     @State private var currentCardIndex: Int = 1
     @State private var isDrawing: Bool = false
-    @State private var showActiveCard: Bool = false
     
-    // Active card animation properties
-    @State private var activeCardOffset: CGSize = .zero
-    @State private var activeCardRotation: Double = 0
-    @State private var activeCardScale: CGFloat = 1.0
-    @State private var activeCardOpacity: Double = 1.0
+    // Reveal card state
+    @State private var showRevealCard: Bool = false
+    @State private var revealCard: TarotCard?
+    @State private var revealOffset: CGSize = .zero
+    @State private var revealRotation: Double = 0
+    @State private var revealFlip: Double = 0
+    @State private var revealOpacity: Double = 1.0
     
-    // Deck subtle animation
+    // Deck state (only opacity, no movement)
     @State private var deckScale: CGFloat = 1.0
     @State private var deckOpacity: Double = 1.0
-    @State private var deckShift: Int = 0 // Track how many cards drawn (for deck shift)
     
     // Navigation control
     @State private var shouldNavigateToReading: Bool = false
     
-    // Progress text animation
+    // Progress text animation (opacity only, no offset)
     @State private var progressOpacity: Double = 1.0
-    @State private var progressOffset: CGFloat = 0
     
     // Card data
     @State private var availableCards: [TarotCard] = []
@@ -57,11 +56,6 @@ struct TarotCardDeck: View {
         }
     }
     
-    // Get starting transform for card from front of fan
-    private var topCardInitialTransform: (offset: CGSize, rotation: Double) {
-        return FannedDeckView.topCardInitialTransform(deckShift: deckShift)
-    }
-    
     var body: some View {
         VStack(spacing: 0) {
             // Main heading
@@ -75,19 +69,27 @@ struct TarotCardDeck: View {
             Spacer()
             
             // Deck area (centered, slightly above middle)
-            AnimatedDeckCard(
-                showActiveCard: showActiveCard,
-                activeCardOffset: activeCardOffset,
-                activeCardRotation: activeCardRotation,
-                activeCardScale: activeCardScale,
-                activeCardOpacity: activeCardOpacity,
-                deckScale: deckScale,
-                deckOpacity: deckOpacity,
-                deckShift: deckShift
-            ) {
+            ZStack {
+                // Static deck - never moves
+                StaticDeckView(opacity: deckOpacity)
+                    .scaleEffect(deckScale)
+                
+                // Reveal card overlay - slides, flips, fades
+                if showRevealCard, let card = revealCard {
+                    RevealCardView(
+                        card: card,
+                        offset: revealOffset,
+                        rotation: revealRotation,
+                        flipAngle: revealFlip,
+                        opacity: revealOpacity
+                    )
+                }
+            }
+            .frame(width: 220, height: 340)
+            .padding(.vertical, 32)
+            .onTapGesture {
                 handleDeckTap()
             }
-            .padding(.vertical, 32)
             
             Spacer()
             
@@ -108,9 +110,6 @@ struct TarotCardDeck: View {
                             )
                     )
                     .opacity(progressOpacity)
-                    .offset(y: progressOffset)
-                    .animation(.easeOut(duration: 0.25), value: progressOpacity)
-                    .animation(.easeOut(duration: 0.25), value: progressOffset)
                 
                 // Helper text
                 Text(helperText)
@@ -121,20 +120,30 @@ struct TarotCardDeck: View {
             .padding(.top, 24)
             .padding(.bottom, 24)
             
-            // Single primary button (Draw All) - ~85% width via padding
+        }
+        .padding(.horizontal, DesignSpacing.sm)
+        .safeAreaInset(edge: .bottom) {
             if currentCardIndex <= cardCount {
-                ArotiButton(
-                    kind: .custom(.accentCard()),
-                    title: "Draw All",
-                    icon: Image(systemName: "play.fill"),
-                    isDisabled: isDrawing,
-                    action: handleDrawAll
-                )
-                .padding(.horizontal, 32) // Creates ~85% width effect
+                Button(action: handleDrawAll) {
+                    Text("Draw All")
+                        .font(ArotiTextStyle.subhead)
+                        .foregroundColor(ArotiColor.accentText)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: ArotiButtonHeight.compact)
+                        .padding(.horizontal, 12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(ArotiColor.accent)
+                                .shadow(color: ArotiColor.accent.opacity(0.35), radius: 10, x: 0, y: 6)
+                        )
+                }
+                .frame(maxWidth: .infinity)
+                .buttonStyle(PlainButtonStyle())
+                .disabled(isDrawing)
+                .padding(.horizontal, DesignSpacing.sm)
                 .padding(.bottom, 32)
             }
         }
-        .padding(.horizontal, 24)
         .onAppear {
             initializeDeck()
         }
@@ -164,68 +173,75 @@ struct TarotCardDeck: View {
         availableCards.remove(at: randomIndex)
         selectedCards.append(drawnCard)
         
-        // 2) Prepare active card at same transform as top card in fan
-        let start = topCardInitialTransform
-        activeCardOffset = start.offset
-        activeCardRotation = start.rotation
-        activeCardScale = 1.0
-        activeCardOpacity = 1.0
-        showActiveCard = true
+        // Get center card transform from static deck
+        let centerTransform = StaticDeckView.centerCardTransform()
         
-        // 1) Small press-down feedback on deck
+        // Optional: Small deck press-down (can remove if jittery)
         withAnimation(.easeOut(duration: 0.08)) {
-            deckScale = 0.98
+            deckScale = 0.97
         }
         
-        // Return deck scale and start lift animation
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
             withAnimation(.easeOut(duration: 0.08)) {
                 deckScale = 1.0
             }
             
-            // 3) Animate card lifting slightly (8-12pt upward) and fading out
-            withAnimation(.easeOut(duration: 0.3)) {
-                activeCardOffset = CGSize(
-                    width: start.offset.width,
-                    height: start.offset.height - 10 // Lift 10pt upward
-                )
-                activeCardRotation = start.rotation
-                activeCardScale = 1.0 // No scaling
-                activeCardOpacity = 0.0 // Fade out
-                deckOpacity = 0.9 // Deck slightly dims
+            // Initialize reveal card at center card position
+            revealCard = drawnCard
+            revealOffset = centerTransform.offset
+            revealRotation = centerTransform.rotation
+            revealFlip = 0
+            revealOpacity = 1.0
+            showRevealCard = true
+            
+            // 1) Slide card out from fan to center above deck (0.3s spring)
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                revealOffset = CGSize(width: 0, height: -120) // Centered above deck
+                revealRotation = 0 // Straighten
             }
             
-            // 4) After fade completes, hide card and shift deck forward
+            // 2) After slide, flip card (0.3s)
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                showActiveCard = false
-                deckOpacity = 1.0
-                
-                // Shift deck forward by one layer
-                withAnimation(.easeOut(duration: 0.25)) {
-                    deckShift += 1
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    revealFlip = 180 // Flip from back to front
                 }
                 
-                // Update progress with cross-fade
-                progressOpacity = 0.0
-                progressOffset = 8
-                
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    currentCardIndex += 1
+                // 3) Pause to show the revealed card, then fade out (0.5s pause + 0.15s fade)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3 + 0.5) {
+                    withAnimation(.easeOut(duration: 0.15)) {
+                        revealOpacity = 0.0
+                    }
                     
-                    // Animate progress update (cross-fade)
-                    progressOpacity = 1.0
-                    progressOffset = 0
-                    
-                    // Reset active card state
-                    activeCardOffset = .zero
-                    activeCardRotation = 0
-                    activeCardScale = 1.0
-                    activeCardOpacity = 1.0
-                    
-                    isDrawing = false
-                    
-                    if currentCardIndex > cardCount {
-                        handleFinishedDrawing()
+                    // Hide card and update state
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                        showRevealCard = false
+                        
+                        // Update progress (opacity only, no offset)
+                        withAnimation(.easeOut(duration: 0.2)) {
+                            progressOpacity = 0.0
+                        }
+                        
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            currentCardIndex += 1
+                            
+                            // Reset reveal card state
+                            revealCard = nil
+                            revealOffset = .zero
+                            revealRotation = 0
+                            revealFlip = 0
+                            revealOpacity = 1.0
+                            
+                            // Fade in progress
+                            withAnimation(.easeIn(duration: 0.2)) {
+                                progressOpacity = 1.0
+                            }
+                            
+                            isDrawing = false
+                            
+                            if currentCardIndex > cardCount {
+                                handleFinishedDrawing()
+                            }
+                        }
                     }
                 }
             }
@@ -233,16 +249,13 @@ struct TarotCardDeck: View {
     }
     
     private func handleFinishedDrawing() {
-        // 1) Fade & slightly scale down deck
+        // Fade out static deck
         withAnimation(.easeOut(duration: 0.25)) {
-            deckScale = 0.93
             deckOpacity = 0.0
         }
         
-        // 2) Helper text should now say "Your cards are ready" (handled by computed property)
-        
-        // 3) After a short pause, navigate to Reading screen
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+        // After delay, navigate to Reading screen
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             shouldNavigateToReading = true
         }
     }
@@ -266,15 +279,26 @@ struct TarotCardDeck: View {
             }
         }
         
-        // Quick "whoosh" animation
-        withAnimation(.easeOut(duration: 0.18)) {
-            deckScale = 1.05
+        // Fade out deck
+        withAnimation(.easeOut(duration: 0.25)) {
             deckOpacity = 0.0
         }
         
         currentCardIndex = cardCount + 1
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+        // Update progress text
+        withAnimation(.easeOut(duration: 0.2)) {
+            progressOpacity = 0.0
+        }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            withAnimation(.easeIn(duration: 0.2)) {
+                progressOpacity = 1.0
+            }
+        }
+        
+        // Navigate immediately
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             shouldNavigateToReading = true
         }
     }

@@ -56,6 +56,86 @@ struct TarotSpreadIntentionPage: View {
                 difficulty: "Beginner",
                 bestFor: "Aligning with lunar energy and cycles",
                 positions: []
+            ),
+            "relationship": TarotSpreadDetail(
+                id: "relationship",
+                name: "Relationship Spread",
+                cardCount: 7,
+                description: "Connection dynamics",
+                instructions: [],
+                difficulty: "Intermediate",
+                bestFor: "Understanding partnerships and connections",
+                positions: []
+            ),
+            "career-path": TarotSpreadDetail(
+                id: "career-path",
+                name: "Career Path Spread",
+                cardCount: 6,
+                description: "Professional guidance and direction",
+                instructions: [],
+                difficulty: "Intermediate",
+                bestFor: "Career decisions and professional growth",
+                positions: []
+            ),
+            "wheel-of-fortune": TarotSpreadDetail(
+                id: "wheel-of-fortune",
+                name: "Wheel of Fortune",
+                cardCount: 8,
+                description: "Life cycles and turning points",
+                instructions: [],
+                difficulty: "Advanced",
+                bestFor: "Understanding life patterns and cycles",
+                positions: []
+            ),
+            "horseshoe": TarotSpreadDetail(
+                id: "horseshoe",
+                name: "Horseshoe Spread",
+                cardCount: 7,
+                description: "Seven-card arc for comprehensive reading",
+                instructions: [],
+                difficulty: "Intermediate",
+                bestFor: "Detailed situation analysis",
+                positions: []
+            ),
+            "one-card": TarotSpreadDetail(
+                id: "one-card",
+                name: "Daily Card",
+                cardCount: 1,
+                description: "Single card for daily guidance",
+                instructions: [],
+                difficulty: "Beginner",
+                bestFor: "Quick daily insights and reflection",
+                positions: []
+            ),
+            "pentagram": TarotSpreadDetail(
+                id: "pentagram",
+                name: "Pentagram Spread",
+                cardCount: 5,
+                description: "Five elements alignment",
+                instructions: [],
+                difficulty: "Intermediate",
+                bestFor: "Balancing different aspects of life",
+                positions: []
+            ),
+            "tree-of-life": TarotSpreadDetail(
+                id: "tree-of-life",
+                name: "Tree of Life",
+                cardCount: 10,
+                description: "Kabbalistic wisdom spread",
+                instructions: [],
+                difficulty: "Advanced",
+                bestFor: "Spiritual growth and enlightenment",
+                positions: []
+            ),
+            "celtic-knot": TarotSpreadDetail(
+                id: "celtic-knot",
+                name: "Celtic Knot",
+                cardCount: 9,
+                description: "Interconnected paths and choices",
+                instructions: [],
+                difficulty: "Advanced",
+                bestFor: "Complex decision-making",
+                positions: []
             )
         ]
         return spreads[spreadId]
@@ -122,28 +202,6 @@ struct TarotSpreadIntentionPage: View {
                                 }
                                 .frame(maxWidth: .infinity, alignment: .leading)
                             }
-                            
-                            // Continue Button
-                            NavigationLink(destination: TarotSpreadReadingPage(spreadId: spread.id, intention: intention.isEmpty ? nil : intention)) {
-                                HStack(spacing: 8) {
-                                    Text("Begin Reading")
-                                        .font(DesignTypography.subheadFont(weight: .medium))
-                                    
-                                    Image(systemName: "arrow.right")
-                                        .font(.system(size: 16))
-                                }
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 44)
-                                .padding(.horizontal, 12)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 10)
-                                        .fill(DesignColors.accent)
-                                        .shadow(color: DesignColors.accent.opacity(0.35), radius: 10, x: 0, y: 6)
-                                )
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                            .padding(.top, 16)
                         }
                     } else {
                         // Not Found
@@ -160,9 +218,28 @@ struct TarotSpreadIntentionPage: View {
                 }
                 .padding(.horizontal, DesignSpacing.sm)
                 .padding(.top, 16)
-                .padding(.bottom, 60)
             }
             .navigationBarHidden(true)
+            .safeAreaInset(edge: .bottom) {
+                if let spread = spread {
+                    NavigationLink(destination: TarotSpreadReadingPage(spreadId: spread.id, intention: intention.isEmpty ? nil : intention)) {
+                        Text("Begin Reading")
+                            .font(ArotiTextStyle.subhead)
+                            .foregroundColor(ArotiColor.accentText)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: ArotiButtonHeight.compact)
+                            .padding(.horizontal, 12)
+                            .background(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .fill(ArotiColor.accent)
+                                    .shadow(color: ArotiColor.accent.opacity(0.35), radius: 10, x: 0, y: 6)
+                            )
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .padding(.horizontal, DesignSpacing.sm)
+                    .padding(.bottom, 32)
+                }
+            }
             .onAppear {
                 // Trigger textarea fade-in animation
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {

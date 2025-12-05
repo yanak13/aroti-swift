@@ -22,8 +22,10 @@ struct TarotSpreadReadingPage: View {
     
     @State private var readingCards: [ReadingCard] = []
     @State private var showingCardDetail: TarotCard? = nil
-    @State private var isSelectingCards: Bool = true
-    @State private var selectedCards: [TarotCard] = []
+    @State private var canvasScale: CGFloat = 1.0
+    
+    // Canvas configuration
+    private let canvasSize = CGSize(width: 1200, height: 1600)
     
     init(spreadId: String, intention: String? = nil) {
         self.spreadId = spreadId
@@ -97,6 +99,147 @@ struct TarotSpreadReadingPage: View {
                     SpreadPosition(id: 4, title: "Full Moon", description: "What to celebrate during the full moon"),
                     SpreadPosition(id: 5, title: "Overall Guidance", description: "Overall lunar guidance for this cycle")
                 ]
+            ),
+            "relationship": TarotSpreadDetail(
+                id: "relationship",
+                name: "Relationship Spread",
+                cardCount: 7,
+                description: "Connection dynamics",
+                instructions: [],
+                difficulty: "Intermediate",
+                bestFor: "Understanding partnerships and connections",
+                positions: [
+                    SpreadPosition(id: 1, title: "You", description: "Your perspective and energy in this relationship"),
+                    SpreadPosition(id: 2, title: "Them", description: "Their perspective and energy in this relationship"),
+                    SpreadPosition(id: 3, title: "Connection", description: "The bond and dynamic between you both"),
+                    SpreadPosition(id: 4, title: "Past", description: "What brought you together or past influences"),
+                    SpreadPosition(id: 5, title: "Present", description: "The current state of the relationship"),
+                    SpreadPosition(id: 6, title: "Challenges", description: "Obstacles or areas needing attention"),
+                    SpreadPosition(id: 7, title: "Future", description: "Potential outcomes and direction")
+                ]
+            ),
+            "career-path": TarotSpreadDetail(
+                id: "career-path",
+                name: "Career Path Spread",
+                cardCount: 6,
+                description: "Professional guidance and direction",
+                instructions: [],
+                difficulty: "Intermediate",
+                bestFor: "Career decisions and professional growth",
+                positions: [
+                    SpreadPosition(id: 1, title: "Current Role", description: "Your present professional situation"),
+                    SpreadPosition(id: 2, title: "Skills & Strengths", description: "Your abilities and talents"),
+                    SpreadPosition(id: 3, title: "Opportunities", description: "Potential career paths and options"),
+                    SpreadPosition(id: 4, title: "Challenges", description: "Obstacles or areas needing development"),
+                    SpreadPosition(id: 5, title: "Advice", description: "Guidance for your career journey"),
+                    SpreadPosition(id: 6, title: "Outcome", description: "Potential career direction and future")
+                ]
+            ),
+            "wheel-of-fortune": TarotSpreadDetail(
+                id: "wheel-of-fortune",
+                name: "Wheel of Fortune",
+                cardCount: 8,
+                description: "Life cycles and turning points",
+                instructions: [],
+                difficulty: "Advanced",
+                bestFor: "Understanding life patterns and cycles",
+                positions: [
+                    SpreadPosition(id: 1, title: "Center", description: "The current cycle you're in"),
+                    SpreadPosition(id: 2, title: "Ascending", description: "What's rising and growing in your life"),
+                    SpreadPosition(id: 3, title: "Peak", description: "The highest point or greatest opportunity"),
+                    SpreadPosition(id: 4, title: "Descending", description: "What's declining or ending"),
+                    SpreadPosition(id: 5, title: "Bottom", description: "The lowest point or greatest challenge"),
+                    SpreadPosition(id: 6, title: "Rising", description: "What's emerging or beginning to grow"),
+                    SpreadPosition(id: 7, title: "Past Cycle", description: "Previous patterns and cycles"),
+                    SpreadPosition(id: 8, title: "Future Cycle", description: "Upcoming patterns and cycles")
+                ]
+            ),
+            "horseshoe": TarotSpreadDetail(
+                id: "horseshoe",
+                name: "Horseshoe Spread",
+                cardCount: 7,
+                description: "Seven-card arc for comprehensive reading",
+                instructions: [],
+                difficulty: "Intermediate",
+                bestFor: "Detailed situation analysis",
+                positions: [
+                    SpreadPosition(id: 1, title: "Past", description: "Past influences affecting the situation"),
+                    SpreadPosition(id: 2, title: "Present", description: "Your current situation"),
+                    SpreadPosition(id: 3, title: "Near Future", description: "What's likely to happen soon"),
+                    SpreadPosition(id: 4, title: "Distant Future", description: "Long-term potential outcomes"),
+                    SpreadPosition(id: 5, title: "Your Approach", description: "Your attitude and approach to the situation"),
+                    SpreadPosition(id: 6, title: "External Influences", description: "Outside factors affecting you"),
+                    SpreadPosition(id: 7, title: "Outcome", description: "The final outcome or resolution")
+                ]
+            ),
+            "one-card": TarotSpreadDetail(
+                id: "one-card",
+                name: "Daily Card",
+                cardCount: 1,
+                description: "Single card for daily guidance",
+                instructions: [],
+                difficulty: "Beginner",
+                bestFor: "Quick daily insights and reflection",
+                positions: [
+                    SpreadPosition(id: 1, title: "Daily Guidance", description: "The card's message for your day")
+                ]
+            ),
+            "pentagram": TarotSpreadDetail(
+                id: "pentagram",
+                name: "Pentagram Spread",
+                cardCount: 5,
+                description: "Five elements alignment",
+                instructions: [],
+                difficulty: "Intermediate",
+                bestFor: "Balancing different aspects of life",
+                positions: [
+                    SpreadPosition(id: 1, title: "Spirit", description: "Your spiritual self and higher purpose"),
+                    SpreadPosition(id: 2, title: "Air", description: "Thoughts, communication, and mental clarity"),
+                    SpreadPosition(id: 3, title: "Fire", description: "Passion, action, and creative energy"),
+                    SpreadPosition(id: 4, title: "Water", description: "Emotions, intuition, and relationships"),
+                    SpreadPosition(id: 5, title: "Earth", description: "Material world, physical health, and stability")
+                ]
+            ),
+            "tree-of-life": TarotSpreadDetail(
+                id: "tree-of-life",
+                name: "Tree of Life",
+                cardCount: 10,
+                description: "Kabbalistic wisdom spread",
+                instructions: [],
+                difficulty: "Advanced",
+                bestFor: "Spiritual growth and enlightenment",
+                positions: [
+                    SpreadPosition(id: 1, title: "Kether - Crown", description: "Divine will and highest purpose"),
+                    SpreadPosition(id: 2, title: "Chokmah - Wisdom", description: "Wisdom and pure thought"),
+                    SpreadPosition(id: 3, title: "Binah - Understanding", description: "Understanding and comprehension"),
+                    SpreadPosition(id: 4, title: "Chesed - Mercy", description: "Mercy, love, and expansion"),
+                    SpreadPosition(id: 5, title: "Geburah - Severity", description: "Strength, discipline, and justice"),
+                    SpreadPosition(id: 6, title: "Tiphareth - Beauty", description: "Balance, harmony, and beauty"),
+                    SpreadPosition(id: 7, title: "Netzach - Victory", description: "Victory, persistence, and endurance"),
+                    SpreadPosition(id: 8, title: "Hod - Glory", description: "Glory, splendor, and form"),
+                    SpreadPosition(id: 9, title: "Yesod - Foundation", description: "Foundation, stability, and connection"),
+                    SpreadPosition(id: 10, title: "Malkuth - Kingdom", description: "The material world and manifestation")
+                ]
+            ),
+            "celtic-knot": TarotSpreadDetail(
+                id: "celtic-knot",
+                name: "Celtic Knot",
+                cardCount: 9,
+                description: "Interconnected paths and choices",
+                instructions: [],
+                difficulty: "Advanced",
+                bestFor: "Complex decision-making",
+                positions: [
+                    SpreadPosition(id: 1, title: "Center", description: "The core issue or question"),
+                    SpreadPosition(id: 2, title: "Path A", description: "One possible path or choice"),
+                    SpreadPosition(id: 3, title: "Path B", description: "Another possible path or choice"),
+                    SpreadPosition(id: 4, title: "Path C", description: "A third possible path or choice"),
+                    SpreadPosition(id: 5, title: "Path D", description: "A fourth possible path or choice"),
+                    SpreadPosition(id: 6, title: "Connection AB", description: "The relationship between paths A and B"),
+                    SpreadPosition(id: 7, title: "Connection BC", description: "The relationship between paths B and C"),
+                    SpreadPosition(id: 8, title: "Connection CD", description: "The relationship between paths C and D"),
+                    SpreadPosition(id: 9, title: "Connection DA", description: "The relationship between paths D and A")
+                ]
             )
         ]
         return spreads[spreadId]
@@ -111,106 +254,212 @@ struct TarotSpreadReadingPage: View {
             CelestialBackground()
                 .ignoresSafeArea()
             
-            ScrollView {
-                VStack(spacing: 12) {
-                    // Header
-                    BaseHeader(
-                        title: spread?.name ?? "Reading",
-                        subtitle: spread != nil ? "\(spread!.cardCount)-card spread" : nil,
-                        leftAction: BaseHeader.HeaderAction(
-                            icon: Image(systemName: "chevron.left"),
-                            label: "Back",
-                            action: { dismiss() }
-                        ),
-                        alignment: .leading,
-                        horizontalPadding: 0
-                    )
-                    .padding(.top, 0)
-                    
-                    if let spread = spread {
-                        VStack(spacing: 20) {
-                            if isSelectingCards {
-                                // Card Selection Section
-                                TarotCardDeck(cardCount: spread.cardCount) { cards in
-                                    handleCardsSelected(cards)
-                                }
-                                .padding(.horizontal, DesignSpacing.sm)
-                            } else {
-                                // Reading Section (shown after cards are selected)
-                                // Reveal All Button
-                                if !allCardsFlipped {
-                                    Button(action: revealAllCards) {
-                                        Text("Reveal All Cards")
-                                            .font(DesignTypography.subheadFont(weight: .medium))
-                                            .foregroundColor(DesignColors.accent)
-                                            .padding(.horizontal, DesignSpacing.md)
-                                            .padding(.vertical, DesignSpacing.sm)
-                                            .background(
-                                                Capsule()
-                                                    .fill(DesignColors.accent.opacity(0.1))
-                                                    .overlay(
-                                                        Capsule()
-                                                            .stroke(DesignColors.accent.opacity(0.3), lineWidth: 1)
-                                                    )
-                                            )
+            if let spread = spread {
+                // Reading Section - Immersive Canvas View
+                ZStack {
+                    // Canvas View - Full Screen Immersive Experience
+                    GeometryReader { geometry in
+                        let screenSize = geometry.size
+                        let initialZoom = TarotSpreadLayout.calculateInitialZoom(
+                            for: spreadId,
+                            canvasSize: canvasSize,
+                            screenSize: screenSize
+                        )
+                        let cardPositions = TarotSpreadLayout.getLayout(
+                            for: spreadId,
+                            canvasSize: canvasSize
+                        )
+                        
+                        ZStack {
+                            // Always render canvas, even if cards are empty
+                            TarotCanvasView(
+                                canvasSize: canvasSize,
+                                initialScale: initialZoom,
+                                currentScale: $canvasScale
+                            ) {
+                                ZStack {
+                                    // Test: Visible background to verify canvas renders
+                                    Rectangle()
+                                        .fill(Color.blue.opacity(0.1))
+                                        .frame(width: canvasSize.width, height: canvasSize.height)
+                                    
+                                    // Test: Center marker
+                                    Circle()
+                                        .fill(Color.green.opacity(0.6))
+                                        .frame(width: 50, height: 50)
+                                        .position(x: canvasSize.width / 2, y: canvasSize.height / 2)
+                                    
+                                    if !readingCards.isEmpty && !cardPositions.isEmpty {
+                                        let _ = print("🎴 Rendering \(readingCards.count) cards")
+                                        
+                                        ForEach(Array(readingCards.enumerated()), id: \.element.id) { index, readingCard in
+                                            if index < cardPositions.count {
+                                                let pos = cardPositions[index].point
+                                                let _ = print("   Card \(index): \(readingCard.card.name) at (\(pos.x), \(pos.y))")
+                                                
+                                                CanvasTarotCard(
+                                                    readingCard: readingCard,
+                                                    position: cardPositions[index],
+                                                    showPositionLabel: canvasScale > 1.2,
+                                                    onFlip: {
+                                                        flipCard(at: readingCard.id)
+                                                    },
+                                                    onViewDetails: {
+                                                        showingCardDetail = readingCard.card
+                                                    }
+                                                )
+                                                .position(cardPositions[index].point)
+                                            }
+                                        }
+                                    } else {
+                                        // Debug text
+                                        Text("Cards: \(readingCards.count), Positions: \(cardPositions.count)")
+                                            .foregroundColor(.white)
+                                            .font(.title2)
+                                            .position(x: canvasSize.width / 2, y: canvasSize.height / 2 + 100)
+                                        
+                                        let _ = print("⚠️ Cards empty: readingCards=\(readingCards.count), cardPositions=\(cardPositions.count)")
                                     }
                                 }
-                                
-                                // Divider
-                                Divider()
-                                    .background(Color.white.opacity(0.1))
-                                
-                                // Your Reading Label
-                                Text("Your Reading")
-                                    .font(DesignTypography.title3Font(weight: .medium))
-                                    .foregroundColor(DesignColors.foreground)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                
-                                // Card Grid
-                                let columns = [
-                                    GridItem(.flexible(), spacing: 16),
-                                    GridItem(.flexible(), spacing: 16)
-                                ]
-                                
-                                LazyVGrid(columns: columns, spacing: 20) {
-                                    ForEach(readingCards) { readingCard in
-                                        ReadingCardSlot(
-                                            readingCard: readingCard,
-                                            onFlip: {
-                                                flipCard(at: readingCard.id)
-                                            },
-                                            onViewDetails: {
-                                                showingCardDetail = readingCard.card
-                                            }
+                                .frame(width: canvasSize.width, height: canvasSize.height)
+                            }
+                        }
+                    }
+                    .ignoresSafeArea()
+                    
+                    // Top Controls Overlay - Buttons are interactive, rest passes through
+                    VStack {
+                        // Header with controls
+                        HStack {
+                            // Back button
+                            Button(action: { dismiss() }) {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "chevron.left")
+                                        .font(.system(size: 16, weight: .medium))
+                                    Text("Close")
+                                        .font(DesignTypography.subheadFont(weight: .medium))
+                                }
+                                .foregroundColor(DesignColors.foreground)
+                                .padding(.horizontal, DesignSpacing.md)
+                                .padding(.vertical, DesignSpacing.sm)
+                                .background(
+                                    Capsule()
+                                        .fill(Color.black.opacity(0.4))
+                                        .overlay(
+                                            Capsule()
+                                                .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                                        )
+                                )
+                            }
+                            
+                            Spacer()
+                            
+                            // Action buttons
+                            HStack(spacing: 12) {
+                                // Reveal All Cards button
+                                if !allCardsFlipped {
+                                    Button(action: revealAllCards) {
+                                        HStack(spacing: 6) {
+                                            Image(systemName: "eye.fill")
+                                                .font(.system(size: 14))
+                                            Text("Reveal All")
+                                                .font(DesignTypography.caption1Font(weight: .medium))
+                                        }
+                                        .foregroundColor(DesignColors.foreground)
+                                        .padding(.horizontal, DesignSpacing.md)
+                                        .padding(.vertical, DesignSpacing.sm)
+                                        .background(
+                                            Capsule()
+                                                .fill(DesignColors.accent.opacity(0.2))
+                                                .overlay(
+                                                    Capsule()
+                                                        .stroke(DesignColors.accent.opacity(0.4), lineWidth: 1)
+                                                )
                                         )
                                     }
                                 }
                                 
-                                // Restart Reading Button
-                                Button(action: restartReading) {
-                                    HStack(spacing: 8) {
-                                        Image(systemName: "arrow.clockwise")
-                                            .font(.system(size: 16))
-                                        Text("Restart Reading")
-                                            .font(DesignTypography.subheadFont(weight: .medium))
+                                // Save Reading button
+                                Button(action: saveReading) {
+                                    HStack(spacing: 6) {
+                                        Image(systemName: "bookmark.fill")
+                                            .font(.system(size: 14))
+                                        Text("Save")
+                                            .font(DesignTypography.caption1Font(weight: .medium))
                                     }
                                     .foregroundColor(DesignColors.foreground)
-                                    .frame(maxWidth: .infinity)
-                                    .padding()
+                                    .padding(.horizontal, DesignSpacing.md)
+                                    .padding(.vertical, DesignSpacing.sm)
                                     .background(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .fill(Color.white.opacity(0.05))
+                                        Capsule()
+                                            .fill(Color.black.opacity(0.4))
                                             .overlay(
-                                                RoundedRectangle(cornerRadius: 12)
-                                                    .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                                                Capsule()
+                                                    .stroke(Color.white.opacity(0.2), lineWidth: 1)
                                             )
                                     )
                                 }
-                                .padding(.top, 24)
                             }
                         }
-                    } else {
-                        // Spread not found
+                        .padding(.horizontal, DesignSpacing.md)
+                        .padding(.top, DesignSpacing.md)
+                        
+                        Spacer()
+                            .allowsHitTesting(false)  // Spacer doesn't block touches
+                        
+                        // Bottom Controls
+                        HStack {
+                            // Restart Reading Button
+                            Button(action: restartReading) {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "arrow.clockwise")
+                                        .font(.system(size: 14))
+                                    Text("Restart")
+                                        .font(DesignTypography.caption1Font(weight: .medium))
+                                }
+                                .foregroundColor(DesignColors.foreground)
+                                .padding(.horizontal, DesignSpacing.md)
+                                .padding(.vertical, DesignSpacing.sm)
+                                .background(
+                                    Capsule()
+                                        .fill(Color.black.opacity(0.4))
+                                        .overlay(
+                                            Capsule()
+                                                .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                                        )
+                                )
+                            }
+                            
+                            Spacer()
+                                .allowsHitTesting(false)  // Spacer doesn't block touches
+                        }
+                        .padding(.horizontal, DesignSpacing.md)
+                        .padding(.bottom, DesignSpacing.lg)
+                    }
+                    .background(
+                        // Transparent background that allows touches to pass through
+                        Color.clear
+                            .contentShape(Rectangle())
+                            .allowsHitTesting(false)
+                    )
+                }
+            } else {
+                // Spread not found
+                ScrollView {
+                    VStack(spacing: 12) {
+                        BaseHeader(
+                            title: "Reading",
+                            subtitle: nil,
+                            leftAction: BaseHeader.HeaderAction(
+                                icon: Image(systemName: "chevron.left"),
+                                label: "Back",
+                                action: { dismiss() }
+                            ),
+                            alignment: .leading,
+                            horizontalPadding: 0
+                        )
+                        .padding(.top, 0)
+                        
                         BaseCard {
                             VStack {
                                 Text("Spread not found")
@@ -220,32 +469,21 @@ struct TarotSpreadReadingPage: View {
                             .frame(maxWidth: .infinity)
                             .padding()
                         }
+                        .padding(.horizontal, DesignSpacing.sm)
+                        .padding(.top, 16)
+                        .padding(.bottom, 60)
                     }
+                    .padding(.horizontal, DesignSpacing.sm)
                 }
-                .padding(.horizontal, DesignSpacing.sm)
-                .padding(.top, 16)
-                .padding(.bottom, 60)
-            }
-            .navigationBarHidden(true)
-            .sheet(item: $showingCardDetail) { card in
-                TarotCardDetailSheet(card: card)
+                .navigationBarHidden(true)
             }
         }
-    }
-    
-    private func handleCardsSelected(_ cards: [TarotCard]) {
-        guard let spread = spread else { return }
-        
-        selectedCards = cards
-        
-        // Create reading cards with positions
-        readingCards = zip(spread.positions, cards).map { position, card in
-            ReadingCard(id: position.id, position: position, card: card, isFlipped: false)
+        .navigationBarHidden(true)
+        .onAppear {
+            drawCards()
         }
-        
-        // Switch to reading view
-        withAnimation {
-            isSelectingCards = false
+        .sheet(item: $showingCardDetail) { card in
+            TarotCardDetailSheet(card: card)
         }
     }
     
@@ -287,9 +525,15 @@ struct TarotSpreadReadingPage: View {
     private func restartReading() {
         withAnimation {
             readingCards = []
-            selectedCards = []
-            isSelectingCards = true
         }
+        drawCards()
+    }
+    
+    private func saveReading() {
+        // TODO: Implement save reading functionality
+        // This could save the reading to user's saved readings or history
+        // For now, this is a placeholder
+        print("Save reading: \(spreadId) with \(readingCards.count) cards")
     }
 }
 

@@ -105,7 +105,7 @@ struct TarotSpreadsListingPage: View {
                     } else {
                         ForEach(filteredSpreads) { spread in
                             NavigationLink(destination: TarotSpreadDetailPage(spreadId: spread.id)) {
-                                BaseCard(variant: .interactive, action: {}) {
+                                BaseCard {
                                     HStack(spacing: 16) {
                                         TarotCardBack()
                                             .frame(width: 80, height: 128)
@@ -156,6 +156,10 @@ struct TarotSpreadsListingPage: View {
                                         }
                                         
                                         Spacer()
+                                        
+                                        Image(systemName: "chevron.right")
+                                            .font(.system(size: 14))
+                                            .foregroundColor(DesignColors.mutedForeground)
                                     }
                                     .frame(maxWidth: .infinity, alignment: .leading)
                                 }

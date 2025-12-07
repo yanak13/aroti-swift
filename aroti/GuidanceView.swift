@@ -8,11 +8,14 @@
 import SwiftUI
 import UIKit
 
+private enum GuidanceLayout {
+    static let horizontalPadding: CGFloat = DesignSpacing.sm
+}
+
 private enum GuidanceScreen {
     case overview
     case chat
     case points
-    case history
 }
 
 private struct GuidanceMessage: Identifiable, Equatable {
@@ -27,125 +30,22 @@ private struct GuidanceMessage: Identifiable, Equatable {
     let timestamp: Date
 }
 
-private struct GuidanceSession: Identifiable, Hashable {
-    let id = UUID()
-    let specialist: GuidanceSpecialist
-    var title: String
-    let dateLabel: String
-    let preview: String
-    var isArchived: Bool = false
-    
-    static let mock: [GuidanceSession] = [
-        GuidanceSession(
-            specialist: .astrologer,
-            title: "Aroti • Daily Focus",
-            dateLabel: "Oct 12",
-            preview: "Let's tune into your energy together..."
-        ),
-        GuidanceSession(
-            specialist: .therapist,
-            title: "Elyon • Finding Calm",
-            dateLabel: "Oct 5",
-            preview: "How are you feeling in this moment?"
-        ),
-        GuidanceSession(
-            specialist: .numerologist,
-            title: "Orin • Life Path Insight",
-            dateLabel: "Sept 29",
-            preview: "The numbers show a powerful pattern..."
-        ),
-    ]
-}
 
-private enum GuidanceSpecialist: String, CaseIterable, Identifiable {
-    case astrologer
-    case therapist
-    case numerologist
+// Aroti guidance constants
+private struct ArotiGuidance {
+    static let welcomeMessage = "Hello! I'm Aroti, your cosmic guide.\n\nI can help you understand your astrological chart, daily energy, and life timing.\n\nWhat would you like to explore?"
     
-    var id: String { rawValue }
-    
-    var name: String {
-        switch self {
-        case .astrologer: return "Aroti"
-        case .therapist: return "Elyon"
-        case .numerologist: return "Orin"
-        }
-    }
-    
-    var description: String {
-        switch self {
-        case .astrologer: return "Cosmic insights & astrology guidance"
-        case .therapist: return "Mindful support & emotional guidance"
-        case .numerologist: return "Life path clarity & numerology"
-        }
-    }
-    
-    var iconName: String {
-        switch self {
-        case .astrologer: return "sparkles"
-        case .therapist: return "heart.fill"
-        case .numerologist: return "number"
-        }
-    }
-    
-    var costPerMessage: Int {
-        switch self {
-        case .astrologer, .numerologist: return 5
-        case .therapist: return 10
-        }
-    }
-    
-    var gradient: [Color] {
-        switch self {
-        case .astrologer:
-            return [DesignColors.primary, DesignColors.secondary]
-        case .therapist:
-            return [DesignColors.accent, DesignColors.accent.opacity(0.7)]
-        case .numerologist:
-            return [DesignColors.primary.opacity(0.9), DesignColors.secondary.opacity(0.8)]
-        }
-    }
-    
-    var welcomeMessage: String {
-        switch self {
-        case .astrologer:
-            return "Hello! I'm Aroti, your cosmic guide. I can help you understand your astrological chart, daily energy, and life timing. What would you like to explore?"
-        case .therapist:
-            return "Hi there! I'm Elyon, here to offer mindful support and gentle guidance. How are you feeling today?"
-        case .numerologist:
-            return "Welcome! I'm Orin, a numbers mystic. I can help decode the patterns in your life path. What would you like to discover?"
-        }
-    }
-    
-    var suggestions: [String] {
-        switch self {
-        case .astrologer:
-            return [
-                "What's my energy today?",
-                "Tell me about my chart",
-                "What should I focus on this week?",
-            ]
-        case .therapist:
-            return [
-                "I'm feeling anxious",
-                "Help me process my emotions",
-                "I need guidance on a relationship",
-            ]
-        case .numerologist:
-            return [
-                "What's my life path number?",
-                "What do my numbers reveal?",
-                "Help me understand my destiny",
-            ]
-        }
-    }
+    static let suggestions = [
+        "What's my energy today?",
+        "Tell me about my chart",
+        "What should I focus on this week?",
+    ]
 }
 
 struct GuidanceView: View {
     @Binding var selectedTab: TabItem
     
     @State private var currentScreen: GuidanceScreen = .chat
-    @State private var selectedSpecialist: GuidanceSpecialist = .astrologer
     @State private var userPoints: Int = 1240
     
     @State private var messages: [GuidanceMessage] = []
@@ -153,12 +53,12 @@ struct GuidanceView: View {
     @State private var isTyping: Bool = false
     
     @State private var showDisclaimer = false
-    @State private var showMenuSheet = false
-    
-    @State private var sessions: [GuidanceSession] = GuidanceSession.mock
-    @State private var sessionToRename: GuidanceSession?
-    @State private var renameDraft: String = ""
-    @State private var sessionToDelete: GuidanceSession?
+    @State private var showPointsSpendModal = false
+    @State private var showConversationStarters = false
+    @State private var pendingMessage: String = ""
+    @State private var currentChatId: UUID = UUID()
+    @State private var showToast = false
+    @State private var toastMessage = ""
     
     var body: some View {
         NavigationStack {
@@ -186,68 +86,54 @@ struct GuidanceView: View {
         }
         .onAppear {
             ensureWelcomeMessage()
+            updatePointsBalance()
+            
+            // Testing helpers - refill free messages and add points
+            #if DEBUG
+            AccessControlService.shared.resetFreeMessagesForTesting()
+            PointsService.shared.addPointsForTesting(1000)
+            updatePointsBalance()
+            #endif
         }
-        .sheet(isPresented: $showMenuSheet) {
-            GuidanceMenuSheet(
-                sessions: sessions,
-                onResumeSession: { specialist in
-                    startNewChat(for: specialist)
-                    showMenuSheet = false
+        .sheet(isPresented: $showPointsSpendModal) {
+            let balance = PointsService.shared.getBalance()
+            let (_, cost) = AccessControlService.shared.canAccessAIChat()
+            PointsSpendModal(
+                isPresented: $showPointsSpendModal,
+                cost: cost ?? 20,
+                currentBalance: balance.totalPoints,
+                title: "Unlock AI Message",
+                message: "This message costs \(cost ?? 20) points. Continue?",
+                onConfirm: {
+                    handlePointsSpendForMessage()
                 },
-                onShare: { session in
-                    print("Share session \(session.id)")
-                },
-                onRename: { session in
-                    sessionToRename = session
-                    renameDraft = session.title
-                    showMenuSheet = false
-                },
-                onArchive: { session in
-                    archiveSession(session)
-                },
-                onDelete: { session in
-                    sessionToDelete = session
-                    showMenuSheet = false
+                onUpgrade: {
+                    // Navigate to premium upgrade
+                    print("Navigate to premium upgrade")
                 }
             )
-            .presentationDetents([.medium, .large])
-            .presentationDragIndicator(.visible)
-        }
-        .sheet(item: $sessionToRename) { session in
-            RenameSessionSheet(
-                title: $renameDraft,
-                onCancel: {
-                    sessionToRename = nil
-                },
-                onSave: {
-                    renameSession(session, to: renameDraft)
-                }
-            )
-        }
-        .alert("Delete Session?", isPresented: Binding(
-            get: { sessionToDelete != nil },
-            set: { newValue in
-                if !newValue {
-                    sessionToDelete = nil
-                }
-            }
-        )) {
-            Button("Cancel", role: .cancel) {
-                sessionToDelete = nil
-            }
-            Button("Delete", role: .destructive) {
-                if let toDelete = sessionToDelete {
-                    deleteSession(toDelete)
-                }
-            }
-        } message: {
-            Text("This action cannot be undone.")
         }
         .sheet(isPresented: $showDisclaimer) {
             DisclaimerSheet {
                 showDisclaimer = false
             }
             .presentationDetents([.medium])
+            .presentationDragIndicator(.visible)
+        }
+        .sheet(isPresented: $showConversationStarters) {
+            ConversationStartersModal(
+                onDismiss: { showConversationStarters = false },
+                onSelectStarter: { starter in
+                    showConversationStarters = false
+                    startNewChatWithStarter(starter)
+                },
+                onSelectFreeTopic: {
+                    showConversationStarters = false
+                    startNewChatFreeTopic()
+                }
+            )
+            .presentationDetents([.large])
+            .presentationDragIndicator(.visible)
         }
     }
 }
@@ -260,60 +146,34 @@ private extension GuidanceView {
             return AnyView(
                 BaseHeader(
                     title: "Guidance",
-                    subtitle: "Each insight costs \(selectedSpecialist.costPerMessage) pts",
-                    leftAction: .init(
-                        icon: Image(systemName: "line.3.horizontal"),
-                        label: "Open menu",
-                        action: { showMenuSheet = true }
-                    ),
+                    subtitle: computeSubtitle(),
+                    leftAction: nil,
                     rightView: AnyView(
-                        HStack(spacing: 8) {
-                            // New Chat Button - Chip Style
-                            Button(action: { startNewChat(for: selectedSpecialist) }) {
-                                HStack(spacing: 6) {
-                                    Image(systemName: "pencil")
-                                        .font(.system(size: 12, weight: .medium))
-                                    Text("New Chat")
-                                        .font(DesignTypography.caption1Font(weight: .semibold))
-                                }
-                                .foregroundColor(DesignColors.primary)
-                                .lineLimit(1)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 6)
-                                .background(
-                                    Capsule()
-                                        .fill(DesignColors.primary.opacity(0.15))
-                                        .overlay(
-                                            Capsule()
-                                                .stroke(DesignColors.primary.opacity(0.3), lineWidth: 1)
-                                        )
-                                )
+                        // Points Display - Chip Style - Navigate to Journey
+                        NavigationLink(destination: JourneyPage()) {
+                            HStack(spacing: 4) {
+                                Image(systemName: "star.fill")
+                                    .font(.system(size: 10))
+                                Text("\(userPoints.formatted()) pts")
+                                    .font(DesignTypography.caption1Font(weight: .semibold))
                             }
-                            
-                            // Points Display - Chip Style
-                            Button(action: { currentScreen = .points }) {
-                                HStack(spacing: 4) {
-                                    Image(systemName: "star.fill")
-                                        .font(.system(size: 10))
-                                    Text("\(userPoints)")
-                                        .font(DesignTypography.caption1Font(weight: .semibold))
-                                }
-                                .foregroundColor(DesignColors.accent)
-                                .lineLimit(1)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 6)
-                                .background(
-                                    Capsule()
-                                        .fill(DesignColors.accent.opacity(0.15))
-                                        .overlay(
-                                            Capsule()
-                                                .stroke(DesignColors.accent.opacity(0.3), lineWidth: 1)
-                                        )
-                                )
-                            }
+                            .foregroundColor(DesignColors.accent)
+                            .fixedSize()
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(
+                                Capsule()
+                                    .fill(DesignColors.accent.opacity(0.15))
+                                    .overlay(
+                                        Capsule()
+                                            .stroke(DesignColors.accent.opacity(0.3), lineWidth: 1)
+                                    )
+                            )
                         }
+                        .buttonStyle(PlainButtonStyle())
                     ),
-                    alignment: .leading
+                    alignment: .leading,
+                    horizontalPadding: GuidanceLayout.horizontalPadding
                 )
             )
         case .overview:
@@ -326,10 +186,18 @@ private extension GuidanceView {
                         label: "Back to chat",
                         action: { currentScreen = .chat }
                     ),
-                    rightAction: .init(
-                        icon: Image(systemName: "star.fill"),
-                        label: "View points",
-                        action: { currentScreen = .points }
+                    rightView: AnyView(
+                        NavigationLink(destination: JourneyPage()) {
+                            Image(systemName: "star.fill")
+                                .font(.system(size: 18))
+                                .foregroundColor(DesignColors.accent)
+                                .frame(width: 44, height: 44)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(DesignColors.accent.opacity(0.15))
+                                )
+                        }
+                        .buttonStyle(PlainButtonStyle())
                     ),
                     alignment: .leading
                 )
@@ -347,19 +215,6 @@ private extension GuidanceView {
                     alignment: .leading
                 )
             )
-        case .history:
-            return AnyView(
-                BaseHeader(
-                    title: "Your Past Guidance",
-                    subtitle: "Continue where you left off",
-                    leftAction: .init(
-                        icon: Image(systemName: "chevron.left"),
-                        label: "Back",
-                        action: { currentScreen = .chat }
-                    ),
-                    alignment: .leading
-                )
-            )
         }
     }
     
@@ -368,85 +223,159 @@ private extension GuidanceView {
         switch currentScreen {
         case .chat:
             GuidanceChatScreen(
-                specialist: selectedSpecialist,
                 messages: messages,
                 inputText: $inputText,
                 isTyping: isTyping,
                 onSend: sendMessage,
                 onSuggestionTap: { inputText = $0 },
-                onShowDisclaimer: { showDisclaimer = true }
+                onShowDisclaimer: { showDisclaimer = true },
+                onPlusTap: { showConversationStarters = true },
+                onShowToast: { message in
+                    toastMessage = message
+                    showToast = true
+                }
             )
+            .toast(isPresented: $showToast, message: toastMessage)
         case .overview:
             GuidanceOverviewScreen(
                 userPoints: userPoints,
-                onSelect: { specialist in
-                    startNewChat(for: specialist)
+                onStartChat: {
+                    startNewChat()
                     currentScreen = .chat
                 },
-                onViewHistory: { currentScreen = .history },
                 onViewPoints: { currentScreen = .points }
             )
         case .points:
             GuidancePointsScreen(userPoints: userPoints)
-        case .history:
-            GuidanceHistoryScreen(
-                sessions: sessions,
-                onResume: { specialist in
-                    currentScreen = .chat
-                    startNewChat(for: specialist)
-                },
-                onShare: { session in
-                    print("Share session \(session.id)")
-                },
-                onRename: { session in
-                    sessionToRename = session
-                    renameDraft = session.title
-                },
-                onArchive: { session in
-                    archiveSession(session)
-                },
-                onDelete: { session in
-                    sessionToDelete = session
-                }
-            )
         }
     }
 }
 
 // MARK: - Actions
 private extension GuidanceView {
+    func computeSubtitle() -> String {
+        if AccessControlService.shared.isPremium {
+            return "Unlimited messages"
+        }
+        let remaining = AccessControlService.shared.getFreeMessagesRemaining()
+        return "\(remaining) free messages/day, then 20 pts each"
+    }
+    
     func ensureWelcomeMessage() {
         guard messages.isEmpty else { return }
         messages = [
             GuidanceMessage(
                 role: .assistant,
-                content: selectedSpecialist.welcomeMessage,
+                content: ArotiGuidance.welcomeMessage,
                 timestamp: Date()
             ),
         ]
     }
     
-    func startNewChat(for specialist: GuidanceSpecialist) {
-        selectedSpecialist = specialist
+    func startNewChat() {
         inputText = ""
         isTyping = false
+        currentChatId = UUID()
         messages = [
             GuidanceMessage(
                 role: .assistant,
-                content: specialist.welcomeMessage,
+                content: ArotiGuidance.welcomeMessage,
                 timestamp: Date()
             ),
         ]
+    }
+    
+    func startNewChatWithStarter(_ starter: String) {
+        currentChatId = UUID()
+        messages = [
+            GuidanceMessage(
+                role: .assistant,
+                content: ArotiGuidance.welcomeMessage,
+                timestamp: Date()
+            ),
+        ]
+        inputText = starter
+        isTyping = false
+        // Auto-send the starter
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            sendMessage()
+        }
+    }
+    
+    func startNewChatFreeTopic() {
+        currentChatId = UUID()
+        messages = [
+            GuidanceMessage(
+                role: .assistant,
+                content: ArotiGuidance.welcomeMessage,
+                timestamp: Date()
+            ),
+        ]
+        inputText = ""
+        isTyping = false
+        // Focus will be handled by the input bar
+        // Note: Input focus should be set after a brief delay to ensure view is ready
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            // Focus is handled by the input bar's FocusState
+        }
     }
     
     func sendMessage() {
         let trimmed = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
         
-        let userMessage = GuidanceMessage(role: .user, content: trimmed, timestamp: Date())
+        // Check access control
+        let (allowed, cost) = AccessControlService.shared.canAccessAIChat()
+        
+        if !allowed {
+            // Need to spend points or upgrade
+            if let cost = cost {
+                let balance = PointsService.shared.getBalance()
+                if balance.totalPoints >= cost {
+                    // Show confirmation modal
+                    pendingMessage = trimmed
+                    showPointsSpendModal = true
+                } else {
+                    // Not enough points - show upgrade modal
+                    pendingMessage = trimmed
+                    showPointsSpendModal = true
+                }
+            } else {
+                // Premium only - show upgrade prompt
+                pendingMessage = trimmed
+                showPointsSpendModal = true
+            }
+            return
+        }
+        
+        // Free or premium - send message
+        actuallySendMessage(trimmed)
+    }
+    
+    private func handlePointsSpendForMessage() {
+        let (_, cost) = AccessControlService.shared.canAccessAIChat()
+        guard let cost = cost else { return }
+        
+        let result = PointsService.shared.spendPoints(event: "ai_chat_message", cost: cost)
+        
+        if result.success {
+            actuallySendMessage(pendingMessage)
+            pendingMessage = ""
+            updatePointsBalance()
+        }
+    }
+    
+    private func actuallySendMessage(_ text: String) {
+        let userMessage = GuidanceMessage(role: .user, content: text, timestamp: Date())
         messages.append(userMessage)
         inputText = ""
         isTyping = true
+        
+        // Record message usage
+        AccessControlService.shared.recordAIChatMessage()
+        
+        // Update points balance and subtitle will auto-update via computeSubtitle()
+        updatePointsBalance()
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
             let response = GuidanceMessage(
@@ -459,43 +388,22 @@ private extension GuidanceView {
         }
     }
     
-    func renameSession(_ session: GuidanceSession, to newName: String) {
-        let trimmed = newName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
-        
-        sessions = sessions.map { current in
-            guard current.id == session.id else { return current }
-            var updated = current
-            updated.title = trimmed
-            return updated
-        }
-        sessionToRename = nil
-    }
-    
-    func archiveSession(_ session: GuidanceSession) {
-        sessions = sessions.map { current in
-            guard current.id == session.id else { return current }
-            var updated = current
-            updated.isArchived.toggle()
-            return updated
-        }
-    }
-    
-    func deleteSession(_ session: GuidanceSession) {
-        sessions.removeAll { $0.id == session.id }
-        sessionToDelete = nil
+    private func updatePointsBalance() {
+        let balance = PointsService.shared.getBalance()
+        userPoints = balance.totalPoints
     }
 }
 
 // MARK: - Chat Screen
 private struct GuidanceChatScreen: View {
-    let specialist: GuidanceSpecialist
     let messages: [GuidanceMessage]
     @Binding var inputText: String
     let isTyping: Bool
     let onSend: () -> Void
     let onSuggestionTap: (String) -> Void
     let onShowDisclaimer: () -> Void
+    let onPlusTap: () -> Void
+    let onShowToast: (String) -> Void
     
     @FocusState private var isInputFocused: Bool
     @State private var keyboardHeight: CGFloat = 0
@@ -505,9 +413,14 @@ private struct GuidanceChatScreen: View {
             ScrollViewReader { proxy in
                 ScrollView {
                     VStack(spacing: 16) {
-                        ForEach(messages) { message in
-                            GuidanceBubble(message: message, onDisclaimer: onShowDisclaimer)
-                                .id(message.id)
+                        ForEach(Array(messages.enumerated()), id: \.element.id) { index, message in
+                            GuidanceBubble(
+                                message: message,
+                                isWelcomeMessage: message.role == .assistant && index == 0,
+                                onDisclaimer: onShowDisclaimer,
+                                onShowToast: onShowToast
+                            )
+                            .id(message.id)
                         }
                         
                         if isTyping {
@@ -521,7 +434,7 @@ private struct GuidanceChatScreen: View {
                             .frame(height: 68)
                             .id("bottom-spacer")
                     }
-                    .padding(.horizontal, DesignSpacing.md)
+                    .padding(.horizontal, GuidanceLayout.horizontalPadding)
                     .padding(.top, DesignSpacing.md)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
@@ -551,11 +464,12 @@ private struct GuidanceChatScreen: View {
             
             // Input bar - positioned above keyboard with minimal padding
             GuidanceInputBar(
-                placeholder: "Ask \(specialist.name)...",
+                placeholder: "Ask Aroti…",
                 text: $inputText,
-                suggestions: messages.count <= 1 ? specialist.suggestions : [],
+                suggestions: messages.count <= 1 ? ArotiGuidance.suggestions : [],
                 onSuggestionTap: onSuggestionTap,
                 onSend: onSend,
+                onPlusTap: onPlusTap,
                 isFocused: $isInputFocused
             )
             .background(
@@ -594,7 +508,12 @@ private struct GuidanceChatScreen: View {
 // MARK: - Bubbles
 private struct GuidanceBubble: View {
     let message: GuidanceMessage
+    let isWelcomeMessage: Bool
     let onDisclaimer: () -> Void
+    let onShowToast: (String) -> Void
+    
+    @State private var thumbsUpActive = false
+    @State private var thumbsDownActive = false
     
     var body: some View {
         HStack {
@@ -610,39 +529,112 @@ private struct GuidanceBubble: View {
     }
     
     private var bubble: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(message.content)
-                .font(DesignTypography.bodyFont())
-                .foregroundColor(message.role == .assistant ? DesignColors.foreground : Color.white)
-            
-            if message.role == .assistant {
-                Button("Disclaimer", action: onDisclaimer)
-                    .font(DesignTypography.caption2Font(weight: .medium))
-                    .foregroundColor(DesignColors.accent)
-                    .underline(true, color: DesignColors.accent)
+        VStack(alignment: .leading, spacing: 0) {
+            // Message bubble content
+            VStack(alignment: .leading, spacing: isWelcomeMessage ? 12 : 8) {
+                if isWelcomeMessage {
+                    // Formatted welcome message with better spacing and readability
+                    VStack(alignment: .leading, spacing: 12) {
+                        ForEach(message.content.components(separatedBy: "\n\n"), id: \.self) { paragraph in
+                            if !paragraph.isEmpty {
+                                Text(paragraph)
+                                    .font(DesignTypography.bodyFont())
+                                    .foregroundColor(DesignColors.foreground)
+                                    .lineSpacing(4)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                        }
+                    }
+                } else {
+                    Text(message.content)
+                        .font(DesignTypography.bodyFont())
+                        .foregroundColor(message.role == .assistant ? DesignColors.foreground : Color.white)
+                }
+                
+                // Disclaimer button (only for non-welcome assistant messages)
+                if message.role == .assistant && !isWelcomeMessage {
+                    Button("Disclaimer", action: onDisclaimer)
+                        .font(DesignTypography.caption2Font(weight: .medium))
+                        .foregroundColor(DesignColors.accent)
+                        .underline(true, color: DesignColors.accent)
+                }
             }
-        }
-        .padding(16)
-        .background {
-            if message.role == .assistant {
-                RoundedRectangle(cornerRadius: 26, style: .continuous)
-                    .fill(Color(red: 23/255, green: 20/255, blue: 31/255, opacity: 0.94))
-            } else {
-                RoundedRectangle(cornerRadius: 26, style: .continuous)
-                    .fill(
-                        LinearGradient(
-                            colors: [DesignColors.primary, DesignColors.secondary],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
+            .padding(16)
+            .background {
+                if message.role == .assistant {
+                    RoundedRectangle(cornerRadius: 26, style: .continuous)
+                        .fill(Color(red: 23/255, green: 20/255, blue: 31/255, opacity: 0.94))
+                } else {
+                    RoundedRectangle(cornerRadius: 26, style: .continuous)
+                        .fill(
+                            LinearGradient(
+                                colors: [DesignColors.primary, DesignColors.secondary],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
                         )
-                    )
+                }
+            }
+            .overlay(
+                RoundedRectangle(cornerRadius: 26)
+                    .stroke(message.role == .assistant ? Color.white.opacity(0.12) : Color.clear, lineWidth: 1)
+            )
+            .shadow(color: Color.black.opacity(0.25), radius: 6, x: 0, y: 2)
+            
+            // Action buttons row (outside bubble, only for non-welcome assistant messages)
+            if message.role == .assistant && !isWelcomeMessage {
+                HStack(spacing: 12) {
+                    // Copy button
+                    Button(action: {
+                        HapticFeedback.impactOccurred(.light)
+                        UIPasteboard.general.string = message.content
+                        onShowToast("Copied to clipboard")
+                    }) {
+                        Image(systemName: "doc.on.doc")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(DesignColors.mutedForeground)
+                            .frame(width: 44, height: 44)
+                    }
+                    
+                    // Thumbs up button
+                    Button(action: {
+                        HapticFeedback.impactOccurred(.light)
+                        if thumbsUpActive {
+                            thumbsUpActive = false
+                        } else {
+                            thumbsUpActive = true
+                            thumbsDownActive = false
+                            onShowToast("Thanks for your feedback")
+                        }
+                    }) {
+                        Image(systemName: thumbsUpActive ? "hand.thumbsup.fill" : "hand.thumbsup")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(thumbsUpActive ? DesignColors.primary : DesignColors.mutedForeground)
+                            .frame(width: 44, height: 44)
+                    }
+                    
+                    // Thumbs down button
+                    Button(action: {
+                        HapticFeedback.impactOccurred(.light)
+                        if thumbsDownActive {
+                            thumbsDownActive = false
+                        } else {
+                            thumbsDownActive = true
+                            thumbsUpActive = false
+                            onShowToast("Thanks for your feedback")
+                        }
+                    }) {
+                        Image(systemName: thumbsDownActive ? "hand.thumbsdown.fill" : "hand.thumbsdown")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(thumbsDownActive ? DesignColors.primary : DesignColors.mutedForeground)
+                            .frame(width: 44, height: 44)
+                    }
+                    
+                    Spacer()
+                }
+                .padding(.top, 8)
             }
         }
-        .overlay(
-            RoundedRectangle(cornerRadius: 26)
-                .stroke(message.role == .assistant ? Color.white.opacity(0.12) : Color.clear, lineWidth: 1)
-        )
-        .shadow(color: Color.black.opacity(0.25), radius: 6, x: 0, y: 2)
     }
 }
 
@@ -673,10 +665,12 @@ private struct GuidanceInputBar: View {
     let suggestions: [String]
     let onSuggestionTap: (String) -> Void
     let onSend: () -> Void
+    let onPlusTap: () -> Void
     @FocusState.Binding var isFocused: Bool
     
     var body: some View {
         VStack(spacing: 12) {
+            // Suggestion chips row - shown initially (when messages.count <= 1)
             if !suggestions.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
@@ -698,36 +692,54 @@ private struct GuidanceInputBar: View {
                             }
                         }
                     }
-                    .padding(.horizontal, DesignSpacing.md)
+                    .padding(.horizontal, GuidanceLayout.horizontalPadding)
                 }
             }
             
+            // Oura-style bottom bar: Plus button (separate) + Input box + Send/Mic
             HStack(spacing: 12) {
-                ZStack(alignment: .leading) {
-                    if text.isEmpty {
-                        Text(placeholder)
-                            .font(DesignTypography.bodyFont())
-                            .foregroundColor(DesignColors.mutedForeground.opacity(0.6))
-                            .padding(.horizontal, 4)
-                    }
-                    TextField("", text: $text, axis: .vertical)
-                        .font(DesignTypography.bodyFont())
+                // Left: Circular plus button (separate, not inside input box)
+                Button(action: {
+                    HapticFeedback.impactOccurred(.medium)
+                    onPlusTap()
+                }) {
+                    Image(systemName: "plus")
+                        .font(.system(size: 18, weight: .semibold))
                         .foregroundColor(DesignColors.foreground)
-                        .lineLimit(1...3)
-                        .focused($isFocused)
+                        .frame(width: 44, height: 44)
+                        .background(
+                            Circle()
+                                .fill(Color.white.opacity(0.08))
+                        )
                 }
                 
-                Button(action: onSend) {
-                    let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-                    Image(systemName: trimmed.isEmpty ? "mic.fill" : "paperplane.fill")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(trimmed.isEmpty ? DesignColors.mutedForeground : Color.white)
-                        .frame(width: 44, height: 44)
-                        .background {
-                            if trimmed.isEmpty {
-                                Circle()
-                                    .fill(Color.white.opacity(0.08))
-                            } else {
+                // Center: Input box container (input field + send/mic button)
+                HStack(spacing: 12) {
+                    // Wide input field
+                    ZStack(alignment: .leading) {
+                        if text.isEmpty {
+                            Text(placeholder)
+                                .font(DesignTypography.bodyFont())
+                                .foregroundColor(DesignColors.mutedForeground.opacity(0.6))
+                                .padding(.horizontal, 4)
+                        }
+                        TextField("", text: $text, axis: .vertical)
+                            .font(DesignTypography.bodyFont())
+                            .foregroundColor(DesignColors.foreground)
+                            .lineLimit(1...3)
+                            .focused($isFocused)
+                    }
+                    
+                    // Right: Send arrow button
+                    Button(action: {
+                        HapticFeedback.impactOccurred(.light)
+                        onSend()
+                    }) {
+                        Image(systemName: "arrow.up")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.white)
+                            .frame(width: 32, height: 32)
+                            .background(
                                 Circle()
                                     .fill(
                                         LinearGradient(
@@ -736,21 +748,22 @@ private struct GuidanceInputBar: View {
                                             endPoint: .bottomTrailing
                                         )
                                     )
-                            }
-                        }
+                            )
+                    }
                 }
+                .padding(.vertical, 0)
+                .padding(.horizontal, 16)
+                .frame(height: 44)
+                .background(
+                    RoundedRectangle(cornerRadius: 22)
+                        .fill(Color(red: 23/255, green: 20/255, blue: 31/255, opacity: 0.95))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 22)
+                                .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                        )
+                )
             }
-            .padding(.vertical, 14)
-            .padding(.horizontal, 16)
-            .background(
-                RoundedRectangle(cornerRadius: 28)
-                    .fill(Color(red: 23/255, green: 20/255, blue: 31/255, opacity: 0.95))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 28)
-                            .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                    )
-            )
-            .padding(.horizontal, DesignSpacing.md)
+            .padding(.horizontal, GuidanceLayout.horizontalPadding)
             .padding(.bottom, 8)
         }
     }
@@ -759,8 +772,7 @@ private struct GuidanceInputBar: View {
 // MARK: - Overview
 private struct GuidanceOverviewScreen: View {
     let userPoints: Int
-    let onSelect: (GuidanceSpecialist) -> Void
-    let onViewHistory: () -> Void
+    let onStartChat: () -> Void
     let onViewPoints: () -> Void
     
     var body: some View {
@@ -770,60 +782,52 @@ private struct GuidanceOverviewScreen: View {
                     Text("Start Your Journey")
                         .font(DesignTypography.title2Font(weight: .bold))
                         .foregroundColor(DesignColors.foreground)
-                    Text("Connect with AI specialists who understand your unique path. Get personalized guidance whenever you need it.")
+                    Text("Connect with Aroti for personalized guidance. Get cosmic insights and support whenever you need it.")
                         .font(DesignTypography.bodyFont())
                         .foregroundColor(DesignColors.mutedForeground)
                         .multilineTextAlignment(.center)
                 }
                 .padding(.top, DesignSpacing.md)
                 
-                ForEach(GuidanceSpecialist.allCases) { specialist in
-                    BaseCard(variant: .interactive, action: {
-                        onSelect(specialist)
-                    }) {
-                        HStack(spacing: 16) {
-                            Circle()
-                                .fill(
-                                    LinearGradient(
-                                        colors: specialist.gradient,
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
+                BaseCard(variant: .interactive, action: {
+                    onStartChat()
+                }) {
+                    HStack(spacing: 16) {
+                        Circle()
+                            .fill(
+                                LinearGradient(
+                                    colors: [DesignColors.primary, DesignColors.secondary],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
                                 )
-                                .frame(width: 56, height: 56)
-                                .overlay(
-                                    Image(systemName: specialist.iconName)
-                                        .font(.system(size: 22, weight: .semibold))
-                                        .foregroundColor(.white)
-                                )
-                            
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(specialist.name)
-                                    .font(DesignTypography.headlineFont(weight: .semibold))
-                                    .foregroundColor(DesignColors.foreground)
-                                Text(specialist.description)
-                                    .font(DesignTypography.footnoteFont())
-                                    .foregroundColor(DesignColors.mutedForeground)
-                            }
-                            
-                            Spacer()
-                            
-                            VStack(alignment: .trailing) {
-                                Text("\(specialist.costPerMessage) pts")
-                                    .font(DesignTypography.subheadFont(weight: .semibold))
-                                    .foregroundColor(DesignColors.primary)
-                                Text("per message")
-                                    .font(DesignTypography.caption2Font())
-                                    .foregroundColor(DesignColors.mutedForeground)
-                            }
+                            )
+                            .frame(width: 56, height: 56)
+                            .overlay(
+                                Image(systemName: "sparkles")
+                                    .font(.system(size: 22, weight: .semibold))
+                                    .foregroundColor(.white)
+                            )
+                        
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Aroti")
+                                .font(DesignTypography.headlineFont(weight: .semibold))
+                                .foregroundColor(DesignColors.foreground)
+                            Text("Cosmic insights & astrology guidance")
+                                .font(DesignTypography.footnoteFont())
+                                .foregroundColor(DesignColors.mutedForeground)
+                        }
+                        
+                        Spacer()
+                        
+                        VStack(alignment: .trailing) {
+                            Text("20 pts")
+                                .font(DesignTypography.subheadFont(weight: .semibold))
+                                .foregroundColor(DesignColors.primary)
+                            Text("per message")
+                                .font(DesignTypography.caption2Font())
+                                .foregroundColor(DesignColors.mutedForeground)
                         }
                     }
-                }
-                
-                Button(action: onViewHistory) {
-                    Label("View Past Sessions", systemImage: "clock.fill")
-                        .font(DesignTypography.subheadFont(weight: .semibold))
-                        .foregroundColor(DesignColors.primary)
                 }
                 
                 Button(action: onViewPoints) {
@@ -884,7 +888,7 @@ private struct GuidancePointsScreen: View {
                         Text("\(userPoints.formatted()) Points")
                             .font(DesignTypography.title1Font(weight: .bold))
                             .foregroundColor(DesignColors.foreground)
-                        Text("Each message costs 5–10 points depending on your specialist.")
+                        Text("Each message costs 20 points.")
                             .font(DesignTypography.footnoteFont())
                             .foregroundColor(DesignColors.mutedForeground)
                             .multilineTextAlignment(.center)
@@ -937,312 +941,61 @@ private struct GuidancePointsScreen: View {
     }
 }
 
-// MARK: - History
-private struct GuidanceHistoryScreen: View {
-    let sessions: [GuidanceSession]
-    let onResume: (GuidanceSpecialist) -> Void
-    let onShare: (GuidanceSession) -> Void
-    let onRename: (GuidanceSession) -> Void
-    let onArchive: (GuidanceSession) -> Void
-    let onDelete: (GuidanceSession) -> Void
-    
-    var body: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(spacing: 12) {
-                if sessions.isEmpty {
-                    BaseCard {
-                        VStack(spacing: 16) {
-                            Image(systemName: "message.circle")
-                                .font(.system(size: 48))
-                                .foregroundColor(DesignColors.mutedForeground)
-                            Text("No past sessions yet — start your first conversation.")
-                                .font(DesignTypography.bodyFont())
-                                .foregroundColor(DesignColors.mutedForeground)
-                                .multilineTextAlignment(.center)
-                            ArotiButton(kind: .secondary, title: "Start New Chat", action: {})
-                        }
-                    }
-                } else {
-                    ForEach(sessions) { session in
-                        BaseCard {
-                            VStack(alignment: .leading, spacing: 8) {
-                                HStack(alignment: .top) {
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text(session.title)
-                                            .font(DesignTypography.subheadFont(weight: .semibold))
-                                            .foregroundColor(session.isArchived ? DesignColors.mutedForeground : DesignColors.foreground)
-                                            .lineLimit(1)
-                                        Text("\"\(session.preview)\"")
-                                            .font(DesignTypography.caption1Font())
-                                            .foregroundColor(DesignColors.mutedForeground)
-                                            .lineLimit(1)
-                                    }
-                                    
-                                    Spacer()
-                                    
-                                    Menu {
-                                        Button("Share", systemImage: "square.and.arrow.up") {
-                                            onShare(session)
-                                        }
-                                        Button("Rename", systemImage: "pencil") {
-                                            onRename(session)
-                                        }
-                                        Button(session.isArchived ? "Unarchive" : "Archive", systemImage: "archivebox") {
-                                            onArchive(session)
-                                        }
-                                        Divider()
-                                        Button("Delete", systemImage: "trash", role: .destructive) {
-                                            onDelete(session)
-                                        }
-                                    } label: {
-                                        Image(systemName: "ellipsis")
-                                            .font(.system(size: 16, weight: .medium))
-                                            .foregroundColor(DesignColors.mutedForeground)
-                                            .padding(4)
-                                    }
-                                }
-                                
-                                HStack {
-                                    Text(session.dateLabel)
-                                        .font(DesignTypography.caption2Font())
-                                        .foregroundColor(DesignColors.mutedForeground)
-                                    Spacer()
-                                    Button(action: { onResume(session.specialist) }) {
-                                        Label("Resume", systemImage: "arrow.forward.circle.fill")
-                                            .font(DesignTypography.caption1Font(weight: .medium))
-                                            .foregroundColor(DesignColors.primary)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            .padding(.horizontal, DesignSpacing.md)
-            .padding(.bottom, 160)
-        }
-    }
-}
 
-// MARK: - Sheets
-private struct GuidanceMenuSheet: View {
-    let sessions: [GuidanceSession]
-    let onResumeSession: (GuidanceSpecialist) -> Void
-    let onShare: (GuidanceSession) -> Void
-    let onRename: (GuidanceSession) -> Void
-    let onArchive: (GuidanceSession) -> Void
-    let onDelete: (GuidanceSession) -> Void
-    
-    @State private var searchText: String = ""
-    
-    private var filteredSessions: [GuidanceSession] {
-        if searchText.isEmpty {
-            return sessions
-        }
-        return sessions.filter { session in
-            session.title.localizedCaseInsensitiveContains(searchText) ||
-            session.preview.localizedCaseInsensitiveContains(searchText)
-        }
-    }
+private struct DisclaimerSheet: View {
+    @Environment(\.dismiss) var dismiss
+    let onDismiss: () -> Void
     
     var body: some View {
         NavigationStack {
             ZStack {
                 CelestialBackground()
                 
-                VStack(spacing: 0) {
-                    // Top Section: Search Only
-                    VStack(spacing: 16) {
-                        // Search Bar
-                        HStack(spacing: 12) {
-                            Image(systemName: "magnifyingglass")
-                                .font(.system(size: 16))
-                                .foregroundColor(DesignColors.mutedForeground)
-                            
-                            ZStack(alignment: .leading) {
-                                if searchText.isEmpty {
-                                    Text("Search chats...")
-                                        .font(DesignTypography.bodyFont())
-                                        .foregroundColor(DesignColors.mutedForeground.opacity(0.6))
-                                        .padding(.horizontal, 4)
-                                }
-                                TextField("", text: $searchText)
-                                    .font(DesignTypography.bodyFont())
-                                    .foregroundColor(DesignColors.foreground)
-                                    .textInputAutocapitalization(.never)
-                                    .autocorrectionDisabled()
-                            }
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 12)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.white.opacity(0.06))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                                )
-                        )
-                    }
-                    .padding(.horizontal, DesignSpacing.md)
-                    .padding(.top, DesignSpacing.md)
-                    .padding(.bottom, DesignSpacing.sm)
-                    
-                    Divider()
-                        .background(Color.white.opacity(0.08))
-                    
-                    // History Section
-                    ScrollView(showsIndicators: false) {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 20) {
+                        // Disclaimer content
                         VStack(alignment: .leading, spacing: 16) {
-                            // HISTORY Label
-                            Text("HISTORY")
-                                .font(DesignTypography.caption1Font(weight: .bold))
-                                .foregroundColor(DesignColors.mutedForeground)
-                                .tracking(1.5)
-                                .padding(.horizontal, DesignSpacing.md)
-                                .padding(.top, DesignSpacing.md)
+                            Text("AI responses are generated by artificial intelligence and may not always be accurate. Please use your judgment and consult with qualified professionals for important decisions.")
+                                .font(DesignTypography.bodyFont())
+                                .foregroundColor(DesignColors.foreground)
+                                .lineSpacing(4)
                             
-                            // Chat Sessions List
-                            if filteredSessions.isEmpty {
-                                VStack(spacing: 12) {
-                                    Image(systemName: "message.circle")
-                                        .font(.system(size: 48))
-                                        .foregroundColor(DesignColors.mutedForeground.opacity(0.5))
-                                    Text(searchText.isEmpty ? "No past sessions yet" : "No results found")
-                                        .font(DesignTypography.bodyFont())
-                                        .foregroundColor(DesignColors.mutedForeground)
-                                }
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, DesignSpacing.xl)
-                            } else {
-                                ForEach(filteredSessions) { session in
-                                    GuidanceHistoryItem(
-                                        session: session,
-                                        onResume: { onResumeSession(session.specialist) },
-                                        onShare: { onShare(session) },
-                                        onRename: { onRename(session) },
-                                        onArchive: { onArchive(session) },
-                                        onDelete: { onDelete(session) }
-                                    )
-                                    .padding(.horizontal, DesignSpacing.md)
-                                }
-                            }
+                            Text("Responses may vary and should not be considered definitive advice. The information provided is for guidance purposes only and does not replace professional consultation.")
+                                .font(DesignTypography.bodyFont())
+                                .foregroundColor(DesignColors.foreground)
+                                .lineSpacing(4)
                         }
-                        .padding(.bottom, DesignSpacing.lg)
+                        .padding(.top, 8)
+                        
+                        // Close button
+                        ArotiButton(
+                            kind: .primary,
+                            title: "Got it",
+                            action: {
+                                onDismiss()
+                                dismiss()
+                            }
+                        )
+                        .padding(.top, 8)
                     }
+                    .padding(DesignSpacing.sm)
+                    .padding(.bottom, 40)
                 }
             }
-            .navigationBarHidden(true)
-        }
-    }
-}
-
-// History item component with 3-dot menu
-private struct GuidanceHistoryItem: View {
-    let session: GuidanceSession
-    let onResume: () -> Void
-    let onShare: () -> Void
-    let onRename: () -> Void
-    let onArchive: () -> Void
-    let onDelete: () -> Void
-    
-    var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            // Content - tappable to resume
-            Button(action: onResume) {
-                VStack(alignment: .leading, spacing: 6) {
-                    // Title
-                    Text(session.title)
-                        .font(DesignTypography.subheadFont(weight: .semibold))
-                        .foregroundColor(session.isArchived ? DesignColors.mutedForeground : DesignColors.foreground)
-                        .lineLimit(1)
-                    
-                    // Preview text
-                    Text("\"\(session.preview)\"")
-                        .font(DesignTypography.caption1Font())
-                        .foregroundColor(DesignColors.mutedForeground)
-                        .lineLimit(1)
+            .navigationTitle("Disclaimer")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(ArotiColor.surface.opacity(0.9), for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbarColorScheme(.dark, for: .navigationBar)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") {
+                        onDismiss()
+                        dismiss()
+                    }
+                    .foregroundColor(DesignColors.accent)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .buttonStyle(PlainButtonStyle())
-            
-            // Date and Menu
-            HStack(spacing: 12) {
-                Text(session.dateLabel)
-                    .font(DesignTypography.caption2Font())
-                    .foregroundColor(DesignColors.mutedForeground)
-                
-                // 3-dot menu
-                CustomMenuButton(
-                    onShare: onShare,
-                    onRename: onRename,
-                    onArchive: onArchive,
-                    onDelete: onDelete,
-                    isArchived: session.isArchived
-                )
-            }
-        }
-        .padding(.vertical, 12)
-        .padding(.horizontal, 16)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.white.opacity(0.03))
-        )
-    }
-}
-
-private struct RenameSessionSheet: View {
-    @Binding var title: String
-    let onCancel: () -> Void
-    let onSave: () -> Void
-    
-    var body: some View {
-        NavigationStack {
-            VStack(spacing: 16) {
-                Text("Rename Session")
-                    .font(DesignTypography.title3Font(weight: .semibold))
-                    .foregroundColor(DesignColors.foreground)
-                TextField("Session name", text: $title)
-                    .textFieldStyle(.roundedBorder)
-                    .padding(.horizontal)
-                HStack {
-                    Button("Cancel", action: onCancel)
-                        .buttonStyle(.bordered)
-                    Spacer()
-                    Button("Save", action: onSave)
-                        .buttonStyle(.borderedProminent)
-                        .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                }
-                .padding(.horizontal)
-                Spacer()
-            }
-            .padding(.top, 32)
-        }
-    }
-}
-
-private struct DisclaimerSheet: View {
-    let onDismiss: () -> Void
-    
-    var body: some View {
-        NavigationStack {
-            VStack(alignment: .leading, spacing: 16) {
-                Text("Disclaimer")
-                    .font(DesignTypography.title3Font(weight: .bold))
-                    .foregroundColor(DesignColors.foreground)
-                Text("AI responses are generated by artificial intelligence and may not always be accurate. Please use your judgment and consult with qualified professionals for important decisions.")
-                    .font(DesignTypography.bodyFont())
-                    .foregroundColor(DesignColors.mutedForeground)
-                Text("Responses may vary and should not be considered definitive advice. The information provided is for guidance purposes only and does not replace professional consultation.")
-                    .font(DesignTypography.bodyFont())
-                    .foregroundColor(DesignColors.mutedForeground)
-                Spacer()
-                Button("Close", action: onDismiss)
-                    .frame(maxWidth: .infinity)
-                    .buttonStyle(.borderedProminent)
-            }
-            .padding(24)
         }
     }
 }

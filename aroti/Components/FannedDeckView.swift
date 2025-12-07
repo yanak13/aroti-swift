@@ -102,7 +102,6 @@ struct FannedDeckView: View {
     
     // Helper to get the transform of the "top card" (front of fan)
     static func topCardInitialTransform(deckShift: Int = 0) -> (offset: CGSize, rotation: Double) {
-        let visibleCount = 7
         let index = 6 + deckShift // the front card in the fan
         let horizontalOffset = CGFloat(index) * 10
         let verticalOffset = CGFloat(index) * 5

@@ -19,6 +19,11 @@ struct DiscoveryView: View {
     @State private var selectedCategory: String? = nil
     @State private var points: Int = 120
     
+    private func updatePoints() {
+        let balance = PointsService.shared.getBalance()
+        points = balance.totalPoints
+    }
+    
     var body: some View {
         NavigationStack {
             GeometryReader { geometry in
@@ -70,24 +75,27 @@ struct DiscoveryView: View {
                             title: "Discovery",
                             safeAreaTop: safeAreaTop
                         ) {
-                            HStack(spacing: 6) {
-                                Image(systemName: "sparkles")
-                                    .font(.system(size: 16))
-                                    .foregroundColor(DesignColors.accent)
-                                Text("\(points)")
-                                    .font(DesignTypography.subheadFont(weight: .medium))
-                                    .foregroundColor(DesignColors.accent)
+                            NavigationLink(destination: JourneyPage()) {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "star.fill")
+                                        .font(.system(size: 16))
+                                        .foregroundColor(DesignColors.accent)
+                                    Text("\(points)")
+                                        .font(DesignTypography.subheadFont(weight: .medium))
+                                        .foregroundColor(DesignColors.accent)
+                                }
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 8)
+                                .background(
+                                    Capsule()
+                                        .fill(DesignColors.accent.opacity(0.15))
+                                        .overlay(
+                                            Capsule()
+                                                .stroke(DesignColors.accent.opacity(0.3), lineWidth: 1)
+                                        )
+                                )
                             }
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 8)
-                            .background(
-                                Capsule()
-                                    .fill(DesignColors.accent.opacity(0.15))
-                                    .overlay(
-                                        Capsule()
-                                            .stroke(DesignColors.accent.opacity(0.3), lineWidth: 1)
-                                    )
-                            )
+                            .buttonStyle(PlainButtonStyle())
                         }
                     }
                     
@@ -102,6 +110,9 @@ struct DiscoveryView: View {
                 }
                 .navigationBarHidden(true)
             }
+        }
+        .onAppear {
+            updatePoints()
         }
     }
 }
@@ -708,58 +719,56 @@ struct YourJourneySection: View {
     private let progress: CGFloat = 0.65
     
     var body: some View {
-        BaseCard {
-            VStack(alignment: .center, spacing: 16) {
-                Text("Your Journey")
-                    .font(DesignTypography.headlineFont(weight: .semibold))
-                    .foregroundColor(DesignColors.foreground)
-                    .frame(maxWidth: .infinity)
-                
-                VStack(spacing: 12) {
-                    JourneyStatsRow(stats: [
-                        JourneyStatDisplay(topText: "7-day", bottomText: "streak"),
-                        JourneyStatDisplay(topText: "24", bottomText: "readings"),
-                        JourneyStatDisplay(topText: "12", bottomText: "reflections"),
-                        JourneyStatDisplay(topText: "8", bottomText: "rituals")
-                    ])
+        NavigationLink(destination: JourneyPage()) {
+            BaseCard {
+                VStack(alignment: .center, spacing: 16) {
+                    Text("Your Journey")
+                        .font(DesignTypography.headlineFont(weight: .semibold))
+                        .foregroundColor(DesignColors.foreground)
+                        .frame(maxWidth: .infinity)
                     
-                    GeometryReader { proxy in
-                        ZStack(alignment: .leading) {
-                            RoundedRectangle(cornerRadius: 10)
-                                .fill(Color.white.opacity(0.08))
-                                .frame(height: 6)
-                            
-                            RoundedRectangle(cornerRadius: 10)
-                                .fill(
-                                    LinearGradient(
-                                        colors: [DesignColors.accent, DesignColors.accent.opacity(0.6)],
-                                        startPoint: .leading,
-                                        endPoint: .trailing
+                    VStack(spacing: 12) {
+                        JourneyStatsRow(stats: [
+                            JourneyStatDisplay(topText: "7-day", bottomText: "streak"),
+                            JourneyStatDisplay(topText: "24", bottomText: "readings"),
+                            JourneyStatDisplay(topText: "12", bottomText: "reflections"),
+                            JourneyStatDisplay(topText: "8", bottomText: "rituals")
+                        ])
+                        
+                        GeometryReader { proxy in
+                            ZStack(alignment: .leading) {
+                                RoundedRectangle(cornerRadius: 10)
+                                    .fill(Color.white.opacity(0.08))
+                                    .frame(height: 6)
+                                
+                                RoundedRectangle(cornerRadius: 10)
+                                    .fill(
+                                        LinearGradient(
+                                            colors: [DesignColors.accent, DesignColors.accent.opacity(0.6)],
+                                            startPoint: .leading,
+                                            endPoint: .trailing
+                                        )
                                     )
-                                )
-                                .frame(width: max(proxy.size.width * progress, 0), height: 6)
-                        }
-                    }
-                    .frame(height: 6)
-                    
-                    // View Your Journey Button
-                    NavigationLink(destination: JourneyPage()) {
-                        ArotiButton(
-                            kind: .primary,
-                            action: {}
-                        ) {
-                            HStack(spacing: 8) {
-                                Text("View Your Journey")
-                                    .font(DesignTypography.subheadFont(weight: .medium))
-                                Image(systemName: "chevron.right")
-                                    .font(.system(size: 14))
+                                    .frame(width: max(proxy.size.width * progress, 0), height: 6)
                             }
                         }
+                        .frame(height: 6)
+                        
+                        // View Your Journey Button
+                        HStack(spacing: 8) {
+                            Text("View Your Journey")
+                                .font(DesignTypography.subheadFont(weight: .medium))
+                                .foregroundColor(DesignColors.accent)
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 14))
+                                .foregroundColor(DesignColors.accent)
+                        }
+                        .padding(.top, 4)
                     }
-                    .buttonStyle(PlainButtonStyle())
                 }
             }
         }
+        .buttonStyle(PlainButtonStyle())
     }
 }
 

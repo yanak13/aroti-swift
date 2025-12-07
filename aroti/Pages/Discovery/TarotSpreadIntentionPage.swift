@@ -162,7 +162,7 @@ struct TarotSpreadIntentionPage: View {
                     )
                     .padding(.top, 0)
                     
-                    if let spread = spread {
+                    if spread != nil {
                         VStack(spacing: 20) {
                             // Introduction Section
                             BaseCard {
@@ -221,8 +221,8 @@ struct TarotSpreadIntentionPage: View {
             }
             .navigationBarHidden(true)
             .safeAreaInset(edge: .bottom) {
-                if let spread = spread {
-                    NavigationLink(destination: TarotSpreadReadingPage(spreadId: spread.id, intention: intention.isEmpty ? nil : intention)) {
+                if spread != nil {
+                    NavigationLink(destination: TarotSpreadReadingPage(spreadId: spreadId, intention: intention.isEmpty ? nil : intention)) {
                         Text("Begin Reading")
                             .font(ArotiTextStyle.subhead)
                             .foregroundColor(ArotiColor.accentText)

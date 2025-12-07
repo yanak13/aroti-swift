@@ -71,6 +71,10 @@ struct GuidedPracticeView: View {
                     PracticeCompletionView(
                         practiceTitle: practice.title,
                         onReturn: {
+                            // Award points for completing practice
+                            _ = PointsService.shared.earnPoints(event: "complete_daily_practice", points: 10)
+                            JourneyService.shared.recordActivity(type: "practice", points: 10)
+                            DailyStateManager.shared.checkAndAwardStreakBonus()
                             dismiss()
                         }
                     )

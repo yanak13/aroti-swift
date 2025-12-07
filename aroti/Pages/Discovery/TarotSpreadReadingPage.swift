@@ -23,6 +23,8 @@ struct TarotSpreadReadingPage: View {
     @State private var readingCards: [ReadingCard] = []
     @State private var showingCardDetail: TarotCard? = nil
     @State private var canvasScale: CGFloat = 1.0
+    @State private var showUnlockModal = false
+    @State private var hasCheckedAccess = false
     
     // Canvas configuration
     private let canvasSize = CGSize(width: 1200, height: 1600)
@@ -254,7 +256,7 @@ struct TarotSpreadReadingPage: View {
             CelestialBackground()
                 .ignoresSafeArea()
             
-            if let spread = spread {
+            if spread != nil {
                 // Reading Section - Immersive Canvas View
                 ZStack {
                     // Canvas View - Full Screen Immersive Experience
@@ -480,11 +482,40 @@ struct TarotSpreadReadingPage: View {
         }
         .navigationBarHidden(true)
         .onAppear {
-            drawCards()
+            checkAccessAndDrawCards()
+        }
+        .sheet(isPresented: $showUnlockModal) {
+            UnlockSpreadModal(
+                spreadId: spreadId,
+                isPresented: $showUnlockModal,
+                onUnlock: {
+                    handleUnlockSpread()
+                }
+            )
         }
         .sheet(item: $showingCardDetail) { card in
             TarotCardDetailSheet(card: card)
         }
+    }
+    
+    private func checkAccessAndDrawCards() {
+        guard spread != nil else { return }
+        
+        // Check access
+        let (allowed, _, _, isPremiumOnly) = AccessControlService.shared.canAccessSpread(spreadId: spreadId)
+        
+        if !allowed {
+            if isPremiumOnly {
+                // Show premium upgrade modal
+                showUnlockModal = true
+            } else {
+                // Show unlock modal
+                showUnlockModal = true
+            }
+            return
+        }
+        
+        drawCards()
     }
     
     private func drawCards() {
@@ -499,6 +530,29 @@ struct TarotSpreadReadingPage: View {
         // Create reading cards with positions
         readingCards = zip(spread.positions, randomCards).map { position, card in
             ReadingCard(id: position.id, position: position, card: card, isFlipped: false)
+        }
+    }
+    
+    private func handleUnlockSpread() {
+        let (_, cost, permanentCost, _) = AccessControlService.shared.canAccessSpread(spreadId: spreadId)
+        
+        // Try permanent unlock first if available
+        if let permanentCost = permanentCost {
+            let result = PointsService.shared.spendPoints(event: "unlock_spread_permanent", cost: permanentCost)
+            if result.success {
+                AccessControlService.shared.unlockContent(contentId: spreadId, contentType: .tarotSpread, permanent: true)
+                drawCards()
+                return
+            }
+        }
+        
+        // Try temporary unlock
+        if let cost = cost {
+            let result = PointsService.shared.spendPoints(event: "unlock_spread_temp", cost: cost)
+            if result.success {
+                AccessControlService.shared.unlockContent(contentId: spreadId, contentType: .tarotSpread, permanent: false)
+                drawCards()
+            }
         }
     }
     
@@ -534,6 +588,13 @@ struct TarotSpreadReadingPage: View {
         // This could save the reading to user's saved readings or history
         // For now, this is a placeholder
         print("Save reading: \(spreadId) with \(readingCards.count) cards")
+        
+        // Award points for completing spread
+        if allCardsFlipped {
+            _ = PointsService.shared.earnPoints(event: "complete_tarot_spread", points: 10)
+            JourneyService.shared.recordActivity(type: "spread", points: 10)
+            DailyStateManager.shared.checkAndAwardStreakBonus()
+        }
     }
 }
 

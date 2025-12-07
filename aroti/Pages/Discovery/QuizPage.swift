@@ -69,6 +69,8 @@ struct QuizPage: View {
     @State private var currentQuestion = 0
     @State private var selectedAnswers: [Int: Int] = [:]
     @State private var showResults = false
+    @State private var showAccessModal = false
+    @State private var hasCheckedAccess = false
     
     private let questions = QuizData.questions
     
@@ -122,6 +124,11 @@ struct QuizPage: View {
                 currentQuestion += 1
             } else {
                 showResults = true
+                // Award points for completing quiz
+                _ = PointsService.shared.earnPoints(event: "complete_quiz", points: 10)
+                JourneyService.shared.recordActivity(type: "quiz", points: 10)
+                AccessControlService.shared.recordQuiz()
+                DailyStateManager.shared.checkAndAwardStreakBonus()
             }
         }
     }
@@ -159,6 +166,43 @@ struct QuizPage: View {
                 }
             }
             .navigationBarHidden(true)
+        }
+        .onAppear {
+            checkAccess()
+        }
+        .sheet(isPresented: $showAccessModal) {
+            let balance = PointsService.shared.getBalance()
+            let (_, cost) = AccessControlService.shared.canAccessQuiz()
+            PointsSpendModal(
+                isPresented: $showAccessModal,
+                cost: cost ?? 10,
+                currentBalance: balance.totalPoints,
+                title: "Unlock Quiz",
+                message: "You've used your free quiz today. Unlock another for \(cost ?? 10) points?",
+                onConfirm: {
+                    handleUnlockQuiz()
+                },
+                onUpgrade: {
+                    // Navigate to premium upgrade
+                }
+            )
+        }
+    }
+    
+    private func checkAccess() {
+        let (allowed, _) = AccessControlService.shared.canAccessQuiz()
+        if !allowed {
+            showAccessModal = true
+        }
+    }
+    
+    private func handleUnlockQuiz() {
+        let (_, cost) = AccessControlService.shared.canAccessQuiz()
+        guard let cost = cost else { return }
+        
+        let result = PointsService.shared.spendPoints(event: "unlock_quiz", cost: cost)
+        if result.success {
+            AccessControlService.shared.recordQuiz()
         }
     }
     

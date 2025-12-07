@@ -295,7 +295,7 @@ enum TarotSpreadLayout {
         // Cards 2-8 arranged in a circle
         let angles: [Double] = [90, 45, 0, -45, -90, -135, -180] // Starting from top, going clockwise
         
-        for (index, angle) in angles.enumerated() {
+        for (_, angle) in angles.enumerated() {
             let radians = angle * .pi / 180
             let x = centerX + radius * cos(radians)
             let y = centerY - radius * sin(radians) // Negative because y increases downward

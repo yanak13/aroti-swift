@@ -92,6 +92,9 @@ struct DailyPracticesListingPage: View {
                                                                 .stroke(Color.white.opacity(0.1), lineWidth: 1)
                                                         )
                                                 )
+                                            
+                                            // Access Badge
+                                            AccessBadge(accessStatus: AccessControlService.shared.checkAccess(contentId: practice.id, contentType: .dailyPractice))
                                         }
                                         
                                         Text(practice.description)

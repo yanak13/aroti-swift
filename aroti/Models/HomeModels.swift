@@ -13,13 +13,15 @@ struct UserData: Codable {
     let moonSign: String?
     let birthDate: Date?
     let traits: [String]?
+    let isPremium: Bool?
     
     static let `default` = UserData(
         name: "Yana",
         sunSign: "Pisces",
         moonSign: "Cancer",
         birthDate: nil,
-        traits: ["Intuitive", "Spiritual"]
+        traits: ["Intuitive", "Spiritual"],
+        isPremium: false
     )
 }
 

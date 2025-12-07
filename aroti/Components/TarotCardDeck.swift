@@ -147,7 +147,7 @@ struct TarotCardDeck: View {
         .onAppear {
             initializeDeck()
         }
-        .onChange(of: shouldNavigateToReading) { shouldNavigate in
+        .onChange(of: shouldNavigateToReading) { _, shouldNavigate in
             if shouldNavigate {
                 onCardsSelected(selectedCards)
             }

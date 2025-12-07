@@ -87,12 +87,12 @@ struct TarotCanvasView<Content: View>: View {
                         offset.height = (screenSize.height - scaledHeight) / 2
                     }
                 }
-                .onChange(of: screenSize) { newSize in
+                .onChange(of: screenSize) { _, newSize in
                     // Re-center when screen size changes (e.g., rotation)
                     centerCanvas(screenSize: newSize)
                     constrainOffset(to: newSize, scale: scale)
                 }
-                .onChange(of: initialScale) { newScale in
+                .onChange(of: initialScale) { _, newScale in
                     // Update if initial scale changes
                     if scale == initialScale || abs(scale - initialScale) < 0.01 {
                         scale = newScale

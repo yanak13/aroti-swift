@@ -118,6 +118,8 @@ struct ArticleDetailPage: View {
     @Environment(\.dismiss) private var dismiss
     let articleId: String
     @State private var isSaved: Bool = false
+    @State private var showUnlockModal = false
+    @State private var isUnlocked = false
     
     private var article: Article? {
         ArticleData.articles[articleId]
@@ -221,23 +223,50 @@ struct ArticleDetailPage: View {
                         }
                         
                         // Main Content
-                        VStack(alignment: .leading, spacing: 20) {
-                            ForEach(Array(article.content.components(separatedBy: "\n\n").enumerated()), id: \.offset) { index, paragraph in
-                                if !paragraph.isEmpty {
-                                    FormattedTextView(
-                                        text: paragraph,
-                                        font: DesignTypography.bodyFont(),
-                                        foregroundColor: DesignColors.foreground,
-                                        highlightColor: DesignColors.accent
-                                    )
-                                    .id("paragraph-\(article.id)-\(index)")
+                        if isUnlocked || AccessControlService.shared.isPremium {
+                            VStack(alignment: .leading, spacing: 20) {
+                                ForEach(Array(article.content.components(separatedBy: "\n\n").enumerated()), id: \.offset) { index, paragraph in
+                                    if !paragraph.isEmpty {
+                                        FormattedTextView(
+                                            text: paragraph,
+                                            font: DesignTypography.bodyFont(),
+                                            foregroundColor: DesignColors.foreground,
+                                            highlightColor: DesignColors.accent
+                                        )
+                                        .id("paragraph-\(article.id)-\(index)")
+                                    }
                                 }
                             }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(.horizontal, DesignSpacing.sm)
+                            .frame(maxWidth: .infinity)
+                        } else {
+                            // Preview only
+                            BaseCard {
+                                VStack(spacing: 16) {
+                                    Text(article.content.components(separatedBy: "\n\n").first ?? "")
+                                        .font(DesignTypography.bodyFont())
+                                        .foregroundColor(DesignColors.mutedForeground)
+                                        .lineLimit(3)
+                                    
+                                    Button(action: {
+                                        showUnlockModal = true
+                                    }) {
+                                        Text("Unlock Full Article - 20 points")
+                                            .font(DesignTypography.subheadFont(weight: .medium))
+                                            .foregroundColor(.white)
+                                            .frame(maxWidth: .infinity)
+                                            .padding()
+                                            .background(
+                                                RoundedRectangle(cornerRadius: 12)
+                                                    .fill(DesignColors.accent)
+                                            )
+                                    }
+                                }
+                            }
+                            .padding(.horizontal, DesignSpacing.sm)
                         }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .padding(.horizontal, DesignSpacing.sm)
-                        .frame(maxWidth: .infinity) // Ensure it doesn't exceed screen width
                         
                         // Related Articles
                         if !article.relatedArticles.isEmpty {
@@ -292,6 +321,42 @@ struct ArticleDetailPage: View {
         }
         .navigationBarHidden(true)
         .navigationBarBackButtonHidden(true)
+        .onAppear {
+            checkArticleAccess()
+        }
+        .sheet(isPresented: $showUnlockModal) {
+            let balance = PointsService.shared.getBalance()
+            PointsSpendModal(
+                isPresented: $showUnlockModal,
+                cost: 20,
+                currentBalance: balance.totalPoints,
+                title: "Unlock Full Article",
+                message: "Unlock the full article content for 20 points?",
+                onConfirm: {
+                    handleUnlockArticle()
+                },
+                onUpgrade: {
+                    // Navigate to premium upgrade
+                }
+            )
+        }
+    }
+    
+    private func checkArticleAccess() {
+        let (allowed, isPreviewOnly) = AccessControlService.shared.canAccessArticle(articleId: articleId)
+        if !allowed {
+            // Article not accessible
+            return
+        }
+        isUnlocked = !isPreviewOnly
+    }
+    
+    private func handleUnlockArticle() {
+        let result = PointsService.shared.spendPoints(event: "unlock_article", cost: 20)
+        if result.success {
+            AccessControlService.shared.unlockContent(contentId: articleId, contentType: .article, permanent: true)
+            isUnlocked = true
+        }
     }
 }
 

@@ -502,25 +502,10 @@ struct PracticeDetailPage: View {
                     }
                 }
                 
-                // Fixed button at bottom (same position as Next button)
+                        // Fixed button at bottom (same position as Next button)
                 if let practice = practice {
                     VStack(spacing: 12) {
-                        NavigationLink(destination: GuidedPracticeView(practice: practice)) {
-                            Text("Start Practice")
-                                .font(DesignTypography.subheadFont(weight: .medium))
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 52)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(DesignColors.accent)
-                                        .shadow(color: DesignColors.accent.opacity(0.35), radius: 10, x: 0, y: 6)
-                                )
-                        }
-                        .simultaneousGesture(TapGesture().onEnded {
-                            HapticFeedback.impactOccurred(.medium)
-                        })
-                        .buttonStyle(PlainButtonStyle())
+                        PracticeStartButtonView(practice: practice)
                         
                         // Invisible spacer to match Back button space (keeps button at same position as Next)
                         Spacer()

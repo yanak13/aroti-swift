@@ -117,7 +117,7 @@ struct PracticeStepView: View {
                 backButtonOpacity = currentStepIndex > 0 ? 1.0 : 0.0
             }
         }
-        .onChange(of: currentStepIndex) { newIndex in
+        .onChange(of: currentStepIndex) { _, newIndex in
             // Smooth cross-fade for text
             withAnimation(.easeInOut(duration: 0.2)) {
                 contentOpacity = 0

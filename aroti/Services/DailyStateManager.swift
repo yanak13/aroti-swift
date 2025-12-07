@@ -136,5 +136,34 @@ class DailyStateManager {
         
         saveDailyState(updatedState)
     }
+    
+    // MARK: - Streak Tracking for Points
+    
+    func checkAndAwardStreakBonus() {
+        // Check if user has activity today (for streak bonus)
+        // This is called when user completes any activity
+        // The actual streak calculation and bonus awarding is handled by JourneyService
+        let journeyService = JourneyService.shared
+        let streakDays = journeyService.getStreakDays()
+        
+        // Award streak bonus if this is a new streak day
+        // This logic ensures we only award once per day
+        let lastStreakBonusDate = UserDefaults.standard.string(forKey: "aroti_last_streak_bonus_date")
+        let todayString = formatDate(Date())
+        
+        if lastStreakBonusDate != todayString && streakDays > 0 {
+            // Award 5 bonus points for maintaining streak
+            _ = PointsService.shared.earnPoints(event: "streak_bonus", points: 5)
+            JourneyService.shared.recordActivity(type: "streak", points: 5)
+            UserDefaults.standard.set(todayString, forKey: "aroti_last_streak_bonus_date")
+        }
+    }
+    
+    private func formatDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.string(from: date)
+    }
 }
+
 

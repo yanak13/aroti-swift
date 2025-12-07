@@ -201,6 +201,19 @@ struct ForYouItem: Identifiable {
 
 struct ForYouCard: View {
     let item: ForYouItem
+    private let accessControl = AccessControlService.shared
+    
+    private func getUnlockStatus(for articleId: String) -> UnlockStatusPillType {
+        let access = accessControl.checkAccess(contentId: articleId, contentType: .article)
+        switch access {
+        case .free, .unlocked:
+            return .unlocked
+        case .unlockableWithPoints(let cost):
+            return .pointsCost(cost)
+        case .premiumOnly:
+            return .premium
+        }
+    }
     
     var body: some View {
         BaseCard {
@@ -234,6 +247,9 @@ struct ForYouCard: View {
                         .foregroundColor(DesignColors.mutedForeground)
                         .lineLimit(2)
                 }
+                
+                // Unlock Status (articles don't earn points)
+                UnlockStatusPill(status: getUnlockStatus(for: item.id))
             }
             .frame(width: DiscoveryLayout.wideCardWidth, height: 200, alignment: .topLeading)
         }

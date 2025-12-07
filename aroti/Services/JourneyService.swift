@@ -212,7 +212,7 @@ class JourneyService {
         saveActivityHistory(history)
     }
     
-    private func getActivityHistory() -> [[String: Any]] {
+    func getActivityHistory() -> [[String: Any]] {
         guard let data = UserDefaults.standard.data(forKey: activityHistoryKey),
               let history = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
             return []

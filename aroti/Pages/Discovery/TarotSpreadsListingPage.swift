@@ -19,6 +19,24 @@ struct TarotSpreadItem: Identifiable {
 struct TarotSpreadsListingPage: View {
     @Environment(\.dismiss) private var dismiss
     @State private var difficultyFilter: String = "All"
+    private let accessControl = AccessControlService.shared
+    private let userSubscription = UserSubscriptionService.shared
+    
+    private var isPremium: Bool {
+        userSubscription.isPremium
+    }
+    
+    private func getUnlockStatus(for spreadId: String) -> UnlockStatusPillType {
+        let access = accessControl.checkAccess(contentId: spreadId, contentType: .tarotSpread)
+        switch access {
+        case .free, .unlocked:
+            return .unlocked
+        case .unlockableWithPoints(let cost):
+            return .pointsCost(cost)
+        case .premiumOnly:
+            return .premium
+        }
+    }
     
     let tarotSpreads: [TarotSpreadItem] = [
         TarotSpreadItem(id: "celtic-cross", name: "Celtic Cross", cardCount: 10, description: "Comprehensive 10-card spread", difficulty: "Intermediate", bestFor: "General guidance and deep insights"),
@@ -148,14 +166,20 @@ struct TarotSpreadsListingPage: View {
                                                                     .stroke(Color.white.opacity(0.1), lineWidth: 1)
                                                             )
                                                     )
-                                                
-                                                // Access Badge
-                                                AccessBadge(accessStatus: AccessControlService.shared.checkAccess(contentId: spread.id, contentType: .tarotSpread))
                                             }
                                             
                                             Text(spread.bestFor)
                                                 .font(DesignTypography.caption2Font())
                                                 .foregroundColor(DesignColors.mutedForeground)
+                                            
+                                            Spacer()
+                                            
+                                            // Unlock Status & Earn Value
+                                            HStack {
+                                                UnlockStatusPill(status: getUnlockStatus(for: spread.id))
+                                                Spacer()
+                                                EarnValueBadge(points: 10)
+                                            }
                                         }
                                         
                                         Spacer()

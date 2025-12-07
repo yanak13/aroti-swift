@@ -13,10 +13,6 @@ struct EditProfileSheet: View {
     @Binding var userLocation: String
     
     @State private var name: String
-    @State private var location: String
-    @State private var birthDate: Date = Date()
-    @State private var birthTime: Date = Date()
-    @State private var hasBirthTime: Bool = false
     
     let onSave: (String, String) -> Void
     
@@ -25,7 +21,10 @@ struct EditProfileSheet: View {
         self._userLocation = userLocation
         self.onSave = onSave
         _name = State(initialValue: userName.wrappedValue)
-        _location = State(initialValue: userLocation.wrappedValue)
+    }
+    
+    private var isFormValid: Bool {
+        !name.isEmpty
     }
     
     var body: some View {
@@ -35,82 +34,96 @@ struct EditProfileSheet: View {
                 
                 ScrollView {
                     VStack(spacing: 20) {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Full Name")
-                                .font(DesignTypography.subheadFont(weight: .medium))
-                                .foregroundColor(DesignColors.foreground)
-                            
-                            TextField("Enter your full name", text: $name)
-                                .textFieldStyle(ProfileTextFieldStyle())
-                        }
-                        
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Birth Date")
-                                .font(DesignTypography.subheadFont(weight: .medium))
-                                .foregroundColor(DesignColors.foreground)
-                            
-                            DatePicker("", selection: $birthDate, displayedComponents: .date)
-                                .datePickerStyle(.compact)
-                                .labelsHidden()
-                                .tint(DesignColors.accent)
-                            
-                            Text("Required for chart calculations")
-                                .font(DesignTypography.footnoteFont())
-                                .foregroundColor(DesignColors.mutedForeground)
-                        }
-                        
-                        VStack(alignment: .leading, spacing: 8) {
-                            Toggle("Include Birth Time", isOn: $hasBirthTime)
-                                .tint(DesignColors.accent)
-                            
-                            if hasBirthTime {
-                                DatePicker("", selection: $birthTime, displayedComponents: .hourAndMinute)
-                                    .datePickerStyle(.compact)
-                                    .labelsHidden()
-                                    .tint(DesignColors.accent)
+                        // Full Name Section
+                        BaseCard {
+                            VStack(alignment: .leading, spacing: 12) {
+                                Text("Full Name")
+                                    .font(DesignTypography.subheadFont(weight: .medium))
+                                    .foregroundColor(DesignColors.foreground)
                                 
-                                Text("Optional • If unknown, Rising sign will be estimated")
-                                    .font(DesignTypography.footnoteFont())
+                                TextField("Enter your full name", text: $name)
+                                    .textFieldStyle(ProfileTextFieldStyle())
+                            }
+                        }
+                        
+                        // Location Display (Read-only)
+                        BaseCard {
+                            VStack(alignment: .leading, spacing: 12) {
+                                Text("Location")
+                                    .font(DesignTypography.subheadFont(weight: .medium))
+                                    .foregroundColor(DesignColors.foreground)
+                                
+                                Text(userLocation.isEmpty ? "Not set" : userLocation)
+                                    .font(DesignTypography.bodyFont())
+                                    .foregroundColor(userLocation.isEmpty ? DesignColors.mutedForeground : DesignColors.foreground)
+                                    .padding()
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .fill(ArotiColor.inputBackground.opacity(0.5))
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 12)
+                                                    .stroke(ArotiColor.inputBorder.opacity(0.5), lineWidth: 1)
+                                            )
+                                    )
+                                
+                                Text("Location is set during onboarding")
+                                    .font(DesignTypography.caption2Font())
                                     .foregroundColor(DesignColors.mutedForeground)
                             }
                         }
                         
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Birth Location")
-                                .font(DesignTypography.subheadFont(weight: .medium))
-                                .foregroundColor(DesignColors.foreground)
-                            
-                            TextField("City, State, Country", text: $location)
-                                .textFieldStyle(ProfileTextFieldStyle())
-                            
-                            Text("Used for accurate chart positioning")
-                                .font(DesignTypography.footnoteFont())
-                                .foregroundColor(DesignColors.mutedForeground)
-                        }
+                        // Save Button
+                        ArotiButton(
+                            kind: .primary,
+                            action: {
+                                saveProfile()
+                            },
+                            label: {
+                                Text("Save")
+                                    .font(DesignTypography.subheadFont(weight: .semibold))
+                            }
+                        )
+                        .disabled(!isFormValid)
+                        .opacity(isFormValid ? 1.0 : 0.6)
                     }
-                    .padding()
+                    .padding(.horizontal, 16)
+                    .padding(.vertical)
                 }
             }
             .navigationTitle("Edit Profile")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbarColorScheme(.dark, for: .navigationBar)
+            .toolbarBackground(Color.clear, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
+                ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Cancel") {
                         dismiss()
                     }
                     .foregroundColor(DesignColors.foreground)
                 }
-                
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Save") {
-                        onSave(name, location)
-                        dismiss()
-                    }
-                    .foregroundColor(DesignColors.accent)
-                    .fontWeight(.semibold)
-                }
             }
         }
+    }
+    
+    private func saveProfile() {
+        // Save name only (location is from onboarding)
+        onSave(name, userLocation)
+        
+        // Update UserData name
+        let existingData = DailyStateManager.shared.loadUserData() ?? UserData.default
+        let updatedData = UserData(
+            name: name,
+            sunSign: existingData.sunSign,
+            moonSign: existingData.moonSign,
+            birthDate: existingData.birthDate,
+            traits: existingData.traits,
+            isPremium: existingData.isPremium
+        )
+        DailyStateManager.shared.saveUserData(updatedData)
+        
+        dismiss()
     }
 }
 

@@ -17,6 +17,26 @@ struct PracticeListItem: Identifiable {
 
 struct DailyPracticesListingPage: View {
     @Environment(\.dismiss) private var dismiss
+    private let accessControl = AccessControlService.shared
+    private let userSubscription = UserSubscriptionService.shared
+    
+    private var isPremium: Bool {
+        userSubscription.isPremium
+    }
+    
+    private func getUnlockStatus(for practiceId: String) -> UnlockStatusPillType {
+        let access = accessControl.checkAccess(contentId: practiceId, contentType: .dailyPractice)
+        switch access {
+        case .free:
+            return .freeToday
+        case .unlocked:
+            return .unlocked
+        case .unlockableWithPoints(let cost):
+            return .pointsCost(cost)
+        case .premiumOnly:
+            return .premium
+        }
+    }
     
     let practices: [PracticeListItem] = [
         PracticeListItem(id: "1", title: "Morning Intention", duration: "5 min", category: "Mindfulness", description: "Start your day with clarity and purpose by setting meaningful intentions"),
@@ -92,15 +112,19 @@ struct DailyPracticesListingPage: View {
                                                                 .stroke(Color.white.opacity(0.1), lineWidth: 1)
                                                         )
                                                 )
-                                            
-                                            // Access Badge
-                                            AccessBadge(accessStatus: AccessControlService.shared.checkAccess(contentId: practice.id, contentType: .dailyPractice))
                                         }
                                         
                                         Text(practice.description)
                                             .font(DesignTypography.footnoteFont())
                                             .foregroundColor(DesignColors.mutedForeground)
                                             .lineLimit(2)
+                                        
+                                        // Unlock Status & Earn Value
+                                        HStack {
+                                            UnlockStatusPill(status: getUnlockStatus(for: practice.id))
+                                            Spacer()
+                                            EarnValueBadge(points: 10)
+                                        }
                                     }
                                     
                                     Spacer()

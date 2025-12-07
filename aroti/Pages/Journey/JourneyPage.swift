@@ -60,366 +60,280 @@ struct JourneyPage: View {
                         // Content
                         let summary = journeyService.getJourneySummary()
                         VStack(spacing: 24) {
-                            if summary.lifetimePoints > 0 || summary.totalPoints > 0 {
-                                // Hero Card - Level & Points
-                                BaseCard {
-                                    VStack(spacing: 20) {
-                                        // Level Display
-                                        VStack(spacing: 8) {
-                                            Text("Level \(summary.currentLevel)")
-                                                .font(DesignTypography.title2Font(weight: .bold))
-                                                .foregroundColor(DesignColors.foreground)
-                                            
-                                            Text(summary.currentLevelName)
-                                                .font(DesignTypography.headlineFont(weight: .medium))
-                                                .foregroundColor(DesignColors.accent)
-                                        }
-                                        
-                                        // Points Display
-                                        VStack(spacing: 4) {
-                                            HStack(spacing: 16) {
-                                                VStack(spacing: 4) {
-                                                    Text("\(summary.totalPoints)")
-                                                        .font(DesignTypography.title1Font(weight: .bold))
-                                                        .foregroundColor(DesignColors.foreground)
-                                                    Text("Points Balance")
-                                                        .font(DesignTypography.caption2Font())
-                                                        .foregroundColor(DesignColors.mutedForeground)
-                                                }
-                                                
-                                                Rectangle()
-                                                    .fill(Color.white.opacity(0.1))
-                                                    .frame(width: 1, height: 40)
-                                                
-                                                VStack(spacing: 4) {
-                                                    Text("\(summary.lifetimePoints)")
-                                                        .font(DesignTypography.title1Font(weight: .bold))
-                                                        .foregroundColor(DesignColors.accent)
-                                                    Text("Lifetime Points")
-                                                        .font(DesignTypography.caption2Font())
-                                                        .foregroundColor(DesignColors.mutedForeground)
-                                                }
-                                            }
-                                        }
-                                        
-                                        // Progress to Next Level
-                                        VStack(alignment: .leading, spacing: 8) {
-                                            HStack {
-                                                Text("Next Level: \(summary.currentLevelName)")
-                                                    .font(DesignTypography.caption2Font(weight: .medium))
-                                                    .foregroundColor(DesignColors.mutedForeground)
-                                                    .textCase(.uppercase)
-                                                Spacer()
-                                                Text("\(summary.pointsToNextLevel) pts to go")
-                                                    .font(DesignTypography.caption2Font())
-                                                    .foregroundColor(DesignColors.mutedForeground)
-                                            }
-                                            
-                                            GeometryReader { proxy in
-                                                ZStack(alignment: .leading) {
-                                                    RoundedRectangle(cornerRadius: 5)
-                                                        .fill(Color.white.opacity(0.08))
-                                                        .frame(height: 8)
-                                                    
-                                                    RoundedRectangle(cornerRadius: 5)
-                                                        .fill(
-                                                            LinearGradient(
-                                                                colors: [DesignColors.accent, DesignColors.accent.opacity(0.6)],
-                                                                startPoint: .leading,
-                                                                endPoint: .trailing
-                                                            )
-                                                        )
-                                                        .frame(width: max(proxy.size.width * progress, 0), height: 8)
-                                                }
-                                            }
-                                            .frame(height: 8)
-                                        }
-                                    }
-                                }
-                                .padding(.horizontal, DesignSpacing.sm)
-                                
-                                // Today's Progress Card
-                                BaseCard {
-                                    VStack(alignment: .leading, spacing: 16) {
-                                        Text("Today's Progress")
-                                            .font(DesignTypography.headlineFont(weight: .medium))
-                                            .foregroundColor(DesignColors.foreground)
-                                        
-                                        VStack(spacing: 12) {
-                                            HStack {
-                                                Text("Points earned today:")
-                                                    .font(DesignTypography.bodyFont())
-                                                    .foregroundColor(DesignColors.mutedForeground)
-                                                Spacer()
-                                                Text("\(summary.today.points)")
-                                                    .font(DesignTypography.bodyFont(weight: .semibold))
-                                                    .foregroundColor(DesignColors.accent)
-                                            }
-                                            
-                                            HStack {
-                                                Text("Streak:")
-                                                    .font(DesignTypography.bodyFont())
-                                                    .foregroundColor(DesignColors.mutedForeground)
-                                                Spacer()
-                                                HStack(spacing: 4) {
-                                                    Text("✨")
-                                                    Text("\(summary.today.streakDays) days")
-                                                        .font(DesignTypography.bodyFont(weight: .semibold))
-                                                        .foregroundColor(DesignColors.foreground)
-                                                }
-                                            }
-                                            
-                                            Divider()
-                                                .background(Color.white.opacity(0.1))
-                                            
-                                            HStack(spacing: 16) {
-                                                VStack(spacing: 4) {
-                                                    Text("\(summary.today.completedPractices)")
-                                                        .font(DesignTypography.title3Font(weight: .semibold))
-                                                        .foregroundColor(DesignColors.foreground)
-                                                    Text("Practices")
-                                                        .font(DesignTypography.caption2Font())
-                                                        .foregroundColor(DesignColors.mutedForeground)
-                                                }
-                                                
-                                                VStack(spacing: 4) {
-                                                    Text("\(summary.today.completedSpreads)")
-                                                        .font(DesignTypography.title3Font(weight: .semibold))
-                                                        .foregroundColor(DesignColors.foreground)
-                                                    Text("Spreads")
-                                                        .font(DesignTypography.caption2Font())
-                                                        .foregroundColor(DesignColors.mutedForeground)
-                                                }
-                                                
-                                                VStack(spacing: 4) {
-                                                    Text("\(summary.today.completedQuizzes)")
-                                                        .font(DesignTypography.title3Font(weight: .semibold))
-                                                        .foregroundColor(DesignColors.foreground)
-                                                    Text("Quizzes")
-                                                        .font(DesignTypography.caption2Font())
-                                                        .foregroundColor(DesignColors.mutedForeground)
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                                .padding(.horizontal, DesignSpacing.sm)
-                                
-                                // Last 7 Days Card
-                                BaseCard {
-                                    VStack(alignment: .leading, spacing: 16) {
-                                        Text("Last 7 Days")
-                                            .font(DesignTypography.headlineFont(weight: .medium))
-                                            .foregroundColor(DesignColors.foreground)
-                                        
-                                        HStack(spacing: 8) {
-                                            ForEach(summary.last7Days.prefix(7), id: \.date) { day in
-                                                VStack(spacing: 4) {
-                                                    Text("\(day.points)")
-                                                        .font(DesignTypography.caption1Font(weight: .semibold))
-                                                        .foregroundColor(DesignColors.foreground)
-                                                    
-                                                    RoundedRectangle(cornerRadius: 4)
-                                                        .fill(day.points > 0 ? DesignColors.accent : Color.white.opacity(0.1))
-                                                        .frame(width: 24, height: CGFloat(max(4, min(40, day.points))))
-                                                }
-                                                .frame(maxWidth: .infinity)
-                                            }
-                                        }
-                                    }
-                                }
-                                .padding(.horizontal, DesignSpacing.sm)
-                                
-                                // Milestones Card
-                                BaseCard {
-                                    VStack(alignment: .leading, spacing: 16) {
-                                        Text("Milestones")
-                                            .font(DesignTypography.headlineFont(weight: .medium))
-                                            .foregroundColor(DesignColors.foreground)
-                                        
-                                        VStack(spacing: 12) {
-                                            ForEach(summary.milestones.prefix(5)) { milestone in
-                                                HStack {
-                                                    Image(systemName: milestone.completed ? "checkmark.circle.fill" : "circle")
-                                                        .font(.system(size: 20))
-                                                        .foregroundColor(milestone.completed ? DesignColors.accent : DesignColors.mutedForeground)
-                                                    
-                                                    VStack(alignment: .leading, spacing: 4) {
-                                                        Text(milestone.label)
-                                                            .font(DesignTypography.bodyFont(weight: .medium))
-                                                            .foregroundColor(DesignColors.foreground)
-                                                        
-                                                        if let reward = milestone.reward {
-                                                            Text(reward)
-                                                                .font(DesignTypography.caption2Font())
-                                                                .foregroundColor(DesignColors.mutedForeground)
-                                                        }
-                                                    }
-                                                    
-                                                    Spacer()
-                                                    
-                                                    Text("\(milestone.requiredPoints) pts")
-                                                        .font(DesignTypography.caption2Font())
-                                                        .foregroundColor(DesignColors.mutedForeground)
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                                .padding(.horizontal, DesignSpacing.sm)
-                                
-                                // Recent Unlocks
-                                if !summary.recentUnlocks.isEmpty {
-                                    BaseCard {
-                                        VStack(alignment: .leading, spacing: 16) {
-                                            Text("Recent Unlocks")
-                                                .font(DesignTypography.headlineFont(weight: .medium))
-                                                .foregroundColor(DesignColors.foreground)
-                                            
-                                            VStack(spacing: 8) {
-                                                ForEach(summary.recentUnlocks.prefix(5)) { unlock in
-                                                    HStack {
-                                                        Image(systemName: "sparkles")
-                                                            .font(.system(size: 16))
-                                                            .foregroundColor(DesignColors.accent)
-                                                        
-                                                        Text("\(unlock.type.capitalized): \(unlock.contentId)")
-                                                            .font(DesignTypography.bodyFont())
-                                                            .foregroundColor(DesignColors.foreground)
-                                                        
-                                                        Spacer()
-                                                        
-                                                        Text(formatDate(unlock.timestamp))
-                                                            .font(DesignTypography.caption2Font())
-                                                            .foregroundColor(DesignColors.mutedForeground)
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                    .padding(.horizontal, DesignSpacing.sm)
-                                }
-                            }
-                            
-                            // Always show Quick Actions sections
-                            // Quick Actions - Earn Points
+                            // 1. Hero Section
                             BaseCard {
-                                VStack(alignment: .leading, spacing: 16) {
-                                    Text("Earn Points")
-                                        .font(DesignTypography.headlineFont(weight: .medium))
-                                        .foregroundColor(DesignColors.foreground)
+                                VStack(spacing: 20) {
+                                    // Level Display
+                                    VStack(spacing: 8) {
+                                        Text("Level \(summary.currentLevel)")
+                                            .font(DesignTypography.title2Font(weight: .bold))
+                                            .foregroundColor(DesignColors.foreground)
+                                        
+                                        Text(summary.currentLevelName)
+                                            .font(DesignTypography.headlineFont(weight: .medium))
+                                            .foregroundColor(DesignColors.accent)
+                                    }
                                     
-                                    Text("Complete activities to earn points and level up")
-                                        .font(DesignTypography.footnoteFont())
-                                        .foregroundColor(DesignColors.mutedForeground)
+                                    // Points Display
+                                    HStack(spacing: 16) {
+                                        VStack(spacing: 4) {
+                                            Text("\(summary.totalPoints)")
+                                                .font(DesignTypography.title1Font(weight: .bold))
+                                                .foregroundColor(DesignColors.foreground)
+                                            Text("Points Balance")
+                                                .font(DesignTypography.caption2Font())
+                                                .foregroundColor(DesignColors.mutedForeground)
+                                        }
+                                        
+                                        Rectangle()
+                                            .fill(Color.white.opacity(0.1))
+                                            .frame(width: 1, height: 40)
+                                        
+                                        VStack(spacing: 4) {
+                                            Text("\(summary.lifetimePoints)")
+                                                .font(DesignTypography.title3Font(weight: .semibold))
+                                                .foregroundColor(DesignColors.mutedForeground)
+                                            Text("Lifetime Points")
+                                                .font(DesignTypography.caption2Font())
+                                                .foregroundColor(DesignColors.mutedForeground.opacity(0.7))
+                                        }
+                                    }
                                     
-                                    VStack(spacing: 12) {
-                                        // Daily Practice
-                                        QuickActionRow(
-                                            icon: "leaf.fill",
-                                            title: "Daily Practice",
-                                            subtitle: isPremium ? "Unlimited access" : "1 free/day, then 10 pts",
-                                            color: Color(red: 0.4, green: 0.8, blue: 0.6),
-                                            destination: AnyView(DailyPracticesListingPage()),
-                                            accessStatus: accessControl.checkAccess(contentId: "daily_practice", contentType: .dailyPractice),
-                                            pointsEarned: 10,
-                                            pointsCost: isPremium ? nil : (accessControl.checkAccess(contentId: "daily_practice", contentType: .dailyPractice) == .free ? nil : 10),
-                                            isPremium: isPremium
-                                        )
+                                    // Progress to Next Level
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        GeometryReader { proxy in
+                                            ZStack(alignment: .leading) {
+                                                RoundedRectangle(cornerRadius: 5)
+                                                    .fill(Color.white.opacity(0.08))
+                                                    .frame(height: 8)
+                                                
+                                                RoundedRectangle(cornerRadius: 5)
+                                                    .fill(
+                                                        LinearGradient(
+                                                            colors: [DesignColors.accent, DesignColors.accent.opacity(0.6)],
+                                                            startPoint: .leading,
+                                                            endPoint: .trailing
+                                                        )
+                                                    )
+                                                    .frame(width: max(proxy.size.width * progress, 0), height: 8)
+                                            }
+                                        }
+                                        .frame(height: 8)
+                                    }
+                                    
+                                    // Streak & Points Today
+                                    HStack(spacing: 16) {
+                                        HStack(spacing: 4) {
+                                            Text("✨")
+                                            Text("\(summary.today.streakDays) days")
+                                                .font(DesignTypography.bodyFont(weight: .medium))
+                                                .foregroundColor(DesignColors.foreground)
+                                        }
                                         
-                                        // Tarot Spread
-                                        QuickActionRow(
-                                            icon: "target",
-                                            title: "Tarot Spread",
-                                            subtitle: isPremium ? "All spreads unlocked" : "Some free, unlock others with points",
-                                            color: Color(red: 0.7, green: 0.5, blue: 0.9),
-                                            destination: AnyView(TarotSpreadsListingPage()),
-                                            accessStatus: accessControl.checkAccess(contentId: "three-card", contentType: .tarotSpread),
-                                            pointsEarned: 10,
-                                            pointsCost: getPointsCost(from: accessControl.checkAccess(contentId: "three-card", contentType: .tarotSpread)),
-                                            isPremium: isPremium
-                                        )
+                                        Spacer()
                                         
-                                        // Quiz
-                                        QuickActionRow(
-                                            icon: "questionmark.circle.fill",
-                                            title: "Take Quiz",
-                                            subtitle: isPremium ? "Unlimited quizzes" : "1 free/day, then 10 pts",
-                                            color: Color(red: 1.0, green: 0.7, blue: 0.3),
-                                            destination: AnyView(QuizPage()),
-                                            accessStatus: accessControl.checkAccess(contentId: "daily_quiz", contentType: .quiz),
-                                            pointsEarned: 10,
-                                            pointsCost: isPremium ? nil : (accessControl.checkAccess(contentId: "daily_quiz", contentType: .quiz) == .free ? nil : 10),
-                                            isPremium: isPremium
-                                        )
-                                        
-                                        // Numerology
-                                        QuickActionRow(
-                                            icon: "sparkles",
-                                            title: "Check Numerology",
-                                            subtitle: isPremium ? "Full numerology insights" : "Basic free, unlock layers with points",
-                                            color: DesignColors.accent,
-                                            destination: AnyView(HomeView(selectedTab: .constant(.home))),
-                                            accessStatus: accessControl.checkAccess(contentId: "basic_daily_number", contentType: .numerologyLayer),
-                                            pointsEarned: 5,
-                                            pointsCost: getPointsCost(from: accessControl.checkAccess(contentId: "basic_daily_number", contentType: .numerologyLayer)),
-                                            isPremium: isPremium
-                                        )
+                                        Text("Points earned today: \(summary.today.points)")
+                                            .font(DesignTypography.bodyFont())
+                                            .foregroundColor(DesignColors.mutedForeground)
                                     }
                                 }
                             }
                             .padding(.horizontal, DesignSpacing.sm)
                             
-                            // Quick Actions - Use Points
+                            // 2. How Points Work - Two Micro-Cards
+                            HStack(spacing: 12) {
+                                // Earn Points Card
+                                BaseCard {
+                                    VStack(alignment: .leading, spacing: 12) {
+                                        Text("Earn Points")
+                                            .font(DesignTypography.headlineFont(weight: .medium))
+                                            .foregroundColor(DesignColors.foreground)
+                                        
+                                        Text("Complete activities to earn points.")
+                                            .font(DesignTypography.footnoteFont())
+                                            .foregroundColor(DesignColors.mutedForeground)
+                                        
+                                        VStack(alignment: .leading, spacing: 8) {
+                                            HStack(spacing: 8) {
+                                                Image(systemName: "leaf.fill")
+                                                    .font(.system(size: 14))
+                                                    .foregroundColor(DesignColors.accent)
+                                                Text("Daily Practice")
+                                                    .font(DesignTypography.bodyFont())
+                                                    .foregroundColor(DesignColors.foreground)
+                                                Spacer()
+                                                Text("+10 pts")
+                                                    .font(DesignTypography.bodyFont(weight: .medium))
+                                                    .foregroundColor(DesignColors.accent)
+                                            }
+                                            
+                                            HStack(spacing: 8) {
+                                                Image(systemName: "target")
+                                                    .font(.system(size: 14))
+                                                    .foregroundColor(DesignColors.accent)
+                                                Text("Tarot Spread")
+                                                    .font(DesignTypography.bodyFont())
+                                                    .foregroundColor(DesignColors.foreground)
+                                                Spacer()
+                                                Text("+10 pts")
+                                                    .font(DesignTypography.bodyFont(weight: .medium))
+                                                    .foregroundColor(DesignColors.accent)
+                                            }
+                                            
+                                            HStack(spacing: 8) {
+                                                Image(systemName: "questionmark.circle.fill")
+                                                    .font(.system(size: 14))
+                                                    .foregroundColor(DesignColors.accent)
+                                                Text("Quiz")
+                                                    .font(DesignTypography.bodyFont())
+                                                    .foregroundColor(DesignColors.foreground)
+                                                Spacer()
+                                                Text("+10 pts")
+                                                    .font(DesignTypography.bodyFont(weight: .medium))
+                                                    .foregroundColor(DesignColors.accent)
+                                            }
+                                            
+                                            HStack(spacing: 8) {
+                                                Image(systemName: "sparkles")
+                                                    .font(.system(size: 14))
+                                                    .foregroundColor(DesignColors.accent)
+                                                Text("Numerology")
+                                                    .font(DesignTypography.bodyFont())
+                                                    .foregroundColor(DesignColors.foreground)
+                                                Spacer()
+                                                Text("+5 pts")
+                                                    .font(DesignTypography.bodyFont(weight: .medium))
+                                                    .foregroundColor(DesignColors.accent)
+                                            }
+                                        }
+                                        
+                                        Spacer()
+                                        
+                                        NavigationLink(destination: DiscoveryView(selectedTab: .constant(.discovery))) {
+                                            Text("View Activities")
+                                                .font(DesignTypography.footnoteFont(weight: .medium))
+                                                .foregroundColor(DesignColors.accent)
+                                                .frame(maxWidth: .infinity)
+                                                .padding(.vertical, 8)
+                                                .background(
+                                                    RoundedRectangle(cornerRadius: 8)
+                                                        .fill(DesignColors.accent.opacity(0.1))
+                                                        .overlay(
+                                                            RoundedRectangle(cornerRadius: 8)
+                                                                .stroke(DesignColors.accent.opacity(0.3), lineWidth: 1)
+                                                        )
+                                                )
+                                        }
+                                        .buttonStyle(PlainButtonStyle())
+                                    }
+                                }
+                                .frame(maxWidth: .infinity)
+                                
+                                // Spend Points Card
+                                BaseCard {
+                                    VStack(alignment: .leading, spacing: 12) {
+                                        Text("Spend Points")
+                                            .font(DesignTypography.headlineFont(weight: .medium))
+                                            .foregroundColor(DesignColors.foreground)
+                                        
+                                        Text("Use points to unlock content and extend your access.")
+                                            .font(DesignTypography.footnoteFont())
+                                            .foregroundColor(DesignColors.mutedForeground)
+                                        
+                                        VStack(alignment: .leading, spacing: 8) {
+                                            HStack {
+                                                Text("Extra Chat Messages")
+                                                    .font(DesignTypography.bodyFont())
+                                                    .foregroundColor(DesignColors.foreground)
+                                                Spacer()
+                                                Text("20 pts")
+                                                    .font(DesignTypography.bodyFont(weight: .medium))
+                                                    .foregroundColor(DesignColors.mutedForeground)
+                                            }
+                                            
+                                            HStack {
+                                                Text("Unlock Spreads")
+                                                    .font(DesignTypography.bodyFont())
+                                                    .foregroundColor(DesignColors.foreground)
+                                                Spacer()
+                                                Text("40–150 pts")
+                                                    .font(DesignTypography.bodyFont(weight: .medium))
+                                                    .foregroundColor(DesignColors.mutedForeground)
+                                            }
+                                            
+                                            HStack {
+                                                Text("Unlock Articles")
+                                                    .font(DesignTypography.bodyFont())
+                                                    .foregroundColor(DesignColors.foreground)
+                                                Spacer()
+                                                Text("20 pts")
+                                                    .font(DesignTypography.bodyFont(weight: .medium))
+                                                    .foregroundColor(DesignColors.mutedForeground)
+                                            }
+                                            
+                                            HStack {
+                                                Text("Unlock Numerology Layers")
+                                                    .font(DesignTypography.bodyFont())
+                                                    .foregroundColor(DesignColors.foreground)
+                                                Spacer()
+                                                Text("30 pts")
+                                                    .font(DesignTypography.bodyFont(weight: .medium))
+                                                    .foregroundColor(DesignColors.mutedForeground)
+                                            }
+                                        }
+                                        
+                                        Spacer()
+                                        
+                                        NavigationLink(destination: DiscoveryView(selectedTab: .constant(.discovery))) {
+                                            Text("View Unlocks")
+                                                .font(DesignTypography.footnoteFont(weight: .medium))
+                                                .foregroundColor(DesignColors.accent)
+                                                .frame(maxWidth: .infinity)
+                                                .padding(.vertical, 8)
+                                                .background(
+                                                    RoundedRectangle(cornerRadius: 8)
+                                                        .fill(DesignColors.accent.opacity(0.1))
+                                                        .overlay(
+                                                            RoundedRectangle(cornerRadius: 8)
+                                                                .stroke(DesignColors.accent.opacity(0.3), lineWidth: 1)
+                                                        )
+                                                )
+                                        }
+                                        .buttonStyle(PlainButtonStyle())
+                                    }
+                                }
+                                .frame(maxWidth: .infinity)
+                            }
+                            .padding(.horizontal, DesignSpacing.sm)
+                            
+                            // 3. Recent Activity
                             BaseCard {
                                 VStack(alignment: .leading, spacing: 16) {
-                                    Text("Use Points")
+                                    Text("Recent Activity")
                                         .font(DesignTypography.headlineFont(weight: .medium))
                                         .foregroundColor(DesignColors.foreground)
                                     
-                                    Text("Unlock content and extend your access")
-                                        .font(DesignTypography.footnoteFont())
-                                        .foregroundColor(DesignColors.mutedForeground)
-                                    
-                                    VStack(spacing: 12) {
-                                        // AI Chat Messages
-                                        QuickActionRow(
-                                            icon: "message.fill",
-                                            title: "AI Chat Messages",
-                                            subtitle: isPremium ? "Unlimited messages" : "3 free/day, then 20 pts each",
-                                            color: DesignColors.accent,
-                                            destination: AnyView(GuidanceView(selectedTab: .constant(.guidance))),
-                                            accessStatus: accessControl.checkAccess(contentId: "ai_chat", contentType: .aiChat),
-                                            pointsEarned: 0,
-                                            pointsCost: isPremium ? nil : (accessControl.checkAccess(contentId: "ai_chat", contentType: .aiChat) == .free ? nil : 20),
-                                            isPremium: isPremium
-                                        )
+                                    VStack(alignment: .leading, spacing: 12) {
+                                        let activities = getRecentActivities().prefix(5)
+                                        ForEach(Array(activities), id: \.id) { activity in
+                                            HStack {
+                                                Text(activity.title)
+                                                    .font(DesignTypography.bodyFont())
+                                                    .foregroundColor(DesignColors.foreground)
+                                                
+                                                Spacer()
+                                                
+                                                Text("→ +\(activity.points) pts")
+                                                    .font(DesignTypography.bodyFont(weight: .medium))
+                                                    .foregroundColor(DesignColors.accent)
+                                            }
+                                        }
                                         
-                                        // Articles
-                                        QuickActionRow(
-                                            icon: "book.fill",
-                                            title: "Unlock Articles",
-                                            subtitle: isPremium ? "All articles unlocked" : "Preview free, 20 pts to unlock full",
-                                            color: Color(red: 0.4, green: 0.6, blue: 1.0),
-                                            destination: AnyView(DiscoveryView(selectedTab: .constant(.discovery))),
-                                            accessStatus: accessControl.checkAccess(contentId: "article_1", contentType: .article),
-                                            pointsEarned: 0,
-                                            pointsCost: getPointsCost(from: accessControl.checkAccess(contentId: "article_1", contentType: .article)),
-                                            isPremium: isPremium
-                                        )
-                                        
-                                        // Unlock Spreads
-                                        QuickActionRow(
-                                            icon: "sparkles.rectangle.stack.fill",
-                                            title: "Unlock Spreads",
-                                            subtitle: isPremium ? "All spreads unlocked" : "40-150 pts to unlock permanently",
-                                            color: Color(red: 0.7, green: 0.5, blue: 0.9),
-                                            destination: AnyView(TarotSpreadsListingPage()),
-                                            accessStatus: accessControl.checkAccess(contentId: "celtic-cross", contentType: .tarotSpread),
-                                            pointsEarned: 0,
-                                            pointsCost: getPointsCost(from: accessControl.checkAccess(contentId: "celtic-cross", contentType: .tarotSpread)),
-                                            isPremium: isPremium
-                                        )
+                                        if activities.isEmpty {
+                                            Text("No activity yet today")
+                                                .font(DesignTypography.bodyFont())
+                                                .foregroundColor(DesignColors.mutedForeground)
+                                        }
                                     }
                                 }
                             }
@@ -458,6 +372,52 @@ struct JourneyPage: View {
             return nil
         }
     }
+    
+    private func getRecentActivities() -> [ActivityItem] {
+        let history = journeyService.getActivityHistory()
+        let today = Date()
+        let calendar = Calendar.current
+        
+        return history
+            .filter { entry in
+                if let date = entry["date"] as? Date {
+                    return calendar.isDate(date, inSameDayAs: today)
+                }
+                return false
+            }
+            .compactMap { entry -> ActivityItem? in
+                guard let type = entry["type"] as? String,
+                      let points = entry["points"] as? Int else {
+                    return nil
+                }
+                
+                let title: String
+                switch type {
+                case "practice":
+                    title = "Daily Practice completed"
+                case "spread":
+                    title = "Tarot Spread completed"
+                case "quiz":
+                    title = "Quiz completed"
+                case "numerology":
+                    title = "Numerology checked"
+                default:
+                    title = "Activity completed"
+                }
+                
+                return ActivityItem(id: UUID().uuidString, title: title, points: points)
+            }
+            .reversed()
+            .prefix(5)
+            .map { $0 }
+    }
+    
+}
+
+struct ActivityItem: Identifiable {
+    let id: String
+    let title: String
+    let points: Int
 }
 
 struct StatCard: View {

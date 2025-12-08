@@ -45,7 +45,7 @@ struct StickyHeaderBar: View {
                     .accessibilityLabel(leftAction.accessibilityLabel)
                 }
                 
-                VStack(alignment: .leading, spacing: subtitle == nil ? 0 : 4) {
+                VStack(alignment: .leading, spacing: subtitle == nil ? 0 : 2) {
                     Text(title)
                         .font(DesignTypography.headlineFont())
                         .foregroundColor(DesignColors.foreground)
@@ -55,8 +55,8 @@ struct StickyHeaderBar: View {
                         Text(subtitle)
                             .font(DesignTypography.footnoteFont())
                             .foregroundColor(DesignColors.mutedForeground)
-                            .opacity(0.9)
                             .lineLimit(1)
+                            .padding(.bottom, 8)
                     }
                 }
                 
@@ -67,17 +67,28 @@ struct StickyHeaderBar: View {
                 }
             }
             .padding(.horizontal, DesignSpacing.sm)
-            .padding(.vertical, DesignSpacing.sm)
+            .padding(.top, 6)
+            .padding(.bottom, 6)
             
-            Divider()
-                .overlay(Color.white.opacity(0.08))
-                .padding(.horizontal, -DesignSpacing.sm)
+            // Thin horizontal line under subtitle
+            if subtitle != nil {
+                Divider()
+                    .background(Color.white.opacity(0.08))
+                    .padding(.horizontal, DesignSpacing.sm)
+                    .padding(.top, 4)
+            }
         }
-        .background(Color.clear)
+        .background(
+            LinearGradient(
+                gradient: Gradient(colors: [ArotiColor.bg, Color(hue: 240/360, saturation: 0.30, brightness: 0.09)]),
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        )
     }
     
     static func totalHeight(for safeAreaTop: CGFloat) -> CGFloat {
-        safeAreaTop + 44
+        safeAreaTop + 32 // 6 top + ~20 content + 6 bottom = 32
     }
 }
 

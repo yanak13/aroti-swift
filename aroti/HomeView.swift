@@ -14,6 +14,7 @@ struct HomeView: View {
     @State private var tarotCardFlipped: Bool = false
     @State private var currentAffirmation: String = ""
     @State private var canShuffleAffirmation: Bool = true
+    @State private var userPoints: Int = 0
     
     // Sheet presentation states
     @State private var showTarotSheet: Bool = false
@@ -52,32 +53,48 @@ struct HomeView: View {
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, DesignSpacing.sm)
+                            .padding(.top, DesignSpacing.lg + 8)
                             
                             // Main Content
                             VStack(spacing: 24) {
                         // Tarot Card Section
                         if let insight = dailyInsight, let tarotCard = insight.tarotCard {
-                            Button(action: {
+                            Group {
                                 if tarotCardFlipped {
-                                    showTarotSheet = true
+                                    Button(action: {
+                                        showTarotSheet = true
+                                    }) {
+                                        TarotCardView(
+                                            card: tarotCard,
+                                            isFlipped: tarotCardFlipped,
+                                            onFlip: {
+                                                tarotCardFlipped = true
+                                                stateManager.markCardFlipped()
+                                                // Show sheet after flip animation
+                                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                                    showTarotSheet = true
+                                                }
+                                            },
+                                            canFlip: !stateManager.hasFlippedCardToday()
+                                        )
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
+                                } else {
+                                    TarotCardView(
+                                        card: tarotCard,
+                                        isFlipped: tarotCardFlipped,
+                                        onFlip: {
+                                            tarotCardFlipped = true
+                                            stateManager.markCardFlipped()
+                                            // Show sheet after flip animation
+                                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                                showTarotSheet = true
+                                            }
+                                        },
+                                        canFlip: !stateManager.hasFlippedCardToday()
+                                    )
                                 }
-                            }) {
-                                TarotCardView(
-                                    card: tarotCard,
-                                    isFlipped: tarotCardFlipped,
-                                    onFlip: {
-                                        tarotCardFlipped = true
-                                        stateManager.markCardFlipped()
-                                        // Show sheet after flip animation
-                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                            showTarotSheet = true
-                                        }
-                                    },
-                                    canFlip: !stateManager.hasFlippedCardToday()
-                                )
                             }
-                            .buttonStyle(PlainButtonStyle())
-                            .disabled(!tarotCardFlipped)
                         }
                         
                         // Horoscope Section
@@ -293,25 +310,54 @@ struct HomeView: View {
                         }
                         .padding(.bottom, 60) // Reasonable padding to prevent content from going behind nav bar
                     }
-                    .padding(.top, StickyHeaderBar.totalHeight(for: safeAreaTop))
+                    .padding(.top, 32) // Just header content height, safe area already handled
                     
                     StickyHeaderBar(
                         title: "Today's Insights",
+                        subtitle: "Your daily cosmic guidance",
                         safeAreaTop: safeAreaTop
                     ) {
-                        Button(action: {}) {
-                            Image(systemName: "bell")
-                                .font(.system(size: 20))
+                        HStack(spacing: 8) {
+                            // Points Chip - dynamic width based on content
+                            NavigationLink(destination: JourneyPage()) {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "star.fill")
+                                        .font(.system(size: 12))
+                                    Text("\(userPoints.formatted())")
+                                        .font(DesignTypography.caption1Font(weight: .semibold))
+                                }
                                 .foregroundColor(DesignColors.accent)
-                                .frame(width: 36, height: 36)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 8)
+                                .frame(height: 36)
                                 .background(
-                                    RoundedRectangle(cornerRadius: 14)
+                                    RoundedRectangle(cornerRadius: 12)
                                         .fill(Color.white.opacity(0.06))
                                         .overlay(
-                                            RoundedRectangle(cornerRadius: 14)
+                                            RoundedRectangle(cornerRadius: 12)
                                                 .stroke(Color.white.opacity(0.12), lineWidth: 1)
                                         )
                                 )
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            
+                            // Notification Bell - matching points style
+                            Button(action: {
+                                // Handle notification tap
+                            }) {
+                                Image(systemName: "bell")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(DesignColors.accent)
+                                    .frame(width: 36, height: 36)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .fill(Color.white.opacity(0.06))
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 12)
+                                                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                                            )
+                                    )
+                            }
                         }
                     }
                 }
@@ -383,6 +429,13 @@ struct HomeView: View {
         dailyInsight = contentService.generateDailyInsight(userData: userData)
         currentAffirmation = dailyInsight?.affirmation ?? ""
         canShuffleAffirmation = stateManager.canShuffleAffirmation()
+        
+        updatePoints()
+    }
+    
+    private func updatePoints() {
+        let balance = PointsService.shared.getBalance()
+        userPoints = balance.totalPoints
     }
     
     private func generateEnergyDescription() -> String {

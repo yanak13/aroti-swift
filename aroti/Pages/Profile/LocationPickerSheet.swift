@@ -33,8 +33,8 @@ struct LocationPickerSheet: View {
                             TextField("Search for city, country…", text: $searchText)
                                 .font(DesignTypography.bodyFont())
                                 .foregroundColor(DesignColors.foreground)
-                                .onChange(of: searchText) { newValue in
-                                    searchLocations(query: newValue)
+                                .onChange(of: searchText) {
+                                    searchLocations(query: searchText)
                                 }
                             
                             if !searchText.isEmpty {

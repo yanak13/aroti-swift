@@ -63,39 +63,62 @@ struct DiscoveryView: View {
                                 CoursesSection()
                             }
                             .padding(.horizontal, DiscoveryLayout.horizontalPadding)
+                            .padding(.top, DesignSpacing.lg + 8)
                             
                             // Footer spacing
                             Spacer()
                                 .frame(height: 60)
                         }
-                        .padding(.top, StickyHeaderBar.totalHeight(for: safeAreaTop))
+                        .padding(.top, 32) // Just header content height, safe area already handled
                         .padding(.bottom, 60) // Space for bottom nav
                         
                         StickyHeaderBar(
                             title: "Discovery",
+                            subtitle: "Explore tarot, practices, and more",
                             safeAreaTop: safeAreaTop
                         ) {
-                            NavigationLink(destination: JourneyPage()) {
-                                HStack(spacing: 6) {
-                                    Image(systemName: "star.fill")
+                            HStack(spacing: 8) {
+                                // Points Chip - dynamic width based on content
+                                NavigationLink(destination: JourneyPage()) {
+                                    HStack(spacing: 4) {
+                                        Image(systemName: "star.fill")
+                                            .font(.system(size: 12))
+                                        Text("\(points.formatted())")
+                                            .font(DesignTypography.caption1Font(weight: .semibold))
+                                    }
+                                    .foregroundColor(DesignColors.accent)
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 8)
+                                    .frame(height: 36)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .fill(Color.white.opacity(0.06))
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 12)
+                                                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                                            )
+                                    )
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                                
+                                // Notification Bell - matching points style
+                                Button(action: {
+                                    // Handle notification tap
+                                }) {
+                                    Image(systemName: "bell")
                                         .font(.system(size: 16))
                                         .foregroundColor(DesignColors.accent)
-                                    Text("\(points)")
-                                        .font(DesignTypography.subheadFont(weight: .medium))
-                                        .foregroundColor(DesignColors.accent)
-                                }
-                                .padding(.horizontal, 14)
-                                .padding(.vertical, 8)
-                                .background(
-                                    Capsule()
-                                        .fill(DesignColors.accent.opacity(0.15))
-                                        .overlay(
-                                            Capsule()
-                                                .stroke(DesignColors.accent.opacity(0.3), lineWidth: 1)
+                                        .frame(width: 36, height: 36)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .fill(Color.white.opacity(0.06))
+                                                .overlay(
+                                                    RoundedRectangle(cornerRadius: 12)
+                                                        .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                                                )
                                         )
-                                )
+                                }
                             }
-                            .buttonStyle(PlainButtonStyle())
                         }
                     }
                     

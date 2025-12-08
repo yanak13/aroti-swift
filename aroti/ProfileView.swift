@@ -15,20 +15,35 @@ struct ProfileView: View {
     @State private var userName: String = "Alexandra Moon"
     @State private var userLocation: String = "San Francisco, CA"
     @State private var profileAvatar: String = "specialist-1" // Image name
+    @State private var userPoints: Int = 0
+    
+    // Personalization status - in real app, this would come from user data
+    private var personalizationStatus: String {
+        if hasBirthDetails {
+            return "Your birth details are complete"
+        } else {
+            return "Add your birth details to unlock insights"
+        }
+    }
     
     // Tab state for saved content
     @State private var activeSavedTab: SavedContentTab = .readings
+    
+    // Category selector state
+    @State private var selectedCategory: BlueprintCategory = .astrology
     
     // Modal states
     @State private var showEditProfile = false
     @State private var showAstrologyModal = false
     @State private var showNumerologyModal = false
+    @State private var showChineseZodiacModal = false
     @State private var showPaywall = false
     @State private var paywallContext: String? = nil
     @State private var showPDFModal = false
     @State private var showPartnerModal = false
-    @State private var selectedAstrologyPlacement: AstrologyPlacement?
+    @State private var selectedAstrologyPlacement: PlanetaryPlacement?
     @State private var selectedReport: Report?
+    @State private var userBlueprint: UserBlueprint?
     
     // Premium status
     private var isPremium: Bool {
@@ -43,6 +58,20 @@ struct ProfileView: View {
         return userData.birthDate != nil
     }
     
+    // Load blueprint from user data
+    private func loadBlueprint() {
+        guard let userData = DailyStateManager.shared.loadUserData() else {
+            return
+        }
+        userBlueprint = BlueprintService.shared.calculateBlueprint(from: userData)
+    }
+    
+    // Update user points
+    private func updatePoints() {
+        let balance = PointsService.shared.getBalance()
+        userPoints = balance.totalPoints
+    }
+    
     var body: some View {
         GeometryReader { geometry in
             let safeAreaTop = geometry.safeAreaInsets.top
@@ -53,34 +82,96 @@ struct ProfileView: View {
                 
                 ZStack(alignment: .top) {
                     ScrollView {
-                        VStack(spacing: 32) {
-                            // 1. Profile Header
-                            profileHeaderSection
+                        VStack(spacing: 0) {
+                            // 1. Unified User Card with Category Selector and Dynamic Content
+                            ScrollReveal {
+                                unifiedUserCard
+                                    .padding(.top, DesignSpacing.lg + 8)
+                                    .padding(.bottom, 32)
+                            }
                             
-                            // 2. Membership Status (compact)
-                            membershipSection
-                            
-                            // 3. Your Blueprint
-                            blueprintSection
-                            
-                            // 4. Saved Content
-                            savedContentSection
+                            // 4. Compatibility Card
+                            ScrollReveal(delay: 0.15) {
+                                compatibilityCard
+                                    .padding(.bottom, 32)
+                            }
                             
                             // 5. Reports
-                            reportsSection
+                            ScrollReveal(delay: 0.2) {
+                                reportsSection
+                                    .padding(.bottom, 32)
+                            }
                             
-                            // 6. Account & Settings
-                            accountSettingsSection
+                            // 6. Saved Content
+                            ScrollReveal(delay: 0.25) {
+                                savedContentSection
+                                    .padding(.bottom, 32)
+                            }
+                            
+                            // 7. Membership
+                            ScrollReveal(delay: 0.3) {
+                                membershipSection
+                                    .padding(.bottom, 32)
+                            }
+                            
+                            // 8. Account & Settings
+                            ScrollReveal(delay: 0.35) {
+                                accountSettingsSection
+                            }
                         }
                         .padding(.horizontal, DesignSpacing.sm)
                         .padding(.bottom, 100) // Space for bottom nav
                     }
-                    .padding(.top, StickyHeaderBar.totalHeight(for: safeAreaTop))
+                    .padding(.top, 32) // Just header content height, safe area already handled
                     
                     StickyHeaderBar(
                         title: "Profile",
+                        subtitle: "Your cosmic journey",
                         safeAreaTop: safeAreaTop
-                    )
+                    ) {
+                        HStack(spacing: 8) {
+                            // Points Chip - dynamic width based on content
+                            NavigationLink(destination: JourneyPage()) {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "star.fill")
+                                        .font(.system(size: 12))
+                                    Text("\(userPoints.formatted())")
+                                        .font(DesignTypography.caption1Font(weight: .semibold))
+                                }
+                                .foregroundColor(DesignColors.accent)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 8)
+                                .frame(height: 36)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(Color.white.opacity(0.06))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                                        )
+                                )
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            
+                            // Notification Bell - matching points style
+                            Button(action: {
+                                // Handle notification tap
+                            }) {
+                                Image(systemName: "bell")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(DesignColors.accent)
+                                    .frame(width: 36, height: 36)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .fill(Color.white.opacity(0.06))
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 12)
+                                                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                                            )
+                                    )
+                            }
+                        }
+                    }
                 }
                 
                 // Bottom Navigation Bar
@@ -100,6 +191,8 @@ struct ProfileView: View {
                     onSave: { name, location in
                         userName = name
                         userLocation = location
+                        // Reload blueprint after birth data changes
+                        loadBlueprint()
                     }
                 )
             }
@@ -109,7 +202,20 @@ struct ProfileView: View {
                 }
             }
             .sheet(isPresented: $showNumerologyModal) {
-                NumerologyDetailSheet()
+                if let blueprint = userBlueprint {
+                    NumerologyDetailSheet(blueprint: blueprint.numerology)
+                } else {
+                    NumerologyDetailSheet()
+                }
+            }
+            .sheet(isPresented: $showChineseZodiacModal) {
+                if let blueprint = userBlueprint {
+                    ChineseZodiacDetailSheet(blueprint: blueprint.chineseZodiac)
+                }
+            }
+            .onAppear {
+                loadBlueprint()
+                updatePoints()
             }
             .sheet(isPresented: $showPaywall) {
                 if let context = paywallContext {
@@ -129,87 +235,150 @@ struct ProfileView: View {
         }
     }
     
-    // MARK: - Profile Header Section
-    private var profileHeaderSection: some View {
-        BaseCard {
-            HStack(spacing: 16) {
-                // Avatar
-                Group {
-                    if let image = UIImage(named: profileAvatar) {
-                        Image(uiImage: image)
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                    } else {
-                        Image(systemName: "person.circle.fill")
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .foregroundColor(DesignColors.accent.opacity(0.5))
-                    }
-                }
-                .frame(width: 80, height: 80)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(DesignColors.accent.opacity(0.2), lineWidth: 2)
-                )
-                
-                // User Info
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(userName)
-                        .font(DesignTypography.title3Font())
-                        .foregroundColor(DesignColors.foreground)
-                    
-                    Text(userLocation)
-                        .font(DesignTypography.footnoteFont())
-                        .foregroundColor(DesignColors.mutedForeground)
-                }
-                
-                Spacer()
-                
-                // Edit Profile Button
-                Button(action: {
-                    showEditProfile = true
-                }) {
-                    Text("Edit Profile")
-                        .font(DesignTypography.subheadFont(weight: .medium))
-                        .foregroundColor(DesignColors.foreground)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .background(
-                            RoundedRectangle(cornerRadius: 10)
-                                .fill(Color.white.opacity(0.05))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 10)
-                                        .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                                )
-                        )
-                }
-            }
+    // MARK: - Helper Functions
+    
+    // MARK: - Helper Functions for Sign Symbols
+    private func getSignSymbol(for planet: String) -> String {
+        switch planet.lowercased() {
+        case "sun": return "☉"
+        case "moon": return "☽"
+        case "rising": return "↑"
+        default: return ""
         }
     }
     
-    // MARK: - Blueprint Section
-    private var blueprintSection: some View {
-        VStack(alignment: .leading, spacing: 24) {
-            BaseSectionHeader(
-                title: "Your Blueprint",
-                subtitle: "Core traits based on your birth details"
-            )
-            
-            if hasBirthDetails {
-                VStack(spacing: 16) {
-                    // Astrology Card
-                    astrologyCard
+    private var signsDisplayText: String {
+        guard let blueprint = userBlueprint else {
+            return ""
+        }
+        let placements = blueprint.astrology.essentialPlacements
+        var parts: [String] = []
+        
+        for placement in placements {
+            let symbol = getSignSymbol(for: placement.planet)
+            if !symbol.isEmpty {
+                parts.append("\(symbol) \(placement.sign)")
+            }
+        }
+        
+        return parts.joined(separator: " • ")
+    }
+    
+    // MARK: - Unified User Card (Hero + Selector + Dynamic Content)
+    private var unifiedUserCard: some View {
+        BaseCard {
+            VStack(alignment: .leading, spacing: 0) {
+                // User Header Section with Edit Button
+                ZStack(alignment: .topTrailing) {
+                    HStack(spacing: 16) {
+                        // Avatar
+                        Group {
+                            if let image = UIImage(named: profileAvatar) {
+                                Image(uiImage: image)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                            } else {
+                                Image(systemName: "person.circle.fill")
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                                    .foregroundColor(DesignColors.accent.opacity(0.5))
+                            }
+                        }
+                        .frame(width: 80, height: 80)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(DesignColors.accent.opacity(0.2), lineWidth: 2)
+                        )
+                        
+                        // User Info
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(userName)
+                                .font(DesignTypography.title3Font())
+                                .foregroundColor(DesignColors.foreground)
+                            
+                            Text(userLocation)
+                                .font(DesignTypography.footnoteFont())
+                                .foregroundColor(DesignColors.mutedForeground)
+                            
+                            // Sun/Moon/Rising signs
+                            if !signsDisplayText.isEmpty {
+                                Text(signsDisplayText)
+                                    .font(DesignTypography.subheadFont())
+                                    .foregroundColor(DesignColors.mutedForeground)
+                                    .padding(.top, 4)
+                            }
+                        }
+                        
+                        Spacer()
+                    }
                     
-                    // Numerology Card
-                    numerologyCard
-                    
-                    // Compatibility Card
-                    compatibilityCard
+                    // Small Edit Button (Pen Icon) in top right
+                    Button(action: {
+                        showEditProfile = true
+                    }) {
+                        Image(systemName: "pencil")
+                            .font(.system(size: 16))
+                            .foregroundColor(DesignColors.mutedForeground)
+                            .frame(width: 32, height: 32)
+                            .background(
+                                Circle()
+                                    .fill(Color.white.opacity(0.05))
+                                    .overlay(
+                                        Circle()
+                                            .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                                    )
+                            )
+                    }
                 }
-            } else {
-                // Missing birth details placeholder
-                BaseCard {
+                .padding(.bottom, 20)
+                
+                // Category Selector
+                Divider()
+                    .background(Color.white.opacity(0.1))
+                    .padding(.bottom, 16)
+                
+                HStack(spacing: 0) {
+                    ForEach(BlueprintCategory.allCases, id: \.self) { category in
+                        Button(action: {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                selectedCategory = category
+                            }
+                        }) {
+                            Text(category.rawValue)
+                                .font(DesignTypography.subheadFont(weight: .medium))
+                                .foregroundColor(selectedCategory == category ? DesignColors.accent : DesignColors.mutedForeground.opacity(0.6))
+                                .scaleEffect(selectedCategory == category ? 1.05 : 1.0)
+                                .multilineTextAlignment(.center)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 12)
+                                .overlay(
+                                    Rectangle()
+                                        .frame(height: selectedCategory == category ? 2 : 0)
+                                        .foregroundColor(DesignColors.accent)
+                                        .offset(y: selectedCategory == category ? 18 : 0),
+                                    alignment: .bottom
+                                )
+                        }
+                    }
+                }
+                .padding(.bottom, 20)
+                
+                // Dynamic Category Content
+                Divider()
+                    .background(Color.white.opacity(0.1))
+                    .padding(.bottom, 16)
+                
+                if hasBirthDetails, let blueprint = userBlueprint {
+                    switch selectedCategory {
+                    case .astrology:
+                        astrologyCategoryContent(blueprint: blueprint.astrology)
+                    case .numerology:
+                        numerologyCategoryContent(blueprint: blueprint.numerology)
+                    case .chineseZodiac:
+                        chineseZodiacCategoryContent(blueprint: blueprint.chineseZodiac)
+                    }
+                } else {
                     VStack(spacing: 16) {
                         Text("Add your birth details to generate your blueprint")
                             .font(DesignTypography.bodyFont())
@@ -227,69 +396,36 @@ struct ProfileView: View {
         }
     }
     
-    private var astrologyCard: some View {
-        BaseCard {
-            VStack(alignment: .leading, spacing: 16) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Astrology")
-                        .font(DesignTypography.title3Font())
-                        .foregroundColor(DesignColors.foreground)
-                    
-                    Text("Essential placements derived from your birth date, time, and location")
-                        .font(DesignTypography.footnoteFont())
-                        .foregroundColor(DesignColors.mutedForeground)
-                }
+    // MARK: - Astrology Category Content
+    private func astrologyCategoryContent(blueprint: AstrologyBlueprint) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Astrology")
+                    .font(DesignTypography.title3Font())
+                    .foregroundColor(DesignColors.foreground)
                 
-                VStack(spacing: 12) {
-                    ForEach(ProfileData.astrologyPlacements) { placement in
-                        Button(action: {
-                            selectedAstrologyPlacement = placement
-                            showAstrologyModal = true
-                        }) {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(placement.title)
-                                    .font(DesignTypography.bodyFont(weight: .medium))
-                                    .foregroundColor(DesignColors.foreground)
-                                
-                                Text(placement.description)
-                                    .font(DesignTypography.footnoteFont())
-                                    .foregroundColor(DesignColors.mutedForeground)
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(12)
-                            .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color.white.opacity(0.02))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .stroke(Color.white.opacity(0.05), lineWidth: 1)
-                                    )
-                            )
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                    }
-                }
-                
-                // Premium Preview Row (compact)
-                if !isPremium {
-                    Divider()
-                        .background(Color.white.opacity(0.1))
-                    
+                Text("Your essential placements based on your birth date, time, and location.")
+                    .font(DesignTypography.footnoteFont())
+                    .foregroundColor(DesignColors.mutedForeground)
+            }
+            
+            // Sun, Moon, Rising (free)
+            VStack(spacing: 12) {
+                ForEach(blueprint.essentialPlacements) { placement in
                     Button(action: {
-                        paywallContext = "astrology"
-                        showPaywall = true
+                        selectedAstrologyPlacement = placement
+                        showAstrologyModal = true
                     }) {
-                        HStack(spacing: 8) {
-                            Image(systemName: "lock.fill")
-                                .font(.system(size: 16))
-                                .foregroundColor(DesignColors.accent)
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(placement.title)
+                                .font(DesignTypography.bodyFont(weight: .medium))
+                                .foregroundColor(DesignColors.foreground)
                             
-                            Text("Unlock full astrology blueprint: planets, houses, and aspects")
-                                .font(DesignTypography.bodyFont())
+                            Text(placement.description)
+                                .font(DesignTypography.footnoteFont())
                                 .foregroundColor(DesignColors.mutedForeground)
-                            
-                            Spacer()
                         }
+                        .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(12)
                         .background(
                             RoundedRectangle(cornerRadius: 12)
@@ -302,165 +438,183 @@ struct ProfileView: View {
                     }
                     .buttonStyle(PlainButtonStyle())
                 }
-                
-                // Natal Chart Wheel (integrated)
-                Divider()
-                    .background(Color.white.opacity(0.1))
-                
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Natal Chart Wheel")
-                        .font(DesignTypography.title3Font())
-                        .foregroundColor(DesignColors.foreground)
-                    
-                    Text("Your visual cosmic blueprint")
-                        .font(DesignTypography.footnoteFont())
-                        .foregroundColor(DesignColors.mutedForeground)
-                    
-                    if isPremium {
-                        // Premium: Show wheel preview
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(
-                                    LinearGradient(
-                                        colors: [
-                                            DesignColors.accent.opacity(0.1),
-                                            Color.white.opacity(0.05),
-                                            DesignColors.accent.opacity(0.05)
-                                        ],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
-                                )
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(Color.white.opacity(0.1), lineWidth: 1)
-                                )
-                            
-                            // Constellation dots effect
-                            VStack {
-                                Text("Natal Chart")
-                                    .font(DesignTypography.bodyFont())
-                                    .foregroundColor(DesignColors.foreground)
-                            }
-                        }
-                        .frame(height: 192)
-                    } else {
-                        // Free: Locked preview
-                        Button(action: {
-                            paywallContext = "astrology"
-                            showPaywall = true
-                        }) {
-                            ZStack {
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(
-                                        LinearGradient(
-                                            colors: [
-                                                DesignColors.accent.opacity(0.1),
-                                                Color.white.opacity(0.05),
-                                                DesignColors.accent.opacity(0.05)
-                                            ],
-                                            startPoint: .topLeading,
-                                            endPoint: .bottomTrailing
-                                        )
-                                    )
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .stroke(Color.white.opacity(0.1), lineWidth: 1)
-                                    )
-                                
-                                VStack(spacing: 8) {
-                                    Image(systemName: "lock.fill")
-                                        .font(.system(size: 24))
-                                        .foregroundColor(DesignColors.mutedForeground)
-                                    
-                                    Text("Premium Feature")
-                                        .font(DesignTypography.bodyFont())
-                                        .foregroundColor(DesignColors.mutedForeground)
-                                    
-                                    Text("Tap to unlock")
-                                        .font(DesignTypography.footnoteFont())
-                                        .foregroundColor(DesignColors.mutedForeground)
-                                }
-                            }
-                            .frame(height: 192)
-                        }
-                        .buttonStyle(PlainButtonStyle())
+            }
+            
+            // Premium Features Section
+            if !isPremium {
+                PremiumFeaturesSection(
+                    features: ProfileData.premiumAstrologyFeatures,
+                    unlockButtonText: "Unlock Full Astrology Report",
+                    onUnlockClick: {
+                        paywallContext = "astrology"
+                        showPaywall = true
                     }
-                }
+                )
             }
         }
     }
     
-    private var numerologyCard: some View {
-        BaseCard {
-            VStack(alignment: .leading, spacing: 16) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Numerology")
-                        .font(DesignTypography.title3Font())
+    // MARK: - Numerology Category Content
+    private func numerologyCategoryContent(blueprint: NumerologyBlueprint) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Numerology")
+                    .font(DesignTypography.title3Font())
+                    .foregroundColor(DesignColors.foreground)
+                
+                Text("Your life path number calculated from your birth date.")
+                    .font(DesignTypography.footnoteFont())
+                    .foregroundColor(DesignColors.mutedForeground)
+            }
+            
+            // Life Path
+            Button(action: {
+                showNumerologyModal = true
+            }) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Life Path \(blueprint.lifePath.number) — \(blueprint.lifePath.name)")
+                        .font(DesignTypography.title3Font(weight: .semibold))
                         .foregroundColor(DesignColors.foreground)
                     
-                    Text("Core numbers that describe your path and personality")
+                    Text(blueprint.lifePath.description)
                         .font(DesignTypography.footnoteFont())
                         .foregroundColor(DesignColors.mutedForeground)
                 }
-                
-                Button(action: {
-                    showNumerologyModal = true
-                }) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Life Path 3 — The Connector")
-                            .font(DesignTypography.title3Font(weight: .semibold))
-                            .foregroundColor(DesignColors.foreground)
-                        
-                        Text("Creative energy • Expression • Communication")
-                            .font(DesignTypography.footnoteFont())
-                            .foregroundColor(DesignColors.mutedForeground)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(16)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.white.opacity(0.02))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(Color.white.opacity(0.05), lineWidth: 1)
-                            )
-                    )
-                }
-                .buttonStyle(PlainButtonStyle())
-                
-                // Premium Preview Row (compact)
-                if !isPremium {
-                    Divider()
-                        .background(Color.white.opacity(0.1))
-                    
-                    Button(action: {
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(16)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.white.opacity(0.02))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.white.opacity(0.05), lineWidth: 1)
+                        )
+                )
+            }
+            .buttonStyle(PlainButtonStyle())
+            
+            // Premium Features Section
+            if !isPremium {
+                PremiumFeaturesSection(
+                    features: ProfileData.premiumNumerologyFeatures,
+                    unlockButtonText: "Unlock All Numerology Numbers",
+                    onUnlockClick: {
                         paywallContext = "numerology"
                         showPaywall = true
-                    }) {
-                        HStack(spacing: 8) {
-                            Image(systemName: "lock.fill")
-                                .font(.system(size: 16))
-                                .foregroundColor(DesignColors.accent)
-                            
-                            Text("Unlock Destiny, Expression, and Soul Urge numbers")
-                                .font(DesignTypography.bodyFont())
-                                .foregroundColor(DesignColors.mutedForeground)
-                            
-                            Spacer()
-                        }
-                        .padding(12)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.white.opacity(0.02))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(Color.white.opacity(0.05), lineWidth: 1)
-                                )
-                        )
                     }
-                    .buttonStyle(PlainButtonStyle())
+                )
+            }
+        }
+    }
+    
+    // MARK: - Chinese Zodiac Category Content
+    private func chineseZodiacCategoryContent(blueprint: ChineseZodiacBlueprint) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Chinese Zodiac")
+                    .font(DesignTypography.title3Font())
+                    .foregroundColor(DesignColors.foreground)
+                
+                Text("Your animal sign and element based on your birth year")
+                    .font(DesignTypography.footnoteFont())
+                    .foregroundColor(DesignColors.mutedForeground)
+            }
+            
+            // Animal sign
+            VStack(alignment: .leading, spacing: 8) {
+                Text("\(blueprint.fullSign) — \(blueprint.animal)")
+                    .font(DesignTypography.title3Font(weight: .semibold))
+                    .foregroundColor(DesignColors.foreground)
+                
+                Text(blueprint.description)
+                    .font(DesignTypography.footnoteFont())
+                    .foregroundColor(DesignColors.mutedForeground)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.white.opacity(0.02))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.white.opacity(0.05), lineWidth: 1)
+                    )
+            )
+            
+            // Element
+            HStack(spacing: 8) {
+                Text("Element:")
+                    .font(DesignTypography.bodyFont(weight: .medium))
+                    .foregroundColor(DesignColors.foreground)
+                
+                Text(blueprint.element)
+                    .font(DesignTypography.bodyFont())
+                    .foregroundColor(DesignColors.mutedForeground)
+            }
+            .padding(12)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.white.opacity(0.02))
+            )
+            
+            // Year Pillar
+            HStack(spacing: 8) {
+                Text("Year Pillar:")
+                    .font(DesignTypography.bodyFont(weight: .medium))
+                    .foregroundColor(DesignColors.foreground)
+                
+                Text("\(blueprint.year)")
+                    .font(DesignTypography.bodyFont())
+                    .foregroundColor(DesignColors.mutedForeground)
+            }
+            .padding(12)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.white.opacity(0.02))
+            )
+            
+            // Personality keywords
+            if !blueprint.traits.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Personality Keywords")
+                        .font(DesignTypography.bodyFont(weight: .medium))
+                        .foregroundColor(DesignColors.foreground)
+                    
+                    VStack(alignment: .leading, spacing: 8) {
+                        ForEach(blueprint.traits, id: \.self) { trait in
+                            Text(trait)
+                                .font(DesignTypography.footnoteFont())
+                                .foregroundColor(DesignColors.mutedForeground)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 6)
+                                .background(
+                                    Capsule()
+                                        .fill(Color.white.opacity(0.05))
+                                        .overlay(
+                                            Capsule()
+                                                .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                                        )
+                                )
+                        }
+                    }
                 }
+                .padding(12)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.white.opacity(0.02))
+                )
+            }
+            
+            // Premium Features Section
+            if !isPremium {
+                PremiumFeaturesSection(
+                    features: ProfileData.premiumChineseZodiacFeatures,
+                    unlockButtonText: "Unlock Full Chinese Zodiac Insights",
+                    onUnlockClick: {
+                        paywallContext = "chineseZodiac"
+                        showPaywall = true
+                    }
+                )
             }
         }
     }
@@ -473,9 +627,15 @@ struct ProfileView: View {
                         .font(DesignTypography.title3Font())
                         .foregroundColor(DesignColors.foreground)
                     
-                    Text("See how your energies interact in love, friendship, and work")
+                    Text("Explore your relationship dynamics and connection patterns.")
                         .font(DesignTypography.footnoteFont())
                         .foregroundColor(DesignColors.mutedForeground)
+                    
+                    Text("Your romantic energy is ruled by Venus — compatibility can reveal deeper patterns.")
+                        .font(DesignTypography.footnoteFont())
+                        .foregroundColor(DesignColors.mutedForeground.opacity(0.8))
+                        .italic()
+                        .padding(.top, 4)
                 }
                 
                 ArotiButton(
@@ -514,11 +674,64 @@ struct ProfileView: View {
                         )
                 )
                 
-                // Premium Preview Row (compact)
+                // Premium Preview Rows (with teaser text)
                 if !isPremium {
                     Divider()
                         .background(Color.white.opacity(0.1))
                     
+                    VStack(spacing: 12) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "lock.fill")
+                                .font(.system(size: 12))
+                                .foregroundColor(DesignColors.accent)
+                            
+                            Text("Premium Features")
+                                .font(DesignTypography.footnoteFont())
+                                .foregroundColor(DesignColors.accent)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        
+                        let compatibilityFeatures = [
+                            ("Full emotional compatibility", "Deep emotional connection insights and patterns."),
+                            ("Communication chemistry", "How you communicate and connect with partners."),
+                            ("Long-term potential", "Relationship longevity and growth opportunities.")
+                        ]
+                        
+                        ForEach(Array(compatibilityFeatures.enumerated()), id: \.offset) { index, feature in
+                            Button(action: {
+                                paywallContext = "compatibility"
+                                showPaywall = true
+                            }) {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    HStack(spacing: 8) {
+                                        Image(systemName: "lock.fill")
+                                            .font(.system(size: 12))
+                                            .foregroundColor(DesignColors.accent)
+                                        
+                                        Text(feature.0)
+                                            .font(DesignTypography.bodyFont())
+                                            .foregroundColor(DesignColors.mutedForeground)
+                                        
+                                        Spacer()
+                                    }
+                                    
+                                    Text(feature.1)
+                                        .font(DesignTypography.footnoteFont())
+                                        .foregroundColor(DesignColors.mutedForeground.opacity(0.7))
+                                        .padding(.leading, 20)
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(8)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .fill(Color.white.opacity(0.02))
+                                )
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
+                    }
+                    
+                    // Unlock button
                     Button(action: {
                         paywallContext = "compatibility"
                         showPaywall = true
@@ -526,21 +739,19 @@ struct ProfileView: View {
                         HStack(spacing: 8) {
                             Image(systemName: "lock.fill")
                                 .font(.system(size: 16))
-                                .foregroundColor(DesignColors.accent)
                             
-                            Text("Unlock full compatibility insights")
-                                .font(DesignTypography.bodyFont())
-                                .foregroundColor(DesignColors.mutedForeground)
-                            
-                            Spacer()
+                            Text("Full Compatibility Insights")
+                                .font(DesignTypography.subheadFont(weight: .medium))
                         }
-                        .padding(12)
+                        .foregroundColor(DesignColors.accent)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
                         .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.white.opacity(0.02))
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(DesignColors.accent.opacity(0.1))
                                 .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(Color.white.opacity(0.05), lineWidth: 1)
+                                    RoundedRectangle(cornerRadius: 10)
+                                        .stroke(DesignColors.accent.opacity(0.5), lineWidth: 1)
                                 )
                         )
                     }
@@ -582,8 +793,8 @@ struct ProfileView: View {
                 // Saved Items Horizontal Scroll
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 16) {
-                        ForEach(ProfileData.savedLibrary[activeSavedTab] ?? [], id: \.self) { item in
-                            savedContentCard(item: item, isPremium: activeSavedTab == .practices && item == ProfileData.savedLibrary[.practices]?.first)
+                        ForEach(Array((ProfileData.savedLibrary[activeSavedTab] ?? []).enumerated()), id: \.offset) { index, item in
+                            savedContentCard(item: item, isPremium: activeSavedTab == .practices && index == 0)
                         }
                     }
                     .padding(.horizontal, DesignSpacing.sm)
@@ -592,7 +803,7 @@ struct ProfileView: View {
         }
     }
     
-    private func savedContentCard(item: String, isPremium: Bool) -> some View {
+    private func savedContentCard(item: ProfileData.SavedContentItem, isPremium: Bool) -> some View {
         Button(action: {
             if isPremium && !UserSubscriptionService.shared.isPremium {
                 paywallContext = nil
@@ -603,10 +814,10 @@ struct ProfileView: View {
         }) {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 8) {
-                    Text(activeSavedTab.rawValue)
-                        .font(DesignTypography.footnoteFont(weight: .medium))
+                    Text(item.type)
+                        .font(DesignTypography.caption2Font(weight: .medium))
                         .foregroundColor(DesignColors.mutedForeground)
-                        .padding(.horizontal, 12)
+                        .padding(.horizontal, 10)
                         .padding(.vertical, 4)
                         .background(
                             Capsule()
@@ -634,7 +845,7 @@ struct ProfileView: View {
                     }
                 }
                 
-                Text(item)
+                Text(item.name)
                     .font(DesignTypography.headlineFont(weight: .medium))
                     .foregroundColor(DesignColors.foreground)
                     .multilineTextAlignment(.leading)
@@ -643,6 +854,11 @@ struct ProfileView: View {
                     .font(.system(size: 15))
                     .foregroundColor(DesignColors.mutedForeground)
                     .multilineTextAlignment(.leading)
+                
+                Text(item.timestamp)
+                    .font(DesignTypography.caption2Font())
+                    .foregroundColor(DesignColors.mutedForeground.opacity(0.7))
+                    .padding(.top, 4)
             }
             .frame(width: 320, height: 200, alignment: .topLeading)
             .padding(24)
@@ -663,7 +879,7 @@ struct ProfileView: View {
         VStack(alignment: .leading, spacing: 24) {
             BaseSectionHeader(
                 title: "Reports",
-                subtitle: "Purchase detailed PDF insights"
+                subtitle: "Purchase detailed PDF reports"
             )
             
             BaseCard {
@@ -673,32 +889,51 @@ struct ProfileView: View {
                             selectedReport = report
                             showPDFModal = true
                         }) {
-                            HStack {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(report.name)
-                                        .font(DesignTypography.bodyFont(weight: .medium))
-                                        .foregroundColor(DesignColors.foreground)
+                            ZStack(alignment: .topTrailing) {
+                                HStack {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(report.name)
+                                            .font(DesignTypography.bodyFont(weight: .medium))
+                                            .foregroundColor(DesignColors.foreground)
+                                        
+                                        Text(report.description)
+                                            .font(DesignTypography.footnoteFont())
+                                            .foregroundColor(DesignColors.mutedForeground)
+                                    }
                                     
-                                    Text(report.description)
-                                        .font(DesignTypography.footnoteFont())
-                                        .foregroundColor(DesignColors.mutedForeground)
+                                    Spacer()
+                                    
+                                    Text("$\(String(format: "%.2f", report.price))")
+                                        .font(DesignTypography.title3Font(weight: .semibold))
+                                        .foregroundColor(DesignColors.accent)
                                 }
+                                .padding(16)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(Color.white.opacity(0.05))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                                        )
+                                )
                                 
-                                Spacer()
-                                
-                                Text("$\(String(format: "%.2f", report.price))")
-                                    .font(DesignTypography.title3Font(weight: .semibold))
+                                if report.isMostPopular {
+                                    HStack(spacing: 4) {
+                                        Image(systemName: "star.fill")
+                                            .font(.system(size: 10))
+                                        Text("Most popular")
+                                            .font(DesignTypography.caption2Font(weight: .medium))
+                                    }
                                     .foregroundColor(DesignColors.accent)
-                            }
-                            .padding(16)
-                            .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color.white.opacity(0.05))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(
+                                        Capsule()
+                                            .fill(DesignColors.accent.opacity(0.2))
                                     )
-                            )
+                                    .offset(x: -4, y: 4)
+                                }
+                            }
                         }
                         .buttonStyle(PlainButtonStyle())
                     }
@@ -707,42 +942,60 @@ struct ProfileView: View {
         }
     }
     
-    // MARK: - Membership Section (Compact)
+    // MARK: - Membership Section
     private var membershipSection: some View {
-        BaseCard {
-            VStack(alignment: .leading, spacing: 16) {
-                HStack {
+        VStack(alignment: .leading, spacing: 24) {
+            BaseSectionHeader(
+                title: "Your Membership",
+                subtitle: "Unlock your full cosmic potential"
+            )
+            
+            ZStack(alignment: .topTrailing) {
+                // Gradient background card
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                DesignColors.accent.opacity(0.25),
+                                DesignColors.accent.opacity(0.10),
+                                Color.clear
+                            ],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(DesignColors.accent.opacity(0.4), lineWidth: 1)
+                    )
+                    .shadow(color: DesignColors.accent.opacity(0.2), radius: 8, x: 0, y: 4)
+                
+                // Star icon in top right
+                Image(systemName: "sparkles")
+                    .font(.system(size: 24))
+                    .foregroundColor(DesignColors.accent)
+                    .padding(.top, 20)
+                    .padding(.trailing, 20)
+                
+                VStack(alignment: .leading, spacing: 16) {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Your Membership")
+                        Text("Membership")
                             .font(DesignTypography.title3Font())
                             .foregroundColor(DesignColors.foreground)
                         
-                        Text(isPremium ? "All Access Member" : "You're on the Free Plan")
+                        Text("You're on the Free Plan")
                             .font(DesignTypography.footnoteFont())
                             .foregroundColor(DesignColors.mutedForeground)
                     }
+                    .padding(.top, 20)
+                    .padding(.leading, 20)
+                    .padding(.trailing, 60) // Space for star icon
                     
-                    Spacer()
-                }
-                
-                VStack(alignment: .leading, spacing: 8) {
-                    if isPremium {
-                        ForEach(ProfileData.premiumMembershipBenefits, id: \.self) { benefit in
+                    VStack(alignment: .leading, spacing: 8) {
+                        ForEach(ProfileData.membershipBenefits, id: \.self) { benefit in
                             HStack(spacing: 8) {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .font(.system(size: 14))
-                                    .foregroundColor(DesignColors.accent)
-                                
-                                Text(benefit)
-                                    .font(DesignTypography.bodyFont())
-                                    .foregroundColor(DesignColors.foreground)
-                            }
-                        }
-                    } else {
-                        ForEach(ProfileData.freeMembershipBenefits, id: \.self) { benefit in
-                            HStack(spacing: 8) {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .font(.system(size: 14))
+                                Image(systemName: "sparkles")
+                                    .font(.system(size: 16))
                                     .foregroundColor(DesignColors.accent)
                                 
                                 Text(benefit)
@@ -751,41 +1004,38 @@ struct ProfileView: View {
                             }
                         }
                     }
-                }
-                
-                ArotiButton(
-                    kind: isPremium ? .custom(ArotiButtonStyle(
-                        foregroundColor: DesignColors.foreground,
-                        backgroundColor: Color.white.opacity(0.05),
-                        borderColor: Color.white.opacity(0.12),
-                        borderWidth: 1,
-                        cornerRadius: 10,
-                        height: 44
-                    )) : .custom(ArotiButtonStyle(
-                        foregroundColor: .white,
-                        backgroundGradient: LinearGradient(
-                            colors: [DesignColors.accent, DesignColors.accent.opacity(0.9)],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        ),
-                        cornerRadius: 10,
-                        height: 44
-                    )),
-                    action: {
-                        if isPremium {
-                            // Navigate to manage membership
-                        } else {
+                    .padding(.horizontal, 20)
+                    
+                    Text("Unlock your full cosmic blueprint.")
+                        .font(DesignTypography.footnoteFont())
+                        .foregroundColor(DesignColors.mutedForeground.opacity(0.8))
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.horizontal, 20)
+                    
+                    ArotiButton(
+                        kind: .custom(ArotiButtonStyle(
+                            foregroundColor: .white,
+                            backgroundGradient: LinearGradient(
+                                colors: [DesignColors.accent, DesignColors.accent.opacity(0.9)],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            ),
+                            cornerRadius: 10,
+                            height: 44
+                        )),
+                        action: {
                             paywallContext = nil
                             showPaywall = true
+                        },
+                        label: {
+                            Text("Unlock All Access")
+                                .font(DesignTypography.subheadFont(weight: .semibold))
                         }
-                    },
-                    label: {
-                        Text(isPremium ? "Manage Membership" : "Unlock All Access")
-                            .font(DesignTypography.subheadFont(weight: .medium))
-                    }
-                )
+                    )
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 20)
+                }
             }
-            .padding(16)
         }
     }
     
@@ -836,82 +1086,79 @@ struct ProfileView: View {
     }
 }
 
-// MARK: - Supporting Data Models
-enum SavedContentTab: String, CaseIterable {
-    case readings = "Readings"
-    case practices = "Practices"
-}
-
-struct AstrologyPlacement: Identifiable {
-    let id = UUID()
-    let title: String
-    let description: String
-    let sign: String
-    let meaning: String
-}
-
-struct Report: Identifiable {
-    let id: String
-    let name: String
-    let description: String
-    let price: Double
-}
-
-struct AccountTool {
-    let label: String
-    let iconName: String
-    let path: String
+// MARK: - Blueprint Category Enum
+enum BlueprintCategory: String, CaseIterable {
+    case astrology = "Astrology"
+    case numerology = "Numerology"
+    case chineseZodiac = "Chinese Zodiac"
 }
 
 struct ProfileData {
-    static let astrologyPlacements: [AstrologyPlacement] = [
-        AstrologyPlacement(
-            title: "Sun — Virgo",
-            description: "Identity • How you move through the world",
+    static let astrologyPlacements: [PlanetaryPlacement] = [
+        PlanetaryPlacement(
+            planet: "Sun",
             sign: "Virgo",
-            meaning: "Your Sun in Virgo reflects a practical, analytical nature. You move through the world with attention to detail and a desire to be of service."
+            description: "Identity • How you move through the world",
+            meaning: "Your Sun in Virgo reflects a practical, analytical nature. You move through the world with attention to detail and a desire to be of service.",
+            house: nil
         ),
-        AstrologyPlacement(
-            title: "Moon — Pisces",
-            description: "Inner world • How you feel and process emotion",
+        PlanetaryPlacement(
+            planet: "Moon",
             sign: "Pisces",
-            meaning: "Your Moon in Pisces reveals a deeply intuitive and empathetic emotional nature. You process feelings through imagination and compassion."
+            description: "Inner world • How you feel and process emotion",
+            meaning: "Your Moon in Pisces reveals a deeply intuitive and empathetic emotional nature. You process feelings through imagination and compassion.",
+            house: nil
         ),
-        AstrologyPlacement(
-            title: "Rising — Leo",
-            description: "First impression • The energy you project to others",
+        PlanetaryPlacement(
+            planet: "Rising",
             sign: "Leo",
-            meaning: "Your Rising in Leo means you present with warmth and confidence. Others see your natural radiance first."
+            description: "First impression • The energy you project to others",
+            meaning: "Your Rising in Leo means you present with warmth and confidence. Others see your natural radiance first.",
+            house: nil
         )
     ]
     
     static let premiumAstrologyFeatures = [
         "All planets (Venus, Mars, Mercury...)",
         "12 Houses",
-        "Aspects",
-        "Strengths & weaknesses",
-        "Full personality, love, career, health interpretation",
-        "Full chart overview"
+        "Aspects"
     ]
     
     static let premiumNumerologyFeatures = [
         "Destiny Number",
         "Expression Number",
-        "Soul Urge",
-        "Birthday Number",
-        "Karmic Lessons"
+        "Soul Urge"
     ]
     
-    static let savedLibrary: [SavedContentTab: [String]] = [
-        .readings: ["Celtic Cross Spread", "Moonlit Reflection", "Solar Alignment"],
-        .practices: ["Morning Mantra", "Gratitude Flow", "Evening Integration"]
+    static let premiumChineseZodiacFeatures = [
+        "Element compatibility",
+        "Yearly forecasts"
+    ]
+    
+    struct SavedContentItem {
+        let name: String
+        let type: String
+        let timestamp: String
+    }
+    
+    static let savedLibrary: [SavedContentTab: [SavedContentItem]] = [
+        .readings: [
+            SavedContentItem(name: "Celtic Cross Spread", type: "Tarot", timestamp: "Saved 2 days ago"),
+            SavedContentItem(name: "Moonlit Reflection", type: "Tarot", timestamp: "Updated today"),
+            SavedContentItem(name: "Solar Alignment", type: "Practice", timestamp: "Saved 1 week ago")
+        ],
+        .practices: [
+            SavedContentItem(name: "Morning Mantra", type: "Daily Ritual", timestamp: "Saved 3 days ago"),
+            SavedContentItem(name: "Gratitude Flow", type: "Practice", timestamp: "Updated yesterday"),
+            SavedContentItem(name: "Evening Integration", type: "Daily Ritual", timestamp: "Saved 5 days ago")
+        ]
     ]
     
     static let reports: [Report] = [
-        Report(id: "birth-chart", name: "Birth Chart Report", description: "Comprehensive analysis of your natal chart", price: 11.99),
-        Report(id: "numerology", name: "Numerology Report", description: "Complete numerology analysis and insights", price: 7.99),
-        Report(id: "compatibility", name: "Compatibility Report", description: "Deep dive into relationship dynamics", price: 9.99),
-        Report(id: "year-ahead", name: "Year Ahead Report", description: "Astrological forecast for the coming year", price: 12.99)
+        Report(id: "birth-chart", name: "Birth Chart Report", description: "Comprehensive analysis of your natal chart", price: 11.99, isMostPopular: true),
+        Report(id: "numerology", name: "Numerology Report", description: "Complete numerology analysis and insights", price: 7.99, isMostPopular: false),
+        Report(id: "compatibility", name: "Compatibility Report", description: "Deep dive into relationship dynamics", price: 9.99, isMostPopular: false),
+        Report(id: "year-ahead", name: "Year Ahead Report", description: "Astrological forecast for the coming year", price: 12.99, isMostPopular: false)
     ]
     
     static let freeMembershipBenefits = [
@@ -926,6 +1173,14 @@ struct ProfileData {
         "Access every ritual & reading"
     ]
     
+    static let membershipBenefits = [
+        "Access every ritual and reading",
+        "Reveal your full astrological blueprint",
+        "Unlock complete numerology insights",
+        "Premium compatibility breakdowns",
+        "Zero ads, pure focus"
+    ]
+    
     static let accountTools: [AccountTool] = [
         AccountTool(label: "Wallet & Credits", iconName: "creditcard", path: "/profile/settings/wallet"),
         AccountTool(label: "Settings", iconName: "gearshape", path: "/profile/settings"),
@@ -935,9 +1190,4 @@ struct ProfileData {
     ]
 }
 
-#Preview {
-    NavigationStack {
-        ProfileView(selectedTab: .constant(.profile))
-    }
-}
 

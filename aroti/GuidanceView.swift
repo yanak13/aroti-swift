@@ -149,28 +149,48 @@ private extension GuidanceView {
                     subtitle: computeSubtitle(),
                     leftAction: nil,
                     rightView: AnyView(
-                        // Points Display - Chip Style - Navigate to Journey
-                        NavigationLink(destination: JourneyPage()) {
-                            HStack(spacing: 4) {
-                                Image(systemName: "star.fill")
-                                    .font(.system(size: 10))
-                                Text("\(userPoints.formatted()) pts")
-                                    .font(DesignTypography.caption1Font(weight: .semibold))
+                        HStack(spacing: 8) {
+                            // Points Chip - dynamic width based on content
+                            NavigationLink(destination: JourneyPage()) {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "star.fill")
+                                        .font(.system(size: 12))
+                                    Text("\(userPoints.formatted())")
+                                        .font(DesignTypography.caption1Font(weight: .semibold))
+                                }
+                                .foregroundColor(DesignColors.accent)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 8)
+                                .frame(height: 36)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(Color.white.opacity(0.06))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                                        )
+                                )
                             }
-                            .foregroundColor(DesignColors.accent)
-                            .fixedSize()
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(
-                                Capsule()
-                                    .fill(DesignColors.accent.opacity(0.15))
-                                    .overlay(
-                                        Capsule()
-                                            .stroke(DesignColors.accent.opacity(0.3), lineWidth: 1)
+                            .buttonStyle(PlainButtonStyle())
+                            
+                            // Notification Bell - matching points style
+                            Button(action: {
+                                // Handle notification tap
+                            }) {
+                                Image(systemName: "bell")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(DesignColors.accent)
+                                    .frame(width: 36, height: 36)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .fill(Color.white.opacity(0.06))
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 12)
+                                                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                                            )
                                     )
-                            )
+                            }
                         }
-                        .buttonStyle(PlainButtonStyle())
                     ),
                     alignment: .leading,
                     horizontalPadding: GuidanceLayout.horizontalPadding

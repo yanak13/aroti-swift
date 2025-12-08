@@ -22,12 +22,12 @@ struct MainTabView: View {
             case .booking:
                 BookingView(selectedTab: $selectedTab)
                     .tag(TabItem.booking)
-            case .profile:
-                ProfileView(selectedTab: $selectedTab)
-                    .tag(TabItem.profile)
             case .guidance:
                 GuidanceView(selectedTab: $selectedTab)
                     .tag(TabItem.guidance)
+            case .profile:
+                ProfileView(selectedTab: $selectedTab)
+                    .tag(TabItem.profile)
             }
         }
     }

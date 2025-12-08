@@ -12,6 +12,8 @@ struct UserData: Codable {
     let sunSign: String
     let moonSign: String?
     let birthDate: Date?
+    let birthTime: Date?
+    let birthLocation: String?
     let traits: [String]?
     let isPremium: Bool?
     
@@ -19,7 +21,9 @@ struct UserData: Codable {
         name: "Yana",
         sunSign: "Pisces",
         moonSign: "Cancer",
-        birthDate: nil,
+        birthDate: BlueprintService.mockBirthDate,
+        birthTime: BlueprintService.mockBirthDate,
+        birthLocation: BlueprintService.mockBirthLocation,
         traits: ["Intuitive", "Spiritual"],
         isPremium: false
     )

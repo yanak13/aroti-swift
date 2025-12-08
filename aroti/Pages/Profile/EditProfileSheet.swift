@@ -13,6 +13,9 @@ struct EditProfileSheet: View {
     @Binding var userLocation: String
     
     @State private var name: String
+    @State private var location: String
+    @State private var birthDate: Date
+    @State private var birthTime: Date
     
     let onSave: (String, String) -> Void
     
@@ -21,10 +24,16 @@ struct EditProfileSheet: View {
         self._userLocation = userLocation
         self.onSave = onSave
         _name = State(initialValue: userName.wrappedValue)
+        
+        // Load user data for birth details
+        let userData = DailyStateManager.shared.loadUserData() ?? UserData.default
+        _location = State(initialValue: userData.birthLocation ?? userLocation.wrappedValue)
+        _birthDate = State(initialValue: userData.birthDate ?? Date())
+        _birthTime = State(initialValue: userData.birthTime ?? userData.birthDate ?? Date())
     }
     
     private var isFormValid: Bool {
-        !name.isEmpty
+        !name.isEmpty && !location.isEmpty
     }
     
     var body: some View {
@@ -44,33 +53,84 @@ struct EditProfileSheet: View {
                                 TextField("Enter your full name", text: $name)
                                     .textFieldStyle(ProfileTextFieldStyle())
                             }
+                            .frame(height: 100)
                         }
                         
-                        // Location Display (Read-only)
+                        // Location Section
                         BaseCard {
                             VStack(alignment: .leading, spacing: 12) {
-                                Text("Location")
+                                Text("Birth Location")
                                     .font(DesignTypography.subheadFont(weight: .medium))
                                     .foregroundColor(DesignColors.foreground)
                                 
-                                Text(userLocation.isEmpty ? "Not set" : userLocation)
-                                    .font(DesignTypography.bodyFont())
-                                    .foregroundColor(userLocation.isEmpty ? DesignColors.mutedForeground : DesignColors.foreground)
-                                    .padding()
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .fill(ArotiColor.inputBackground.opacity(0.5))
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 12)
-                                                    .stroke(ArotiColor.inputBorder.opacity(0.5), lineWidth: 1)
-                                            )
-                                    )
-                                
-                                Text("Location is set during onboarding")
-                                    .font(DesignTypography.caption2Font())
-                                    .foregroundColor(DesignColors.mutedForeground)
+                                TextField("Enter your birth location", text: $location)
+                                    .textFieldStyle(ProfileTextFieldStyle())
                             }
+                            .frame(height: 100)
+                        }
+                        
+                        // Birth Date Section
+                        BaseCard {
+                            VStack(alignment: .leading, spacing: 12) {
+                                Text("Birth Date")
+                                    .font(DesignTypography.subheadFont(weight: .medium))
+                                    .foregroundColor(DesignColors.foreground)
+                                
+                                DatePicker(
+                                    "",
+                                    selection: $birthDate,
+                                    displayedComponents: [.date]
+                                )
+                                .datePickerStyle(.compact)
+                                .accentColor(DesignColors.accent)
+                                .tint(DesignColors.accent)
+                                .colorScheme(.dark)
+                                .labelsHidden()
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding()
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(ArotiColor.inputBackground)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .stroke(ArotiColor.inputBorder, lineWidth: 1)
+                                        )
+                                )
+                                .foregroundColor(DesignColors.foreground)
+                            }
+                            .frame(height: 100)
+                        }
+                        
+                        // Birth Time Section
+                        BaseCard {
+                            VStack(alignment: .leading, spacing: 12) {
+                                Text("Birth Time")
+                                    .font(DesignTypography.subheadFont(weight: .medium))
+                                    .foregroundColor(DesignColors.foreground)
+                                
+                                DatePicker(
+                                    "",
+                                    selection: $birthTime,
+                                    displayedComponents: [.hourAndMinute]
+                                )
+                                .datePickerStyle(.compact)
+                                .accentColor(DesignColors.accent)
+                                .tint(DesignColors.accent)
+                                .colorScheme(.dark)
+                                .labelsHidden()
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding()
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(ArotiColor.inputBackground)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .stroke(ArotiColor.inputBorder, lineWidth: 1)
+                                        )
+                                )
+                                .foregroundColor(DesignColors.foreground)
+                            }
+                            .frame(height: 100)
                         }
                         
                         // Save Button
@@ -96,6 +156,8 @@ struct EditProfileSheet: View {
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbarBackground(Color.clear, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
+            .preferredColorScheme(.dark)
+            .environment(\.colorScheme, .dark)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Cancel") {
@@ -108,16 +170,18 @@ struct EditProfileSheet: View {
     }
     
     private func saveProfile() {
-        // Save name only (location is from onboarding)
-        onSave(name, userLocation)
+        // Save name and location
+        onSave(name, location)
         
-        // Update UserData name
+        // Update UserData with all fields
         let existingData = DailyStateManager.shared.loadUserData() ?? UserData.default
         let updatedData = UserData(
             name: name,
             sunSign: existingData.sunSign,
             moonSign: existingData.moonSign,
-            birthDate: existingData.birthDate,
+            birthDate: birthDate,
+            birthTime: birthTime,
+            birthLocation: location,
             traits: existingData.traits,
             isPremium: existingData.isPremium
         )
@@ -139,7 +203,10 @@ struct ProfileTextFieldStyle: TextFieldStyle {
                             .stroke(ArotiColor.inputBorder, lineWidth: 1)
                     )
             )
-            .foregroundColor(DesignColors.foreground)
+            .foregroundColor(.white)
+            .tint(DesignColors.accent)
+            .colorScheme(.dark)
+            .accentColor(DesignColors.accent)
     }
 }
 

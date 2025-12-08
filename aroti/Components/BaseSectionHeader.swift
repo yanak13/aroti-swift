@@ -38,9 +38,13 @@ struct BaseSectionHeader: View {
             
             if let onViewAll = onViewAll {
                 Button(action: onViewAll) {
-                    Text("View All")
-                        .font(DesignTypography.subheadFont())
-                        .foregroundColor(DesignColors.accent)
+                    HStack(spacing: 2) {
+                        Text("View All")
+                            .font(DesignTypography.subheadFont())
+                        Text(">")
+                            .font(DesignTypography.subheadFont())
+                    }
+                    .foregroundColor(DesignColors.accent)
                 }
             }
         }

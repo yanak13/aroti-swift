@@ -11,8 +11,8 @@ enum TabItem: String, CaseIterable {
     case home = "Home"
     case discovery = "Discovery"
     case booking = "Booking"
-    case profile = "Profile"
     case guidance = "Guidance"
+    case profile = "Profile"
     
     var icon: String {
         switch self {

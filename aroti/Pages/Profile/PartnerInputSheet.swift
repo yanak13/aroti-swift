@@ -11,7 +11,19 @@ struct PartnerInputSheet: View {
     @Environment(\.dismiss) var dismiss
     @State private var partnerName: String = ""
     @State private var partnerBirthDate: Date = Date()
+    @State private var partnerBirthTime: Date? = nil
     @State private var partnerLocation: String = ""
+    @State private var showUnlockSheet = false
+    
+    let onCalculateCompatibility: (String, Date, Date?, String) -> Void
+    
+    init(onCalculateCompatibility: @escaping (String, Date, Date?, String) -> Void) {
+        self.onCalculateCompatibility = onCalculateCompatibility
+    }
+    
+    private var canCalculate: Bool {
+        !partnerName.isEmpty && !partnerLocation.isEmpty
+    }
     
     var body: some View {
         NavigationStack {
@@ -68,17 +80,47 @@ struct PartnerInputSheet: View {
                         }
                         .padding()
                         
-                        ArotiButton(
-                            kind: .primary,
-                            action: {
-                                // Handle save
-                                dismiss()
-                            },
-                            label: {
-                                Text("Save Partner")
-                                    .font(DesignTypography.subheadFont(weight: .semibold))
+                        VStack(spacing: 20) {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Birth Time (Optional)")
+                                    .font(DesignTypography.subheadFont(weight: .medium))
+                                    .foregroundColor(DesignColors.foreground)
+                                
+                                DatePicker("", selection: Binding(
+                                    get: { partnerBirthTime ?? partnerBirthDate },
+                                    set: { partnerBirthTime = $0 }
+                                ), displayedComponents: [.hourAndMinute])
+                                    .datePickerStyle(.compact)
+                                    .labelsHidden()
+                                    .tint(DesignColors.accent)
                             }
-                        )
+                            
+                            ArotiButton(
+                                kind: .primary,
+                                action: {
+                                    guard canCalculate else { return }
+                                    
+                                    // Check access before calculating
+                                    let access = AccessControlService.shared.canAccessCompatibility()
+                                    if access.allowed {
+                                        onCalculateCompatibility(
+                                            partnerName,
+                                            partnerBirthDate,
+                                            partnerBirthTime,
+                                            partnerLocation
+                                        )
+                                        dismiss()
+                                    } else {
+                                        showUnlockSheet = true
+                                    }
+                                },
+                                label: {
+                                    Text("Calculate Compatibility")
+                                        .font(DesignTypography.subheadFont(weight: .semibold))
+                                }
+                            )
+                            .disabled(!canCalculate)
+                        }
                         .padding(.horizontal)
                     }
                     .padding(.vertical)
@@ -93,6 +135,24 @@ struct PartnerInputSheet: View {
                     }
                     .foregroundColor(DesignColors.foreground)
                 }
+            }
+            .sheet(isPresented: $showUnlockSheet) {
+                CompatibilityUnlockSheet(
+                    isPresented: $showUnlockSheet,
+                    onUnlock: {
+                        let success = AccessControlService.shared.recordCompatibilityCheck()
+                        if success {
+                            onCalculateCompatibility(
+                                partnerName,
+                                partnerBirthDate,
+                                partnerBirthTime,
+                                partnerLocation
+                            )
+                            showUnlockSheet = false
+                            dismiss()
+                        }
+                    }
+                )
             }
         }
     }

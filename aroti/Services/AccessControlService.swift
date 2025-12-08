@@ -16,11 +16,15 @@ class AccessControlService {
     private let freePracticesDateKey = "aroti_free_practices_date"
     private let freeQuizzesKey = "aroti_free_quizzes_used"
     private let freeQuizzesDateKey = "aroti_free_quizzes_date"
+    private let freeCompatibilityKey = "aroti_free_compatibility_used"
+    private let freeCompatibilityDateKey = "aroti_free_compatibility_date"
     private let unlockedContentKey = "aroti_unlocked_content"
     
     private let freeMessagesLimit = 3
     private let freePracticesLimit = 1
     private let freeQuizzesLimit = 1
+    private let freeCompatibilityLimit = 1
+    private let compatibilityPointsCost = 50
     
     private init() {}
     
@@ -376,5 +380,103 @@ class AccessControlService {
             return .unlockableWithPoints(cost: 30) // Example cost
         }
     }
+    
+    // MARK: - Compatibility Access
+    
+    func getFreeCompatibilityRemaining() -> Int {
+        if isPremium {
+            return Int.max // Unlimited for premium
+        }
+        
+        let (used, date) = getFreeCompatibilityUsage()
+        let calendar = Calendar.current
+        let today = Date()
+        
+        // Reset if different day
+        if !calendar.isDate(date, inSameDayAs: today) {
+            return freeCompatibilityLimit
+        }
+        
+        let remaining = freeCompatibilityLimit - used
+        return max(0, remaining)
+    }
+    
+    func canAccessCompatibility() -> (allowed: Bool, type: CompatibilityAccessType, cost: Int?) {
+        if isPremium {
+            return (true, .premium, nil)
+        }
+        
+        let freeRemaining = getFreeCompatibilityRemaining()
+        if freeRemaining > 0 {
+            return (true, .free, nil)
+        }
+        
+        let balance = PointsService.shared.balance.totalPoints
+        if balance >= compatibilityPointsCost {
+            return (true, .points, compatibilityPointsCost)
+        }
+        
+        return (false, .denied, compatibilityPointsCost)
+    }
+    
+    func recordCompatibilityCheck() -> Bool {
+        let access = canAccessCompatibility()
+        
+        guard access.allowed else {
+            return false
+        }
+        
+        if access.type == .premium {
+            // Premium users don't need to record
+            return true
+        }
+        
+        if access.type == .free {
+            // Record free check usage
+            let (used, date) = getFreeCompatibilityUsage()
+            let calendar = Calendar.current
+            let today = Date()
+            
+            if !calendar.isDate(date, inSameDayAs: today) {
+                UserDefaults.standard.set(1, forKey: freeCompatibilityKey)
+                UserDefaults.standard.set(today, forKey: freeCompatibilityDateKey)
+            } else {
+                UserDefaults.standard.set(used + 1, forKey: freeCompatibilityKey)
+            }
+            return true
+        }
+        
+        if access.type == .points, let cost = access.cost {
+            // Spend points
+            let result = PointsService.shared.spendPoints(event: "compatibility_check", cost: cost)
+            return result.success
+        }
+        
+        return false
+    }
+    
+    func getCompatibilityPointsCost() -> Int {
+        return compatibilityPointsCost
+    }
+    
+    private func getFreeCompatibilityUsage() -> (used: Int, date: Date) {
+        let used = UserDefaults.standard.integer(forKey: freeCompatibilityKey)
+        let date = UserDefaults.standard.object(forKey: freeCompatibilityDateKey) as? Date ?? Date()
+        return (used, date)
+    }
+    
+    private func resetFreeCompatibilityUsage() {
+        UserDefaults.standard.set(0, forKey: freeCompatibilityKey)
+        UserDefaults.standard.set(Date(), forKey: freeCompatibilityDateKey)
+    }
+}
+
+// MARK: - Compatibility Access Type
+
+enum CompatibilityAccessType {
+    case free
+    case points
+    case premium
+    case denied
 }
 

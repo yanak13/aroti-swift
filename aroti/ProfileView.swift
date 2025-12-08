@@ -41,9 +41,19 @@ struct ProfileView: View {
     @State private var paywallContext: String? = nil
     @State private var showPDFModal = false
     @State private var showPartnerModal = false
+    @State private var showCompatibilityUnlockSheet = false
+    @State private var showCompatibilityResults = false
     @State private var selectedAstrologyPlacement: PlanetaryPlacement?
     @State private var selectedReport: Report?
     @State private var userBlueprint: UserBlueprint?
+    @State private var partnerData: (name: String, birthDate: Date, birthTime: Date?, location: String)?
+    
+    // Settings sheet states
+    @State private var showWalletCreditsSheet = false
+    @State private var showSettingsSheet = false
+    @State private var showNotificationsSheet = false
+    @State private var showLanguageSheet = false
+    @State private var showPrivacyTermsSheet = false
     
     // Premium status
     private var isPremium: Bool {
@@ -230,12 +240,102 @@ struct ProfileView: View {
                 }
             }
             .sheet(isPresented: $showPartnerModal) {
-                PartnerInputSheet()
+                PartnerInputSheet(
+                    onCalculateCompatibility: { name, birthDate, birthTime, location in
+                        partnerData = (name: name, birthDate: birthDate, birthTime: birthTime, location: location)
+                        showPartnerModal = false
+                        
+                        // Check access
+                        let access = AccessControlService.shared.canAccessCompatibility()
+                        if access.allowed {
+                            let success = AccessControlService.shared.recordCompatibilityCheck()
+                            if success {
+                                updatePoints()
+                                showCompatibilityResults = true
+                            } else {
+                                showCompatibilityUnlockSheet = true
+                            }
+                        } else {
+                            showCompatibilityUnlockSheet = true
+                        }
+                    }
+                )
+            }
+            .sheet(isPresented: $showCompatibilityUnlockSheet) {
+                CompatibilityUnlockSheet(
+                    isPresented: $showCompatibilityUnlockSheet,
+                    onUnlock: {
+                        let success = AccessControlService.shared.recordCompatibilityCheck()
+                        if success {
+                            updatePoints()
+                            showCompatibilityUnlockSheet = false
+                            if let partner = partnerData {
+                                showCompatibilityResults = true
+                            }
+                        }
+                    }
+                )
+            }
+            .sheet(isPresented: $showCompatibilityResults) {
+                if let partner = partnerData {
+                    CompatibilityResultsSheet(
+                        partnerName: partner.name,
+                        partnerBirthDate: partner.birthDate,
+                        partnerBirthTime: partner.birthTime,
+                        partnerBirthLocation: partner.location
+                    )
+                } else {
+                    // Fallback empty view
+                    Text("")
+                        .onAppear {
+                            showCompatibilityResults = false
+                        }
+                }
+            }
+            .sheet(isPresented: $showWalletCreditsSheet) {
+                WalletCreditsSheet()
+            }
+            .sheet(isPresented: $showSettingsSheet) {
+                SettingsSheet()
+            }
+            .sheet(isPresented: $showNotificationsSheet) {
+                NotificationsSheet()
+            }
+            .sheet(isPresented: $showLanguageSheet) {
+                LanguageSheet()
+            }
+            .sheet(isPresented: $showPrivacyTermsSheet) {
+                PrivacyTermsSheet()
             }
         }
     }
     
+    // MARK: - Account Tool Navigation Handler
+    
+    private func handleAccountToolTap(path: String) {
+        switch path {
+        case "/profile/settings/wallet":
+            showWalletCreditsSheet = true
+        case "/profile/settings":
+            showSettingsSheet = true
+        case "/profile/notifications":
+            showNotificationsSheet = true
+        case "/profile/language":
+            showLanguageSheet = true
+        case "/profile/settings/privacy":
+            showPrivacyTermsSheet = true
+        default:
+            break
+        }
+    }
+    
     // MARK: - Helper Functions
+    
+    private func getChineseZodiacPreview(for blueprint: ChineseZodiacBlueprint) -> String {
+        // Use first 2-3 traits as preview, similar to Astrology format
+        let previewTraits = Array(blueprint.traits.prefix(3))
+        return previewTraits.joined(separator: " • ")
+    }
     
     // MARK: - Helper Functions for Sign Symbols
     private func getSignSymbol(for planet: String) -> String {
@@ -443,6 +543,8 @@ struct ProfileView: View {
             // Premium Features Section
             if !isPremium {
                 PremiumFeaturesSection(
+                    title: "Astrology Premium",
+                    summary: "All planets, 12 houses, and aspect insights.",
                     features: ProfileData.premiumAstrologyFeatures,
                     unlockButtonText: "Unlock Full Astrology Report",
                     onUnlockClick: {
@@ -473,7 +575,7 @@ struct ProfileView: View {
             }) {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Life Path \(blueprint.lifePath.number) — \(blueprint.lifePath.name)")
-                        .font(DesignTypography.title3Font(weight: .semibold))
+                        .font(DesignTypography.bodyFont(weight: .medium))
                         .foregroundColor(DesignColors.foreground)
                     
                     Text(blueprint.lifePath.description)
@@ -496,6 +598,8 @@ struct ProfileView: View {
             // Premium Features Section
             if !isPremium {
                 PremiumFeaturesSection(
+                    title: "Numerology Premium",
+                    summary: "Destiny, Expression, and Soul Urge numbers.",
                     features: ProfileData.premiumNumerologyFeatures,
                     unlockButtonText: "Unlock All Numerology Numbers",
                     onUnlockClick: {
@@ -515,151 +619,22 @@ struct ProfileView: View {
                     .font(DesignTypography.title3Font())
                     .foregroundColor(DesignColors.foreground)
                 
-                Text("Your animal sign and element based on your birth year")
+                Text("Your zodiac sign based on your birth year.")
                     .font(DesignTypography.footnoteFont())
                     .foregroundColor(DesignColors.mutedForeground)
             }
             
-            // Animal sign
-            VStack(alignment: .leading, spacing: 8) {
-                Text("\(blueprint.fullSign) — \(blueprint.animal)")
-                    .font(DesignTypography.title3Font(weight: .semibold))
-                    .foregroundColor(DesignColors.foreground)
-                
-                Text(blueprint.description)
-                    .font(DesignTypography.footnoteFont())
-                    .foregroundColor(DesignColors.mutedForeground)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(16)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.white.opacity(0.02))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color.white.opacity(0.05), lineWidth: 1)
-                    )
-            )
-            
-            // Element
-            HStack(spacing: 8) {
-                Text("Element:")
-                    .font(DesignTypography.bodyFont(weight: .medium))
-                    .foregroundColor(DesignColors.foreground)
-                
-                Text(blueprint.element)
-                    .font(DesignTypography.bodyFont())
-                    .foregroundColor(DesignColors.mutedForeground)
-            }
-            .padding(12)
-            .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Color.white.opacity(0.02))
-            )
-            
-            // Year Pillar
-            HStack(spacing: 8) {
-                Text("Year Pillar:")
-                    .font(DesignTypography.bodyFont(weight: .medium))
-                    .foregroundColor(DesignColors.foreground)
-                
-                Text("\(blueprint.year)")
-                    .font(DesignTypography.bodyFont())
-                    .foregroundColor(DesignColors.mutedForeground)
-            }
-            .padding(12)
-            .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Color.white.opacity(0.02))
-            )
-            
-            // Personality keywords
-            if !blueprint.traits.isEmpty {
+            // Animal sign + Element (FREE - clickable card like Life Path)
+            Button(action: {
+                showChineseZodiacModal = true
+            }) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Personality Keywords")
+                    Text("\(blueprint.fullSign) — \(blueprint.animal)")
                         .font(DesignTypography.bodyFont(weight: .medium))
                         .foregroundColor(DesignColors.foreground)
                     
-                    VStack(alignment: .leading, spacing: 8) {
-                        ForEach(blueprint.traits, id: \.self) { trait in
-                            Text(trait)
-                                .font(DesignTypography.footnoteFont())
-                                .foregroundColor(DesignColors.mutedForeground)
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 6)
-                                .background(
-                                    Capsule()
-                                        .fill(Color.white.opacity(0.05))
-                                        .overlay(
-                                            Capsule()
-                                                .stroke(Color.white.opacity(0.1), lineWidth: 1)
-                                        )
-                                )
-                        }
-                    }
-                }
-                .padding(12)
-                .background(
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(Color.white.opacity(0.02))
-                )
-            }
-            
-            // Premium Features Section
-            if !isPremium {
-                PremiumFeaturesSection(
-                    features: ProfileData.premiumChineseZodiacFeatures,
-                    unlockButtonText: "Unlock Full Chinese Zodiac Insights",
-                    onUnlockClick: {
-                        paywallContext = "chineseZodiac"
-                        showPaywall = true
-                    }
-                )
-            }
-        }
-    }
-    
-    private var compatibilityCard: some View {
-        BaseCard {
-            VStack(alignment: .leading, spacing: 16) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Compatibility")
-                        .font(DesignTypography.title3Font())
-                        .foregroundColor(DesignColors.foreground)
-                    
-                    Text("Explore your relationship dynamics and connection patterns.")
-                        .font(DesignTypography.footnoteFont())
-                        .foregroundColor(DesignColors.mutedForeground)
-                    
-                    Text("Your romantic energy is ruled by Venus — compatibility can reveal deeper patterns.")
-                        .font(DesignTypography.footnoteFont())
-                        .foregroundColor(DesignColors.mutedForeground.opacity(0.8))
-                        .italic()
-                        .padding(.top, 4)
-                }
-                
-                ArotiButton(
-                    kind: .primary,
-                    action: {
-                        showPartnerModal = true
-                    },
-                    label: {
-                        HStack(spacing: 8) {
-                            Image(systemName: "plus")
-                                .font(.system(size: 16))
-                            Text("Add Partner")
-                                .font(DesignTypography.subheadFont(weight: .medium))
-                        }
-                    }
-                )
-                
-                // Free Preview Row
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Your Sun-sign compatibility preview")
-                        .font(DesignTypography.bodyFont(weight: .medium))
-                        .foregroundColor(DesignColors.foreground)
-                    
-                    Text("Tap for a quick overview")
+                    // Show preview (first 2-3 traits joined with •)
+                    Text(getChineseZodiacPreview(for: blueprint))
                         .font(DesignTypography.footnoteFont())
                         .foregroundColor(DesignColors.mutedForeground)
                 }
@@ -673,87 +648,127 @@ struct ProfileView: View {
                                 .stroke(Color.white.opacity(0.05), lineWidth: 1)
                         )
                 )
-                
-                // Premium Preview Rows (with teaser text)
-                if !isPremium {
-                    Divider()
-                        .background(Color.white.opacity(0.1))
-                    
-                    VStack(spacing: 12) {
-                        HStack(spacing: 8) {
-                            Image(systemName: "lock.fill")
-                                .font(.system(size: 12))
-                                .foregroundColor(DesignColors.accent)
-                            
-                            Text("Premium Features")
-                                .font(DesignTypography.footnoteFont())
-                                .foregroundColor(DesignColors.accent)
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        
-                        let compatibilityFeatures = [
-                            ("Full emotional compatibility", "Deep emotional connection insights and patterns."),
-                            ("Communication chemistry", "How you communicate and connect with partners."),
-                            ("Long-term potential", "Relationship longevity and growth opportunities.")
-                        ]
-                        
-                        ForEach(Array(compatibilityFeatures.enumerated()), id: \.offset) { index, feature in
-                            Button(action: {
-                                paywallContext = "compatibility"
-                                showPaywall = true
-                            }) {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    HStack(spacing: 8) {
-                                        Image(systemName: "lock.fill")
-                                            .font(.system(size: 12))
-                                            .foregroundColor(DesignColors.accent)
-                                        
-                                        Text(feature.0)
-                                            .font(DesignTypography.bodyFont())
-                                            .foregroundColor(DesignColors.mutedForeground)
-                                        
-                                        Spacer()
-                                    }
-                                    
-                                    Text(feature.1)
-                                        .font(DesignTypography.footnoteFont())
-                                        .foregroundColor(DesignColors.mutedForeground.opacity(0.7))
-                                        .padding(.leading, 20)
-                                }
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(8)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .fill(Color.white.opacity(0.02))
-                                )
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                        }
+            }
+            .buttonStyle(PlainButtonStyle())
+            
+            // Premium Features Section
+            if !isPremium {
+                PremiumFeaturesSection(
+                    title: "Chinese Zodiac Premium",
+                    summary: "Element compatibility, lucky numbers, yearly outlook.",
+                    features: ProfileData.premiumChineseZodiacFeatures,
+                    unlockButtonText: "Unlock Full Chinese Zodiac Insights",
+                    onUnlockClick: {
+                        paywallContext = "chineseZodiac"
+                        showPaywall = true
                     }
+                )
+            }
+        }
+    }
+    
+    private var compatibilityCard: some View {
+        BaseCard {
+            VStack(alignment: .leading, spacing: 12) {
+                // 1. Header
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Compatibility")
+                        .font(DesignTypography.title3Font())
+                        .foregroundColor(DesignColors.foreground)
                     
-                    // Unlock button
+                    Text("Explore your relationship dynamics and connection patterns.")
+                        .font(DesignTypography.footnoteFont())
+                        .foregroundColor(DesignColors.mutedForeground)
+                }
+                
+                // 2. Free Insight Line (inline, no card)
+                if !isPremium {
+                    let freeRemaining = AccessControlService.shared.getFreeCompatibilityRemaining()
+                    
+                    if freeRemaining > 0 {
+                        Text("\(freeRemaining) free compatibility insight\(freeRemaining != 1 ? "s" : "") remaining")
+                            .font(DesignTypography.footnoteFont(weight: .medium))
+                            .foregroundColor(DesignColors.foreground)
+                    }
+                }
+                
+                // 3. Main CTA - Add Partner (Hero)
+                VStack(spacing: 6) {
+                    ArotiButton(
+                        kind: .primary,
+                        action: {
+                            showPartnerModal = true
+                        },
+                        label: {
+                            HStack(spacing: 8) {
+                                Image(systemName: "plus")
+                                    .font(.system(size: 18))
+                                Text("Add Partner")
+                                    .font(DesignTypography.subheadFont(weight: .semibold))
+                            }
+                        }
+                    )
+                    
+                    Text("Choose someone to explore your compatibility with.")
+                        .font(DesignTypography.footnoteFont())
+                        .foregroundColor(DesignColors.mutedForeground.opacity(0.6))
+                        .frame(maxWidth: .infinity)
+                        .multilineTextAlignment(.center)
+                }
+                
+                // 4. Baseline Compatibility Preview (Small Card)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Your baseline compatibility")
+                        .font(DesignTypography.bodyFont(weight: .medium))
+                        .foregroundColor(DesignColors.foreground)
+                    
+                    Text("Tap for a quick overview")
+                        .font(DesignTypography.footnoteFont())
+                        .foregroundColor(DesignColors.mutedForeground)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(12)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.white.opacity(0.02))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.white.opacity(0.05), lineWidth: 1)
+                        )
+                )
+                
+                // 5. Premium Preview Row (collapsed, tappable)
+                if !isPremium {
                     Button(action: {
                         paywallContext = "compatibility"
                         showPaywall = true
                     }) {
-                        HStack(spacing: 8) {
-                            Image(systemName: "lock.fill")
-                                .font(.system(size: 16))
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack(spacing: 6) {
+                                Image(systemName: "sparkles")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(DesignColors.accent)
+                                
+                                Text("Unlock deeper insights")
+                                    .font(DesignTypography.bodyFont(weight: .medium))
+                                    .foregroundColor(DesignColors.foreground)
+                            }
                             
-                            Text("Full Compatibility Insights")
-                                .font(DesignTypography.subheadFont(weight: .medium))
+                            Text("Emotional connection • Communication • Long-term potential")
+                                .font(DesignTypography.footnoteFont())
+                                .foregroundColor(DesignColors.mutedForeground.opacity(0.7))
+                            
+                            Text("Unlock Unlimited Compatibility + Timing Insights")
+                                .font(DesignTypography.bodyFont(weight: .medium))
+                                .foregroundColor(DesignColors.accent)
+                            
+                            Text("Access every insight and explore deeper patterns.")
+                                .font(DesignTypography.footnoteFont())
+                                .foregroundColor(DesignColors.mutedForeground.opacity(0.7))
                         }
-                        .foregroundColor(DesignColors.accent)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(
-                            RoundedRectangle(cornerRadius: 10)
-                                .fill(DesignColors.accent.opacity(0.1))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 10)
-                                        .stroke(DesignColors.accent.opacity(0.5), lineWidth: 1)
-                                )
-                        )
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.vertical, 10)
+                        .padding(.horizontal, 6)
                     }
                     .buttonStyle(PlainButtonStyle())
                 }
@@ -764,14 +779,15 @@ struct ProfileView: View {
     
     // MARK: - Saved Content Section
     private var savedContentSection: some View {
-        VStack(alignment: .leading, spacing: 24) {
-            BaseSectionHeader(
-                title: "Saved Content",
-                subtitle: "Your personal library of readings and tools",
-                onViewAll: {
-                    // Navigate to saved library
-                }
-            )
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Saved Content")
+                .font(DesignTypography.headlineFont(weight: .semibold))
+                .foregroundColor(DesignColors.foreground)
+            
+            // Separator line
+            Divider()
+                .overlay(Color.white.opacity(0.2))
+                .padding(.bottom, 4)
             
             VStack(spacing: 16) {
                 // Category Chips
@@ -787,7 +803,6 @@ struct ProfileView: View {
                             )
                         }
                     }
-                    .padding(.horizontal, DesignSpacing.sm)
                 }
                 
                 // Saved Items Horizontal Scroll
@@ -797,81 +812,52 @@ struct ProfileView: View {
                             savedContentCard(item: item, isPremium: activeSavedTab == .practices && index == 0)
                         }
                     }
-                    .padding(.horizontal, DesignSpacing.sm)
                 }
             }
         }
     }
     
     private func savedContentCard(item: ProfileData.SavedContentItem, isPremium: Bool) -> some View {
-        Button(action: {
-            if isPremium && !UserSubscriptionService.shared.isPremium {
-                paywallContext = nil
-                showPaywall = true
-            } else {
-                // Navigate to content
-            }
-        }) {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(spacing: 8) {
-                    Text(item.type)
-                        .font(DesignTypography.caption2Font(weight: .medium))
-                        .foregroundColor(DesignColors.mutedForeground)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 4)
-                        .background(
-                            Capsule()
-                                .fill(Color.white.opacity(0.05))
-                                .overlay(
-                                    Capsule()
-                                        .stroke(Color.white.opacity(0.1), lineWidth: 1)
-                                )
-                        )
-                    
-                    if isPremium {
-                        HStack(spacing: 4) {
-                            Image(systemName: "lock.fill")
-                                .font(.system(size: 12))
-                            Text("Premium")
-                                .font(DesignTypography.caption2Font(weight: .medium))
-                        }
-                        .foregroundColor(DesignColors.accent)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 2)
-                        .background(
-                            Capsule()
-                                .fill(DesignColors.accent.opacity(0.2))
-                        )
-                    }
+        BaseCard(
+            variant: .interactive,
+            action: {
+                if isPremium && !UserSubscriptionService.shared.isPremium {
+                    paywallContext = nil
+                    showPaywall = true
+                } else {
+                    // Navigate to content
                 }
+            }
+        ) {
+            VStack(alignment: .leading, spacing: 12) {
+                // Type Tag
+                Text(item.type)
+                    .font(DesignTypography.footnoteFont(weight: .medium))
+                    .foregroundColor(DesignColors.mutedForeground)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(
+                        Capsule()
+                            .fill(Color.white.opacity(0.05))
+                            .overlay(
+                                Capsule()
+                                    .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                            )
+                    )
+                
+                Spacer()
                 
                 Text(item.name)
                     .font(DesignTypography.headlineFont(weight: .medium))
                     .foregroundColor(DesignColors.foreground)
-                    .multilineTextAlignment(.leading)
+                    .lineLimit(2)
                 
-                Text(isPremium ? "Unlock to view" : "Tap to view your saved content")
+                Text("Tap to explore")
                     .font(.system(size: 15))
                     .foregroundColor(DesignColors.mutedForeground)
-                    .multilineTextAlignment(.leading)
-                
-                Text(item.timestamp)
-                    .font(DesignTypography.caption2Font())
-                    .foregroundColor(DesignColors.mutedForeground.opacity(0.7))
-                    .padding(.top, 4)
             }
             .frame(width: 320, height: 200, alignment: .topLeading)
-            .padding(24)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.white.opacity(0.05))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                    )
-            )
         }
-        .buttonStyle(PlainButtonStyle())
     }
     
     // MARK: - Reports Section
@@ -1056,7 +1042,7 @@ struct ProfileView: View {
                     BaseCard(
                         variant: .interactive,
                         action: {
-                            // Handle navigation
+                            handleAccountToolTap(path: tool.path)
                         }
                     ) {
                         HStack(spacing: 12) {
@@ -1132,7 +1118,10 @@ struct ProfileData {
     
     static let premiumChineseZodiacFeatures = [
         "Element compatibility",
-        "Yearly forecasts"
+        "Lucky numbers & colors",
+        "Yearly forecasts",
+        "Detailed personality traits",
+        "Compatibility insights"
     ]
     
     struct SavedContentItem {
@@ -1169,7 +1158,8 @@ struct ProfileData {
     
     static let premiumMembershipBenefits = [
         "Full astrology + numerology blueprint",
-        "All compatibility insights",
+        "Unlimited compatibility checks",
+        "Relationship timing insights",
         "Access every ritual & reading"
     ]
     

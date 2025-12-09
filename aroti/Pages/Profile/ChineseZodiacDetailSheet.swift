@@ -257,7 +257,7 @@ struct ChineseZodiacDetailSheet: View {
     
     private func getManifestationText(for animal: String, element: String) -> String {
         let animalLower = animal.lowercased()
-        let elementLower = element.lowercased()
+        let _ = element.lowercased()
         
         var manifestation = ""
         

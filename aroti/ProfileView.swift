@@ -53,7 +53,16 @@ struct ProfileView: View {
     @State private var showSettingsSheet = false
     @State private var showNotificationsSheet = false
     @State private var showLanguageSheet = false
+    @State private var showChangeEmailSheet = false
+    @State private var showChangePasswordSheet = false
     @State private var showPrivacyTermsSheet = false
+    @State private var showPrivacyPolicySheet = false
+    @State private var showTermsOfUseSheet = false
+    @State private var showCookiePolicySheet = false
+    @State private var showDataDeletionPolicySheet = false
+    @State private var showDownloadDataSheet = false
+    @State private var showDeleteAccountSheet = false
+    @State private var showContactSupportSheet = false
     
     // Premium status
     private var isPremium: Bool {
@@ -293,10 +302,15 @@ struct ProfileView: View {
                 }
             }
             .sheet(isPresented: $showWalletCreditsSheet) {
-                WalletCreditsSheet()
+                MembershipBillingSheet(showPaywall: $showPaywall)
             }
             .sheet(isPresented: $showSettingsSheet) {
-                SettingsSheet()
+                SettingsSheet(
+                    showNotificationsSheet: $showNotificationsSheet,
+                    showLanguageSheet: $showLanguageSheet,
+                    showChangeEmailSheet: $showChangeEmailSheet,
+                    showChangePasswordSheet: $showChangePasswordSheet
+                )
             }
             .sheet(isPresented: $showNotificationsSheet) {
                 NotificationsSheet()
@@ -304,8 +318,43 @@ struct ProfileView: View {
             .sheet(isPresented: $showLanguageSheet) {
                 LanguageSheet()
             }
+            .sheet(isPresented: $showChangeEmailSheet) {
+                ChangeEmailSheet()
+            }
+            .sheet(isPresented: $showChangePasswordSheet) {
+                ChangePasswordSheet()
+            }
             .sheet(isPresented: $showPrivacyTermsSheet) {
-                PrivacyTermsSheet()
+                PrivacyTermsSheet(
+                    showPrivacyPolicySheet: $showPrivacyPolicySheet,
+                    showTermsOfUseSheet: $showTermsOfUseSheet,
+                    showCookiePolicySheet: $showCookiePolicySheet,
+                    showDataDeletionPolicySheet: $showDataDeletionPolicySheet,
+                    showDownloadDataSheet: $showDownloadDataSheet,
+                    showDeleteAccountSheet: $showDeleteAccountSheet,
+                    showContactSupportSheet: $showContactSupportSheet
+                )
+            }
+            .sheet(isPresented: $showPrivacyPolicySheet) {
+                PrivacyPolicySheet()
+            }
+            .sheet(isPresented: $showTermsOfUseSheet) {
+                TermsOfUseSheet()
+            }
+            .sheet(isPresented: $showCookiePolicySheet) {
+                CookiePolicySheet()
+            }
+            .sheet(isPresented: $showDataDeletionPolicySheet) {
+                DataDeletionPolicySheet()
+            }
+            .sheet(isPresented: $showDownloadDataSheet) {
+                DownloadDataSheet()
+            }
+            .sheet(isPresented: $showDeleteAccountSheet) {
+                DeleteAccountSheet()
+            }
+            .sheet(isPresented: $showContactSupportSheet) {
+                ContactSupportSheet()
             }
         }
     }
@@ -1172,10 +1221,8 @@ struct ProfileData {
     ]
     
     static let accountTools: [AccountTool] = [
-        AccountTool(label: "Wallet & Credits", iconName: "creditcard", path: "/profile/settings/wallet"),
+        AccountTool(label: "Membership & Billing", iconName: "creditcard", path: "/profile/settings/wallet"),
         AccountTool(label: "Settings", iconName: "gearshape", path: "/profile/settings"),
-        AccountTool(label: "Notifications", iconName: "bell", path: "/profile/notifications"),
-        AccountTool(label: "Language", iconName: "globe", path: "/profile/language"),
         AccountTool(label: "Privacy & Terms", iconName: "shield", path: "/profile/settings/privacy")
     ]
 }

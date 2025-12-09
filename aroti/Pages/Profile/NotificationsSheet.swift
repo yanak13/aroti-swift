@@ -6,54 +6,55 @@
 //
 
 import SwiftUI
+import UserNotifications
 
 struct NotificationsSheet: View {
+    @State private var allowPushNotifications: Bool = true
+    @State private var dailyHoroscopeNotifications: Bool = true
+    @State private var guidanceMessageAlerts: Bool = true
     @State private var ritualReminders: Bool = true
-    @State private var dailyReading: Bool = true
-    @State private var astrologyUpdates: Bool = true
-    @State private var bookingUpdates: Bool = true
-    @State private var marketingOffers: Bool = false
+    @State private var systemNotificationsDisabled: Bool = false
     
     private let notificationKeyPrefix = "aroti_notification_"
     
     var body: some View {
-        GlassSheetContainer(title: "Notifications", subtitle: "Fine-tune reminders and updates") {
+        GlassSheetContainer(title: "Notifications", subtitle: "Manage alerts and ritual reminders") {
             VStack(spacing: 20) {
-                BaseCard {
-                    VStack(alignment: .leading, spacing: 24) {
+                // System Notification Banner
+                if systemNotificationsDisabled {
+                    BaseCard {
                         HStack(spacing: 12) {
-                            Image(systemName: "bell")
-                                .font(.system(size: 20))
-                                .foregroundColor(DesignColors.accent)
-                                .frame(width: 40, height: 40)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .fill(Color.white.opacity(0.05))
-                                )
-                            
-                            Text("Notification Preferences")
-                                .font(DesignTypography.headlineFont(weight: .semibold))
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .font(.system(size: 18))
+                                .foregroundColor(DesignColors.warning)
+                            Text("Notifications are turned off in iOS Settings → Aroti.")
+                                .font(DesignTypography.bodyFont())
                                 .foregroundColor(DesignColors.foreground)
                         }
-                        
-                        VStack(spacing: 16) {
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .overlay(
+                        RoundedRectangle(cornerRadius: ArotiRadius.md)
+                            .stroke(DesignColors.warning.opacity(0.3), lineWidth: 1)
+                    )
+                }
+                
+                BaseCard {
+                    VStack(alignment: .leading, spacing: 16) {
+                        VStack(spacing: 12) {
+                            notificationToggleRow(title: "Allow Push Notifications", binding: $allowPushNotifications, key: "allowPushNotifications")
+                            notificationToggleRow(title: "Daily Horoscope Notifications", binding: $dailyHoroscopeNotifications, key: "dailyHoroscopeNotifications")
+                            notificationToggleRow(title: "Guidance Message Alerts", binding: $guidanceMessageAlerts, key: "guidanceMessageAlerts")
                             notificationToggleRow(title: "Ritual Reminders", binding: $ritualReminders, key: "ritualReminders")
-                            notificationToggleRow(title: "Daily Reading", binding: $dailyReading, key: "dailyReading")
-                            notificationToggleRow(title: "Astrology Updates", binding: $astrologyUpdates, key: "astrologyUpdates")
-                            notificationToggleRow(title: "Booking Updates", binding: $bookingUpdates, key: "bookingUpdates")
-                            notificationToggleRow(title: "Marketing/Offers", binding: $marketingOffers, key: "marketingOffers")
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                
-                Text("Your device notification settings can override these preferences.")
-                    .font(DesignTypography.footnoteFont())
-                    .foregroundColor(DesignColors.mutedForeground)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 16)
             }
-            .onAppear { loadNotificationPreferences() }
+            .onAppear {
+                loadNotificationPreferences()
+                checkSystemNotificationStatus()
+            }
         }
     }
     
@@ -66,7 +67,7 @@ struct NotificationsSheet: View {
             Toggle("", isOn: binding)
                 .tint(DesignColors.accent)
                 .labelsHidden()
-                .onChange(of: binding.wrappedValue) { newValue in
+                .onChange(of: binding.wrappedValue) { oldValue, newValue in
                     saveNotificationPreference(key: key, value: newValue)
                 }
         }
@@ -74,20 +75,25 @@ struct NotificationsSheet: View {
     
     private func loadNotificationPreferences() {
         let defaults = UserDefaults.standard
+        if defaults.object(forKey: notificationKeyPrefix + "allowPushNotifications") != nil {
+            allowPushNotifications = defaults.bool(forKey: notificationKeyPrefix + "allowPushNotifications")
+        }
+        if defaults.object(forKey: notificationKeyPrefix + "dailyHoroscopeNotifications") != nil {
+            dailyHoroscopeNotifications = defaults.bool(forKey: notificationKeyPrefix + "dailyHoroscopeNotifications")
+        }
+        if defaults.object(forKey: notificationKeyPrefix + "guidanceMessageAlerts") != nil {
+            guidanceMessageAlerts = defaults.bool(forKey: notificationKeyPrefix + "guidanceMessageAlerts")
+        }
         if defaults.object(forKey: notificationKeyPrefix + "ritualReminders") != nil {
             ritualReminders = defaults.bool(forKey: notificationKeyPrefix + "ritualReminders")
         }
-        if defaults.object(forKey: notificationKeyPrefix + "dailyReading") != nil {
-            dailyReading = defaults.bool(forKey: notificationKeyPrefix + "dailyReading")
-        }
-        if defaults.object(forKey: notificationKeyPrefix + "astrologyUpdates") != nil {
-            astrologyUpdates = defaults.bool(forKey: notificationKeyPrefix + "astrologyUpdates")
-        }
-        if defaults.object(forKey: notificationKeyPrefix + "bookingUpdates") != nil {
-            bookingUpdates = defaults.bool(forKey: notificationKeyPrefix + "bookingUpdates")
-        }
-        if defaults.object(forKey: notificationKeyPrefix + "marketingOffers") != nil {
-            marketingOffers = defaults.bool(forKey: notificationKeyPrefix + "marketingOffers")
+    }
+    
+    private func checkSystemNotificationStatus() {
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+            DispatchQueue.main.async {
+                systemNotificationsDisabled = settings.authorizationStatus != .authorized
+            }
         }
     }
     

@@ -34,7 +34,7 @@ struct BaseCard<Content: View>: View {
                 Button(action: action!) {
                     cardContent
                 }
-                .buttonStyle(PlainButtonStyle())
+                .buttonStyle(CardTapButtonStyle(cornerRadius: ArotiRadius.md))
             } else {
                 cardContent
             }

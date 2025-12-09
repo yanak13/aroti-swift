@@ -8,38 +8,100 @@
 import SwiftUI
 
 struct PrivacyTermsSheet: View {
-    @State private var showAlert = false
-    @State private var alertMessage = ""
+    @Environment(\.dismiss) private var dismiss
+    @Binding var showPrivacyPolicySheet: Bool
+    @Binding var showTermsOfUseSheet: Bool
+    @Binding var showCookiePolicySheet: Bool
+    @Binding var showDataDeletionPolicySheet: Bool
+    @Binding var showDownloadDataSheet: Bool
+    @Binding var showDeleteAccountSheet: Bool
+    @Binding var showContactSupportSheet: Bool
     
     var body: some View {
-        GlassSheetContainer(title: "Privacy & Terms", subtitle: "Review policies and contact support") {
-            VStack(spacing: 12) {
-                interactiveRow(icon: "shield", label: "Privacy Policy", message: "Privacy Policy page coming soon")
-                interactiveRow(icon: "doc.text", label: "Terms of Use", message: "Terms of Use page coming soon")
-                interactiveRow(icon: "doc.text.fill", label: "Cookie Policy", message: "Cookie Policy page coming soon")
-                interactiveRow(icon: "trash", label: "Data Deletion Policy", message: "Data Deletion Policy page coming soon")
-                BaseCard(variant: .interactive, action: {
-                    if let url = URL(string: "mailto:support@aroti.com?subject=Privacy & Terms Inquiry") {
-                        UIApplication.shared.open(url)
+        GlassSheetContainer(title: "Privacy & Terms", subtitle: "Legal documents, data management, and support") {
+            VStack(alignment: .leading, spacing: 20) {
+                // Legal Documents Section
+                VStack(alignment: .leading, spacing: 12) {
+                    sectionHeader(title: "Legal Documents")
+                    BaseCard(variant: .interactive, action: {
+                        dismiss()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            showPrivacyPolicySheet = true
+                        }
+                    }) {
+                        SheetRow(iconName: "shield", label: "Privacy Policy")
                     }
-                }) {
-                    SheetRow(iconName: "questionmark.circle", label: "Contact Support")
+                    BaseCard(variant: .interactive, action: {
+                        dismiss()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            showTermsOfUseSheet = true
+                        }
+                    }) {
+                        SheetRow(iconName: "doc.text", label: "Terms of Use")
+                    }
+                    BaseCard(variant: .interactive, action: {
+                        dismiss()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            showCookiePolicySheet = true
+                        }
+                    }) {
+                        SheetRow(iconName: "doc.text.fill", label: "Cookie Policy")
+                    }
                 }
-            }
-            .alert("Info", isPresented: $showAlert) {
-                Button("OK", role: .cancel) { }
-            } message: {
-                Text(alertMessage)
+                
+                // Your Data Section
+                VStack(alignment: .leading, spacing: 12) {
+                    sectionHeader(title: "Your Data")
+                    BaseCard(variant: .interactive, action: {
+                        dismiss()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            showDownloadDataSheet = true
+                        }
+                    }) {
+                        SheetRow(iconName: "arrow.down.circle", label: "Download My Data")
+                    }
+                    BaseCard(variant: .interactive, action: {
+                        dismiss()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            showDataDeletionPolicySheet = true
+                        }
+                    }) {
+                        SheetRow(iconName: "doc.text.fill", label: "Data Deletion Policy")
+                    }
+                }
+                
+                // Account & Support Section
+                VStack(alignment: .leading, spacing: 12) {
+                    sectionHeader(title: "Account & Support")
+                    BaseCard(variant: .interactive, action: {
+                        dismiss()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            showDeleteAccountSheet = true
+                        }
+                    }) {
+                        SheetRow(iconName: "trash", label: "Delete Account", iconColor: DesignColors.destructive, textColor: DesignColors.destructive)
+                    }
+                    .overlay(
+                        RoundedRectangle(cornerRadius: ArotiRadius.md)
+                            .stroke(DesignColors.destructive.opacity(0.2), lineWidth: 1)
+                    )
+                    BaseCard(variant: .interactive, action: {
+                        dismiss()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            showContactSupportSheet = true
+                        }
+                    }) {
+                        SheetRow(iconName: "questionmark.circle", label: "Contact Support")
+                    }
+                }
             }
         }
     }
     
-    private func interactiveRow(icon: String, label: String, message: String) -> some View {
-        BaseCard(variant: .interactive, action: {
-            alertMessage = message
-            showAlert = true
-        }) {
-            SheetRow(iconName: icon, label: label)
-        }
+    private func sectionHeader(title: String) -> some View {
+        Text(title)
+            .font(DesignTypography.subheadFont(weight: .semibold))
+            .foregroundColor(DesignColors.mutedForeground)
+            .padding(.horizontal, 4)
     }
 }

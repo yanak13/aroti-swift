@@ -43,7 +43,6 @@ struct ProfileView: View {
     @State private var showPartnerModal = false
     @State private var showCompatibilityUnlockSheet = false
     @State private var showCompatibilityResults = false
-    @State private var selectedAstrologyPlacement: PlanetaryPlacement?
     @State private var selectedReport: Report?
     @State private var userBlueprint: UserBlueprint?
     @State private var partnerData: (name: String, birthDate: Date, birthTime: Date?, location: String)?
@@ -102,9 +101,9 @@ struct ProfileView: View {
                 ZStack(alignment: .top) {
                     ScrollView {
                         VStack(spacing: 0) {
-                            // 1. Unified User Card with Category Selector and Dynamic Content
+                            // 1. Modern Profile Header (No Card Background)
                             ScrollReveal {
-                                unifiedUserCard
+                                modernProfileHeader
                                     .padding(.top, DesignSpacing.lg + 8)
                                     .padding(.bottom, 32)
                             }
@@ -216,8 +215,8 @@ struct ProfileView: View {
                 )
             }
             .sheet(isPresented: $showAstrologyModal) {
-                if let placement = selectedAstrologyPlacement {
-                    AstrologyDetailSheet(placement: placement)
+                if let blueprint = userBlueprint {
+                    AstrologyDetailSheet(blueprint: blueprint.astrology)
                 }
             }
             .sheet(isPresented: $showNumerologyModal) {
@@ -386,107 +385,70 @@ struct ProfileView: View {
         return previewTraits.joined(separator: " • ")
     }
     
-    // MARK: - Helper Functions for Sign Symbols
-    private func getSignSymbol(for planet: String) -> String {
-        switch planet.lowercased() {
-        case "sun": return "☉"
-        case "moon": return "☽"
-        case "rising": return "↑"
-        default: return ""
-        }
-    }
     
-    private var signsDisplayText: String {
-        guard let blueprint = userBlueprint else {
-            return ""
-        }
-        let placements = blueprint.astrology.essentialPlacements
-        var parts: [String] = []
-        
-        for placement in placements {
-            let symbol = getSignSymbol(for: placement.planet)
-            if !symbol.isEmpty {
-                parts.append("\(symbol) \(placement.sign)")
-            }
-        }
-        
-        return parts.joined(separator: " • ")
-    }
-    
-    // MARK: - Unified User Card (Hero + Selector + Dynamic Content)
-    private var unifiedUserCard: some View {
-        BaseCard {
+    // MARK: - Modern Profile Header (No Card Background)
+    private var modernProfileHeader: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // Header Identity Block - No heavy card background
             VStack(alignment: .leading, spacing: 0) {
-                // User Header Section with Edit Button
-                ZStack(alignment: .topTrailing) {
-                    HStack(spacing: 16) {
-                        // Avatar
-                        Group {
-                            if let image = UIImage(named: profileAvatar) {
-                                Image(uiImage: image)
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fill)
-                            } else {
-                                Image(systemName: "person.circle.fill")
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fill)
-                                    .foregroundColor(DesignColors.accent.opacity(0.5))
-                            }
+                // User Info Row
+                HStack(alignment: .top, spacing: 12) {
+                    // Small Modern Avatar (44px)
+                    Group {
+                        if let image = UIImage(named: profileAvatar) {
+                            Image(uiImage: image)
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                        } else {
+                            Image(systemName: "person.circle.fill")
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .foregroundColor(DesignColors.accent.opacity(0.5))
                         }
-                        .frame(width: 80, height: 80)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(DesignColors.accent.opacity(0.2), lineWidth: 2)
-                        )
-                        
-                        // User Info
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(userName)
-                                .font(DesignTypography.title3Font())
-                                .foregroundColor(DesignColors.foreground)
-                            
-                            Text(userLocation)
-                                .font(DesignTypography.footnoteFont())
-                                .foregroundColor(DesignColors.mutedForeground)
-                            
-                            // Sun/Moon/Rising signs
-                            if !signsDisplayText.isEmpty {
-                                Text(signsDisplayText)
-                                    .font(DesignTypography.subheadFont())
-                                    .foregroundColor(DesignColors.mutedForeground)
-                                    .padding(.top, 4)
-                            }
-                        }
-                        
-                        Spacer()
                     }
+                    .frame(width: 44, height: 44)
+                    .clipShape(Circle())
+                    .shadow(color: Color.black.opacity(0.2), radius: 4, x: 0, y: 2)
                     
-                    // Small Edit Button (Pen Icon) in top right
+                    // User Info - Clean Typography
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(userName)
+                            .font(DesignTypography.title2Font(weight: .medium))
+                            .foregroundColor(DesignColors.foreground)
+                            .lineLimit(1)
+                        
+                        Text(userLocation)
+                            .font(DesignTypography.footnoteFont())
+                            .foregroundColor(DesignColors.mutedForeground.opacity(0.7))
+                            .lineLimit(1)
+                        
+                        Text("Your personal cosmic blueprint")
+                            .font(DesignTypography.footnoteFont(weight: .light))
+                            .foregroundColor(DesignColors.mutedForeground.opacity(0.5))
+                            .lineLimit(1)
+                    }
+                    .padding(.top, 2)
+                    
+                    Spacer()
+                    
+                    // Minimal Edit Button
                     Button(action: {
                         showEditProfile = true
                     }) {
                         Image(systemName: "pencil")
                             .font(.system(size: 16))
-                            .foregroundColor(DesignColors.mutedForeground)
+                            .foregroundColor(DesignColors.mutedForeground.opacity(0.6))
                             .frame(width: 32, height: 32)
                             .background(
                                 Circle()
                                     .fill(Color.white.opacity(0.05))
-                                    .overlay(
-                                        Circle()
-                                            .stroke(Color.white.opacity(0.1), lineWidth: 1)
-                                    )
                             )
                     }
+                    .buttonStyle(PlainButtonStyle())
                 }
-                .padding(.bottom, 20)
+                .padding(.bottom, 24)
                 
-                // Category Selector
-                Divider()
-                    .background(Color.white.opacity(0.1))
-                    .padding(.bottom, 16)
-                
+                // Category Tabs - Integrated with header
                 HStack(spacing: 0) {
                     ForEach(BlueprintCategory.allCases, id: \.self) { category in
                         Button(action: {
@@ -494,30 +456,40 @@ struct ProfileView: View {
                                 selectedCategory = category
                             }
                         }) {
-                            Text(category.rawValue)
-                                .font(DesignTypography.subheadFont(weight: .medium))
-                                .foregroundColor(selectedCategory == category ? DesignColors.accent : DesignColors.mutedForeground.opacity(0.6))
-                                .scaleEffect(selectedCategory == category ? 1.05 : 1.0)
-                                .multilineTextAlignment(.center)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 12)
-                                .overlay(
+                            VStack(spacing: 0) {
+                                Text(category.rawValue)
+                                    .font(DesignTypography.subheadFont(weight: .medium))
+                                    .foregroundColor(selectedCategory == category ? DesignColors.foreground : DesignColors.mutedForeground.opacity(0.5))
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 12)
+                                
+                                // Soft underline animation
+                                if selectedCategory == category {
                                     Rectangle()
-                                        .frame(height: selectedCategory == category ? 2 : 0)
+                                        .frame(height: 2)
                                         .foregroundColor(DesignColors.accent)
-                                        .offset(y: selectedCategory == category ? 18 : 0),
-                                    alignment: .bottom
-                                )
+                                        .shadow(color: DesignColors.accent.opacity(0.4), radius: 4, x: 0, y: 0)
+                                } else {
+                                    Rectangle()
+                                        .frame(height: 0)
+                                        .foregroundColor(.clear)
+                                }
+                            }
                         }
+                        .buttonStyle(PlainButtonStyle())
                     }
                 }
-                .padding(.bottom, 20)
-                
-                // Dynamic Category Content
-                Divider()
-                    .background(Color.white.opacity(0.1))
-                    .padding(.bottom, 16)
-                
+                .overlay(
+                    Rectangle()
+                        .frame(height: 1)
+                        .foregroundColor(Color.white.opacity(0.05)),
+                    alignment: .bottom
+                )
+            }
+            .padding(.bottom, 24)
+            
+            // Dynamic Category Content (wrapped in BaseCard)
+            BaseCard {
                 if hasBirthDetails, let blueprint = userBlueprint {
                     switch selectedCategory {
                     case .astrology:
@@ -547,53 +519,48 @@ struct ProfileView: View {
     
     // MARK: - Astrology Category Content
     private func astrologyCategoryContent(blueprint: AstrologyBlueprint) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 20) {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Astrology")
                     .font(DesignTypography.title3Font())
                     .foregroundColor(DesignColors.foreground)
                 
-                Text("Your essential placements based on your birth date, time, and location.")
+                Text("Your essential placements based on your birth details.")
                     .font(DesignTypography.footnoteFont())
                     .foregroundColor(DesignColors.mutedForeground)
             }
             
-            // Sun, Moon, Rising (free)
-            VStack(spacing: 12) {
-                ForEach(blueprint.essentialPlacements) { placement in
-                    Button(action: {
-                        selectedAstrologyPlacement = placement
-                        showAstrologyModal = true
-                    }) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(placement.title)
-                                .font(DesignTypography.bodyFont(weight: .medium))
-                                .foregroundColor(DesignColors.foreground)
-                            
-                            Text(placement.description)
-                                .font(DesignTypography.footnoteFont())
-                                .foregroundColor(DesignColors.mutedForeground)
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(12)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.white.opacity(0.02))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(Color.white.opacity(0.05), lineWidth: 1)
-                                )
-                        )
-                    }
-                    .buttonStyle(PlainButtonStyle())
+            // Sun card only (free)
+            Button(action: {
+                showAstrologyModal = true
+            }) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Sun — \(blueprint.sun.sign)")
+                        .font(DesignTypography.bodyFont(weight: .medium))
+                        .foregroundColor(DesignColors.foreground)
+                    
+                    Text(blueprint.sun.description)
+                        .font(DesignTypography.footnoteFont())
+                        .foregroundColor(DesignColors.mutedForeground)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(16)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.white.opacity(0.02))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.white.opacity(0.05), lineWidth: 1)
+                        )
+                )
             }
+            .buttonStyle(PlainButtonStyle())
             
             // Premium Features Section
             if !isPremium {
                 PremiumFeaturesSection(
                     title: "Astrology Premium",
-                    summary: "All planets, 12 houses, and aspect insights.",
+                    summary: "All planets, houses, and aspect insights.",
                     features: ProfileData.premiumAstrologyFeatures,
                     unlockButtonText: "Unlock Full Astrology Report",
                     onUnlockClick: {
@@ -607,7 +574,7 @@ struct ProfileView: View {
     
     // MARK: - Numerology Category Content
     private func numerologyCategoryContent(blueprint: NumerologyBlueprint) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 20) {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Numerology")
                     .font(DesignTypography.title3Font())
@@ -662,7 +629,7 @@ struct ProfileView: View {
     
     // MARK: - Chinese Zodiac Category Content
     private func chineseZodiacCategoryContent(blueprint: ChineseZodiacBlueprint) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 20) {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Chinese Zodiac")
                     .font(DesignTypography.title3Font())
@@ -678,7 +645,7 @@ struct ProfileView: View {
                 showChineseZodiacModal = true
             }) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("\(blueprint.fullSign) — \(blueprint.animal)")
+                    Text("\(blueprint.element) \(blueprint.animal) — \(blueprint.animal)")
                         .font(DesignTypography.bodyFont(weight: .medium))
                         .foregroundColor(DesignColors.foreground)
                     
@@ -718,9 +685,9 @@ struct ProfileView: View {
     
     private var compatibilityCard: some View {
         BaseCard {
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 10) {
                 // 1. Header
-                VStack(alignment: .leading, spacing: 6) {
+                VStack(alignment: .leading, spacing: 4) {
                     Text("Compatibility")
                         .font(DesignTypography.title3Font())
                         .foregroundColor(DesignColors.foreground)
@@ -738,11 +705,12 @@ struct ProfileView: View {
                         Text("\(freeRemaining) free compatibility insight\(freeRemaining != 1 ? "s" : "") remaining")
                             .font(DesignTypography.footnoteFont(weight: .medium))
                             .foregroundColor(DesignColors.foreground)
+                            .padding(.top, 2)
                     }
                 }
                 
                 // 3. Main CTA - Add Partner (Hero)
-                VStack(spacing: 6) {
+                VStack(spacing: 4) {
                     ArotiButton(
                         kind: .primary,
                         action: {
@@ -764,6 +732,7 @@ struct ProfileView: View {
                         .frame(maxWidth: .infinity)
                         .multilineTextAlignment(.center)
                 }
+                .padding(.top, 2)
                 
                 // 4. Baseline Compatibility Preview (Small Card)
                 VStack(alignment: .leading, spacing: 4) {
@@ -785,18 +754,18 @@ struct ProfileView: View {
                                 .stroke(Color.white.opacity(0.05), lineWidth: 1)
                         )
                 )
+                .padding(.top, 2)
                 
-                // 5. Premium Preview Row (collapsed, tappable)
+                // 5. Premium Preview Row (collapsed, tappable, minimal)
                 if !isPremium {
                     Button(action: {
                         paywallContext = "compatibility"
                         showPaywall = true
                     }) {
-                        VStack(alignment: .leading, spacing: 4) {
+                        VStack(alignment: .leading, spacing: 3) {
                             HStack(spacing: 6) {
-                                Image(systemName: "sparkles")
+                                Text("✨")
                                     .font(.system(size: 14))
-                                    .foregroundColor(DesignColors.accent)
                                 
                                 Text("Unlock deeper insights")
                                     .font(DesignTypography.bodyFont(weight: .medium))
@@ -806,7 +775,19 @@ struct ProfileView: View {
                             Text("Emotional connection • Communication • Long-term potential")
                                 .font(DesignTypography.footnoteFont())
                                 .foregroundColor(DesignColors.mutedForeground.opacity(0.7))
-                            
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.vertical, 8)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .padding(.top, 2)
+                    
+                    // 6. Small Premium CTA Card (reduced height by ~50%)
+                    Button(action: {
+                        paywallContext = "compatibility"
+                        showPaywall = true
+                    }) {
+                        VStack(alignment: .leading, spacing: 3) {
                             Text("Unlock Unlimited Compatibility + Timing Insights")
                                 .font(DesignTypography.bodyFont(weight: .medium))
                                 .foregroundColor(DesignColors.accent)
@@ -816,10 +797,18 @@ struct ProfileView: View {
                                 .foregroundColor(DesignColors.mutedForeground.opacity(0.7))
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.vertical, 10)
-                        .padding(.horizontal, 6)
+                        .padding(12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.white.opacity(0.02))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(DesignColors.accent.opacity(0.25), lineWidth: 1)
+                                )
+                        )
                     }
                     .buttonStyle(PlainButtonStyle())
+                    .padding(.top, 2)
                 }
             }
         }
@@ -911,67 +900,69 @@ struct ProfileView: View {
     
     // MARK: - Reports Section
     private var reportsSection: some View {
-        VStack(alignment: .leading, spacing: 24) {
-            BaseSectionHeader(
-                title: "Reports",
-                subtitle: "Purchase detailed PDF reports"
-            )
+        VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Reports")
+                    .font(DesignTypography.title3Font())
+                    .foregroundColor(DesignColors.foreground)
+                
+                Text("Purchase detailed PDF reports")
+                    .font(DesignTypography.footnoteFont())
+                    .foregroundColor(DesignColors.mutedForeground)
+            }
             
-            BaseCard {
-                VStack(spacing: 12) {
-                    ForEach(ProfileData.reports) { report in
-                        Button(action: {
-                            selectedReport = report
-                            showPDFModal = true
-                        }) {
-                            ZStack(alignment: .topTrailing) {
-                                HStack {
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text(report.name)
-                                            .font(DesignTypography.bodyFont(weight: .medium))
-                                            .foregroundColor(DesignColors.foreground)
-                                        
-                                        Text(report.description)
-                                            .font(DesignTypography.footnoteFont())
-                                            .foregroundColor(DesignColors.mutedForeground)
-                                    }
-                                    
-                                    Spacer()
-                                    
-                                    Text("$\(String(format: "%.2f", report.price))")
-                                        .font(DesignTypography.title3Font(weight: .semibold))
-                                        .foregroundColor(DesignColors.accent)
-                                }
-                                .padding(16)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(Color.white.opacity(0.05))
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 12)
-                                                .stroke(Color.white.opacity(0.1), lineWidth: 1)
-                                        )
-                                )
+            VStack(spacing: 8) {
+                ForEach(ProfileData.reports) { report in
+                    Button(action: {
+                        selectedReport = report
+                        showPDFModal = true
+                    }) {
+                        HStack(alignment: .center, spacing: 12) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(report.name)
+                                    .font(DesignTypography.bodyFont(weight: .medium))
+                                    .foregroundColor(DesignColors.foreground)
+                                
+                                Text(report.description)
+                                    .font(DesignTypography.footnoteFont())
+                                    .foregroundColor(DesignColors.mutedForeground)
+                            }
+                            
+                            Spacer()
+                            
+                            VStack(alignment: .trailing, spacing: 4) {
+                                Text("$\(String(format: "%.2f", report.price))")
+                                    .font(DesignTypography.title3Font(weight: .semibold))
+                                    .foregroundColor(DesignColors.accent)
                                 
                                 if report.isMostPopular {
-                                    HStack(spacing: 4) {
+                                    HStack(spacing: 3) {
                                         Image(systemName: "star.fill")
-                                            .font(.system(size: 10))
+                                            .font(.system(size: 9))
                                         Text("Most popular")
                                             .font(DesignTypography.caption2Font(weight: .medium))
                                     }
                                     .foregroundColor(DesignColors.accent)
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 4)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 3)
                                     .background(
                                         Capsule()
                                             .fill(DesignColors.accent.opacity(0.2))
                                     )
-                                    .offset(x: -4, y: 4)
                                 }
                             }
                         }
-                        .buttonStyle(PlainButtonStyle())
+                        .padding(16)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.white.opacity(0.02))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(Color.white.opacity(0.05), lineWidth: 1)
+                                )
+                        )
                     }
+                    .buttonStyle(PlainButtonStyle())
                 }
             }
         }
@@ -1193,8 +1184,8 @@ struct ProfileData {
     ]
     
     static let reports: [Report] = [
-        Report(id: "birth-chart", name: "Birth Chart Report", description: "Comprehensive analysis of your natal chart", price: 11.99, isMostPopular: true),
-        Report(id: "numerology", name: "Numerology Report", description: "Complete numerology analysis and insights", price: 7.99, isMostPopular: false),
+        Report(id: "birth-chart", name: "Birth Chart Report", description: "In-depth analysis of your natal chart", price: 11.99, isMostPopular: true),
+        Report(id: "numerology", name: "Numerology Report", description: "Complete numerology breakdown & insights", price: 7.99, isMostPopular: false),
         Report(id: "compatibility", name: "Compatibility Report", description: "Deep dive into relationship dynamics", price: 9.99, isMostPopular: false),
         Report(id: "year-ahead", name: "Year Ahead Report", description: "Astrological forecast for the coming year", price: 12.99, isMostPopular: false)
     ]

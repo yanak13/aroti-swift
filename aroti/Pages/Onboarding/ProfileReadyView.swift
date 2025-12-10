@@ -61,7 +61,7 @@ struct ProfileReadyView: View {
                     icon: Image(systemName: "sparkles"),
                     action: {
                         // Save to user profile/service
-                        let profile = onboardingManager.getCompiledProfile()
+                        let _ = onboardingManager.getCompiledProfile()
                         // TODO: Save to backend/user service
                         
                         showHomePage = true

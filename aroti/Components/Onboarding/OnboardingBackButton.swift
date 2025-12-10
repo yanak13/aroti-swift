@@ -29,8 +29,9 @@ struct OnboardingBackButton: View {
                 Text("Back")
                     .font(ArotiTextStyle.subhead)
             }
-            .foregroundColor(ArotiColor.textSecondary)
+            .foregroundColor(ArotiColor.textPrimary.opacity(0.8)) // Increased contrast
         }
+        .opacity(1) // Start visible, will fade in smoothly
     }
     
     private func goBack() {

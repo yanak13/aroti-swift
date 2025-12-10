@@ -15,6 +15,13 @@ struct BuildingProfileView: View {
             CelestialBackground()
             
             VStack(spacing: 32) {
+                HStack {
+                    Spacer()
+                    OnboardingSkipButton()
+                }
+                .padding(.horizontal, 24)
+                .padding(.top, 20)
+                
                 Spacer()
                 
                 BuildingAnimationView()

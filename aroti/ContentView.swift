@@ -28,6 +28,9 @@ struct ContentView: View {
             .navigationDestination(isPresented: $showDesignComponents) {
                 DesignComponentsView()
             }
+            .environment(\.skipOnboarding) {
+                showHomePage = true
+            }
         }
     }
     

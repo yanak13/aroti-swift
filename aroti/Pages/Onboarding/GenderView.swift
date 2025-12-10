@@ -21,6 +21,7 @@ struct GenderView: View {
                 HStack {
                     OnboardingBackButton()
                     Spacer()
+                    OnboardingSkipButton()
                 }
                 .padding(.horizontal, 24)
                 .padding(.top, 20)

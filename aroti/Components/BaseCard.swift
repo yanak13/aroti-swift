@@ -48,7 +48,7 @@ struct BaseCard<Content: View>: View {
                 ZStack {
                     // Glass card background - dark purple-tinted color without material blur
                     RoundedRectangle(cornerRadius: ArotiRadius.md)
-                        .fill(variant == .secondary ? ArotiColor.surface.opacity(0.5) : Color(red: 23/255, green: 20/255, blue: 31/255, opacity: 0.9))
+                        .fill(variant == .secondary ? ArotiColor.surface.opacity(0.5) : Color(red: 23/255, green: 20/255, blue: 31/255, opacity: 0.75))
                     
                     // Liquid glass highlight at top
                     VStack {

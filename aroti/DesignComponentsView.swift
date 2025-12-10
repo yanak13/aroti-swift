@@ -17,7 +17,6 @@ struct DesignComponentsView: View {
                     iconsSection
                     layoutSection
                     modalsSection
-                    onboardingSection
                     avatarsSection
                 }
                 .padding(.horizontal, DesignSpacing.sm)
@@ -202,17 +201,6 @@ struct DesignComponentsView: View {
             )
             UnifiedModalDemo()
             TarotModalDemo()
-        }
-    }
-    
-    private var onboardingSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            BaseSectionHeader(
-                title: "Onboarding Components",
-                subtitle: "Components used in onboarding flow"
-            )
-            ProgressBarDemo()
-            BackButtonDemo()
         }
     }
     

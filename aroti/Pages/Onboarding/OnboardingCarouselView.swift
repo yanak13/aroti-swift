@@ -97,7 +97,7 @@ struct OnboardingCarouselView: View {
                         coordinator.currentPage = newValue + 1
                     }
                     
-                    // Bottom controls - fixed at bottom
+                    // Bottom controls - pinned at same position as Welcome screen button
                     VStack(spacing: DesignSpacing.md) {
                         // Pagination dots with animation
                         HStack(spacing: 8) {
@@ -112,7 +112,7 @@ struct OnboardingCarouselView: View {
                         }
                         .padding(.vertical, DesignSpacing.sm)
                         
-                        // Continue button
+                        // Continue button - same position as Welcome screen
                         ArotiButton(
                             kind: .primary,
                             title: "Continue",
@@ -130,7 +130,7 @@ struct OnboardingCarouselView: View {
                         )
                         .padding(.horizontal, DesignSpacing.lg)
                     }
-                    .padding(.bottom, DesignSpacing.lg)
+                    .padding(.bottom, geometry.size.height * 0.11) // Match Welcome screen button position
                     .frame(maxWidth: .infinity)
                     .background(
                         // Subtle fade to blend with background

@@ -9,6 +9,7 @@ import SwiftUI
 struct OnboardingBirthTimeView: View {
     @ObservedObject var coordinator: OnboardingCoordinator
     @State private var isUnknown: Bool = false
+    @State private var isPickerOpen = false
     
     private var hasTimeSelected: Bool {
         coordinator.birthTime != nil && !isUnknown
@@ -40,6 +41,7 @@ struct OnboardingBirthTimeView: View {
                                     isUnknown = false
                                 }
                             ),
+                            isPickerOpen: $isPickerOpen,
                             displayedComponents: [.hourAndMinute],
                             placeholder: "Choose time",
                             title: "Select Birth Time"
@@ -62,5 +64,8 @@ struct OnboardingBirthTimeView: View {
                 coordinator.nextPage()
             }
         )
+        .blur(radius: isPickerOpen ? 8 : 0)
+        .opacity(isPickerOpen ? 0.7 : 1.0)
+        .animation(.easeInOut(duration: 0.3), value: isPickerOpen)
     }
 }

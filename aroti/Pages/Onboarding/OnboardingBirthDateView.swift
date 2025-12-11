@@ -8,6 +8,7 @@ import SwiftUI
 
 struct OnboardingBirthDateView: View {
     @ObservedObject var coordinator: OnboardingCoordinator
+    @State private var isPickerOpen = false
     
     private var hasDateSelected: Bool {
         coordinator.birthDate != nil
@@ -32,6 +33,7 @@ struct OnboardingBirthDateView: View {
                                 coordinator.birthDate = newDate
                             }
                         ),
+                        isPickerOpen: $isPickerOpen,
                         displayedComponents: [.date],
                         placeholder: "MM / DD / YYYY",
                         title: "Select Birth Date"
@@ -43,5 +45,8 @@ struct OnboardingBirthDateView: View {
                 coordinator.nextPage()
             }
         )
+        .blur(radius: isPickerOpen ? 8 : 0)
+        .opacity(isPickerOpen ? 0.7 : 1.0)
+        .animation(.easeInOut(duration: 0.3), value: isPickerOpen)
     }
 }

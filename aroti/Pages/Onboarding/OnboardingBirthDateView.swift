@@ -22,8 +22,7 @@ struct OnboardingBirthDateView: View {
             title: "What's your birth date?",
             content: {
                 OnboardingInputCard(
-                    label: "Select your birth date",
-                    placeholder: "Select your birth date",
+                    placeholder: "MM / DD / YYYY",
                     isSelected: hasDateSelected
                 ) {
                     OnboardingDatePicker(
@@ -34,7 +33,7 @@ struct OnboardingBirthDateView: View {
                             }
                         ),
                         displayedComponents: [.date],
-                        placeholder: "Select your birth date",
+                        placeholder: "MM / DD / YYYY",
                         title: "Select Birth Date"
                     )
                 }

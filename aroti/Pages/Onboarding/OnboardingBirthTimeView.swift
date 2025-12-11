@@ -26,29 +26,24 @@ struct OnboardingBirthTimeView: View {
                 VStack(spacing: DesignSpacing.md) {
                     // Time picker card - always visible, highlightable
                     OnboardingInputCard(
-                        label: "Select your birth time",
-                        placeholder: "Select your time",
+                        placeholder: "Choose time",
                         isSelected: hasTimeSelected,
                         action: {
                             isUnknown = false
                         }
                     ) {
-                        HStack {
-                            Spacer()
-                            OnboardingDatePicker(
-                                date: Binding(
-                                    get: { coordinator.birthTime },
-                                    set: { newTime in
-                                        coordinator.birthTime = newTime
-                                        isUnknown = false
-                                    }
-                                ),
-                                displayedComponents: [.hourAndMinute],
-                                placeholder: "Select your time",
-                                title: "Select Birth Time"
-                            )
-                            Spacer()
-                        }
+                        OnboardingDatePicker(
+                            date: Binding(
+                                get: { coordinator.birthTime },
+                                set: { newTime in
+                                    coordinator.birthTime = newTime
+                                    isUnknown = false
+                                }
+                            ),
+                            displayedComponents: [.hourAndMinute],
+                            placeholder: "Choose time",
+                            title: "Select Birth Time"
+                        )
                     }
                     
                     // "I'm not sure" option - always visible

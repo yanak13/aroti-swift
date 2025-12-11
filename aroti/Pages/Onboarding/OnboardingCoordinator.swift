@@ -11,7 +11,17 @@ class OnboardingCoordinator: ObservableObject {
     @Published var currentPage: Int = 0
     @Published var isOnboardingComplete: Bool = false
     
-    private let totalPages = 4 // Welcome + 3 carousel screens
+    // Onboarding data
+    @Published var emotionalState: String?
+    @Published var personalFocus: [String] = []
+    @Published var guidanceFrequency: String?
+    @Published var relationshipFocus: String?
+    @Published var birthDate: Date?
+    @Published var birthTime: Date?
+    @Published var birthLocation: String?
+    @Published var userName: String?
+    
+    private let totalPages = 17 // Total onboarding pages
     private let onboardingCompleteKey = "hasCompletedOnboarding"
     
     init() {
@@ -28,6 +38,22 @@ class OnboardingCoordinator: ObservableObject {
         }
     }
     
+    func previousPage() {
+        if currentPage > 0 {
+            withAnimation(.easeInOut(duration: 0.3)) {
+                currentPage -= 1
+            }
+        }
+    }
+    
+    func goToPage(_ page: Int) {
+        if page >= 0 && page < totalPages {
+            withAnimation(.easeInOut(duration: 0.3)) {
+                currentPage = page
+            }
+        }
+    }
+    
     func completeOnboarding() {
         UserDefaults.standard.set(true, forKey: onboardingCompleteKey)
         withAnimation {
@@ -37,5 +63,9 @@ class OnboardingCoordinator: ObservableObject {
     
     func getProgress() -> Double {
         return Double(currentPage) / Double(totalPages - 1)
+    }
+    
+    func canGoBack() -> Bool {
+        return currentPage > 0 && currentPage != 14 // Premium offer page disables back button
     }
 }

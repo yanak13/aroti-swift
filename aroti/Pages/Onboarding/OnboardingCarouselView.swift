@@ -92,7 +92,7 @@ struct OnboardingCarouselView: View {
                         }
                     }
                     .tabViewStyle(.page(indexDisplayMode: .never))
-                    .onChange(of: carouselPage) { newValue in
+                    .onChange(of: carouselPage) { oldValue, newValue in
                         // Update coordinator: page 1, 2, or 3 (welcome is 0)
                         coordinator.currentPage = newValue + 1
                     }
@@ -120,7 +120,7 @@ struct OnboardingCarouselView: View {
                             action: {
                                 if carouselPage == carouselPages.count - 1 {
                                     HapticFeedback.impactOccurred(.medium)
-                                    coordinator.completeOnboarding()
+                                    coordinator.nextPage() // Go to page 4 (Personalization Intro)
                                 } else {
                                     withAnimation {
                                         carouselPage += 1

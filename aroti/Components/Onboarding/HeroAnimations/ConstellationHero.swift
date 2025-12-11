@@ -11,7 +11,6 @@ struct ConstellationHero: View {
     @State private var drawingProgress: Double = 0
     @State private var starsOpacity: Double = 0
     @State private var glowPulse: Double = 0.5
-    @State private var rotation: Double = 0
     @State private var breathingScale: Double = 1.0
     
     var body: some View {
@@ -48,7 +47,6 @@ struct ConstellationHero: View {
                         style: StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round)
                     )
                     .scaleEffect(breathingScale)
-                    .rotationEffect(Angle.degrees(rotation))
                     .shadow(color: ArotiColor.accent.opacity(0.5 * glowPulse), radius: 12, x: 0, y: 0)
                     .blur(radius: 0.5)
                 
@@ -80,11 +78,6 @@ struct ConstellationHero: View {
             // Very slow breathing animation
             withAnimation(.easeInOut(duration: 8.0).repeatForever(autoreverses: true)) {
                 breathingScale = 1.02
-            }
-            
-            // Subtle rotation
-            withAnimation(.linear(duration: 40).repeatForever(autoreverses: false)) {
-                rotation = 360
             }
         }
     }

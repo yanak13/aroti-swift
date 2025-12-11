@@ -44,7 +44,7 @@ struct OnboardingCarouselView: View {
                 VStack(spacing: 0) {
                     // Unified navigation system - back button + progress bar
                     VStack(spacing: DesignSpacing.xs) {
-                        // Back button - top left
+                        // Back button - top left (with safe area padding)
                         HStack {
                             Button(action: {
                                 HapticFeedback.impactOccurred(.light)
@@ -70,7 +70,7 @@ struct OnboardingCarouselView: View {
                             
                             Spacer()
                         }
-                        .padding(.top, DesignSpacing.md)
+                        .padding(.top, geometry.safeAreaInsets.top + DesignSpacing.xxl)
                         
                         // Progress bar - premium design
                         OnboardingProgressBar(progress: overallProgress)

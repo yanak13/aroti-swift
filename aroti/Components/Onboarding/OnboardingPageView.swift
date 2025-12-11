@@ -21,6 +21,7 @@ struct OnboardingPageView<Hero: View, Content: View>: View {
     let paginationCurrentPage: Int?
     let paginationTotalPages: Int?
     let showHero: Bool
+    let keyboardPadding: CGFloat
     
     init(
         coordinator: OnboardingCoordinator,
@@ -36,7 +37,8 @@ struct OnboardingPageView<Hero: View, Content: View>: View {
         showPaginationDots: Bool = false,
         paginationCurrentPage: Int? = nil,
         paginationTotalPages: Int? = nil,
-        showHero: Bool = true
+        showHero: Bool = true,
+        keyboardPadding: CGFloat = 0
     ) {
         self.coordinator = coordinator
         self.hero = hero()
@@ -52,6 +54,7 @@ struct OnboardingPageView<Hero: View, Content: View>: View {
         self.paginationCurrentPage = paginationCurrentPage
         self.paginationTotalPages = paginationTotalPages
         self.showHero = showHero
+        self.keyboardPadding = keyboardPadding
     }
     
     var body: some View {
@@ -86,11 +89,11 @@ struct OnboardingPageView<Hero: View, Content: View>: View {
                                 
                                 Spacer()
                             }
-                            .padding(.top, geometry.safeAreaInsets.top + DesignSpacing.xxl)
+                            .padding(.top, geometry.safeAreaInsets.top + DesignSpacing.xxl + DesignSpacing.md)
                         } else {
                             // Spacer to maintain consistent positioning
                             Spacer()
-                                .frame(height: geometry.safeAreaInsets.top + DesignSpacing.xxl)
+                                .frame(height: geometry.safeAreaInsets.top + DesignSpacing.xxl + DesignSpacing.md)
                         }
                         
                         // Progress bar
@@ -101,59 +104,64 @@ struct OnboardingPageView<Hero: View, Content: View>: View {
                         }
                     }
                     
-                    // Main content area - optimized spacing
-                    VStack(spacing: 0) {
-                        // Small top spacing after progress bar - mindful spacing
-                        Spacer()
-                            .frame(height: DesignSpacing.lg)
-                        
-                        // Hero area - only shown if showHero is true
-                        if showHero {
-                            ZStack {
-                                hero
-                                    .frame(height: geometry.size.height * 0.20)
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.horizontal, DesignSpacing.lg)
-                            }
-                            .frame(height: geometry.size.height * 0.22)
-                            
-                            // Spacing from hero to content - minimal
+                    // Main content area - optimized spacing, scrollable when keyboard is active
+                    ScrollView {
+                        VStack(spacing: 0) {
+                            // Small top spacing after progress bar - mindful spacing
                             Spacer()
-                                .frame(height: DesignSpacing.md)
-                        }
-                        
-                        // Content area - starts right after progress bar/hero
-                        VStack(spacing: DesignSpacing.md) {
-                            // Title
-                            Text(title)
-                                .font(ArotiTextStyle.largeTitle)
-                                .fontWeight(.bold)
-                                .foregroundColor(ArotiColor.textPrimary)
-                                .multilineTextAlignment(.center)
-                                .lineLimit(nil)
-                                .fixedSize(horizontal: false, vertical: true)
-                                .padding(.horizontal, DesignSpacing.xl)
+                                .frame(height: DesignSpacing.lg)
                             
-                            // Subtitle
-                            if let subtitle = subtitle {
-                                Text(subtitle)
-                                    .font(ArotiTextStyle.body)
-                                    .foregroundColor(ArotiColor.textSecondary)
+                            // Hero area - only shown if showHero is true
+                            if showHero {
+                                ZStack {
+                                    hero
+                                        .frame(height: geometry.size.height * 0.20)
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.horizontal, DesignSpacing.lg)
+                                }
+                                .frame(height: geometry.size.height * 0.22)
+                                
+                                // Spacing from hero to content - minimal
+                                Spacer()
+                                    .frame(height: DesignSpacing.md)
+                            }
+                            
+                            // Content area - starts right after progress bar/hero
+                            VStack(spacing: DesignSpacing.md) {
+                                // Title
+                                Text(title)
+                                    .font(ArotiTextStyle.largeTitle)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(ArotiColor.textPrimary)
                                     .multilineTextAlignment(.center)
-                                    .lineSpacing(4)
                                     .lineLimit(nil)
                                     .fixedSize(horizontal: false, vertical: true)
                                     .padding(.horizontal, DesignSpacing.xl)
+                                
+                                // Subtitle
+                                if let subtitle = subtitle {
+                                    Text(subtitle)
+                                        .font(ArotiTextStyle.body)
+                                        .foregroundColor(ArotiColor.textSecondary)
+                                        .multilineTextAlignment(.center)
+                                        .lineSpacing(4)
+                                        .lineLimit(nil)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                        .padding(.horizontal, DesignSpacing.xl)
+                                }
+                                
+                                // Custom content
+                                content
+                                    .padding(.horizontal, DesignSpacing.lg)
                             }
+                            .frame(maxWidth: .infinity)
                             
-                            // Custom content
-                            content
-                                .padding(.horizontal, DesignSpacing.lg)
+                            // Bottom padding for keyboard - ensures content and dropdown are visible
+                            Spacer()
+                                .frame(height: keyboardPadding > 0 ? keyboardPadding : DesignSpacing.xl)
                         }
-                        .frame(maxWidth: .infinity)
-                        
-                        Spacer()
                     }
+                    .scrollDismissesKeyboard(.interactively)
                     
                     // Bottom controls - position-locked
                     VStack(spacing: DesignSpacing.md) {
@@ -184,7 +192,7 @@ struct OnboardingPageView<Hero: View, Content: View>: View {
                         )
                         .padding(.horizontal, DesignSpacing.lg)
                     }
-                    .padding(.bottom, geometry.size.height * 0.11) // Match carousel button position
+                    .padding(.bottom, geometry.size.height * 0.11 + keyboardPadding) // Match carousel button position + keyboard padding
                     .frame(maxWidth: .infinity)
                     .background(
                         // Subtle fade to blend with background

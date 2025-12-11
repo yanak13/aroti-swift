@@ -11,6 +11,9 @@ struct OnboardingInputCard<Content: View>: View {
     let label: String?
     let placeholder: String
     let isSelected: Bool
+    let isFocused: Bool
+    let icon: String?
+    let iconPulse: Bool
     let content: Content
     let action: (() -> Void)?
     
@@ -18,12 +21,18 @@ struct OnboardingInputCard<Content: View>: View {
         label: String? = nil,
         placeholder: String,
         isSelected: Bool = false,
+        isFocused: Bool = false,
+        icon: String? = nil,
+        iconPulse: Bool = false,
         action: (() -> Void)? = nil,
         @ViewBuilder content: () -> Content
     ) {
         self.label = label
         self.placeholder = placeholder
         self.isSelected = isSelected
+        self.isFocused = isFocused
+        self.icon = icon
+        self.iconPulse = iconPulse
         self.action = action
         self.content = content()
     }
@@ -45,34 +54,48 @@ struct OnboardingInputCard<Content: View>: View {
     }
     
     private var cardContent: some View {
-        VStack(alignment: .leading, spacing: DesignSpacing.xs) {
-            if let label = label {
-                Text(label)
-                    .font(ArotiTextStyle.caption1)
-                    .foregroundColor(ArotiColor.textSecondary)
+        HStack(spacing: DesignSpacing.sm) {
+            // Left icon (if provided) - aligned with placeholder baseline
+            if let icon = icon {
+                Image(systemName: icon)
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundColor(isSelected || isFocused ? ArotiColor.accent : ArotiColor.textSecondary)
+                    .scaleEffect(iconPulse ? 1.1 : 1.0)
+                    .opacity(iconPulse ? 0.8 : 1.0)
             }
             
-            content
+            // Content area
+            if let label = label {
+                VStack(alignment: .leading, spacing: DesignSpacing.xs) {
+                    Text(label)
+                        .font(ArotiTextStyle.caption1)
+                        .foregroundColor(ArotiColor.textSecondary)
+                    
+                    content
+                }
+            } else {
+                content
+            }
         }
         .padding(.horizontal, DesignSpacing.lg)
         .padding(.vertical, DesignSpacing.md)
         .frame(height: 68) // Fixed height to match SelectionOptionButton (24pt padding * 2 + ~20pt text)
         .background(
             RoundedRectangle(cornerRadius: ArotiRadius.md)
-                .fill(isSelected ? ArotiColor.accent.opacity(0.15) : ArotiColor.surface.opacity(0.6))
+                .fill((isSelected || isFocused) ? ArotiColor.accent.opacity(0.15) : ArotiColor.surface.opacity(0.6))
                 .overlay(
                     RoundedRectangle(cornerRadius: ArotiRadius.md)
                         .stroke(
-                            isSelected ? ArotiColor.accent.opacity(0.5) : ArotiColor.border,
-                            lineWidth: isSelected ? 1.5 : 1
+                            (isSelected || isFocused) ? ArotiColor.accent.opacity(0.5) : ArotiColor.border,
+                            lineWidth: (isSelected || isFocused) ? 1.5 : 1
                         )
                 )
         )
         .shadow(
-            color: isSelected ? ArotiColor.accent.opacity(0.3) : Color.clear,
-            radius: isSelected ? 8 : 0,
+            color: (isSelected || isFocused) ? ArotiColor.accent.opacity(0.3) : Color.clear,
+            radius: (isSelected || isFocused) ? 8 : 0,
             x: 0,
-            y: isSelected ? 4 : 0
+            y: (isSelected || isFocused) ? 4 : 0
         )
     }
 }

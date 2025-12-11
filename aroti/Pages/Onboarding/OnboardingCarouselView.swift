@@ -70,7 +70,7 @@ struct OnboardingCarouselView: View {
                             
                             Spacer()
                         }
-                        .padding(.top, geometry.safeAreaInsets.top + DesignSpacing.xxl)
+                        .padding(.top, geometry.safeAreaInsets.top + DesignSpacing.xxl + DesignSpacing.md)
                         
                         // Progress bar - premium design
                         OnboardingProgressBar(progress: overallProgress)

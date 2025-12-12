@@ -58,24 +58,27 @@ struct OnboardingNameInputView: View {
                     }
                 }
             },
-            keyboardPadding: keyboardHeight
+            keyboardHeight: keyboardHeight
         )
         .onAppear {
             nameText = coordinator.userName ?? ""
         }
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { notification in
             if let keyboardFrame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect,
-               let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-               let window = windowScene.windows.first {
-                let safeAreaBottom = window.safeAreaInsets.bottom
-                withAnimation(.easeOut(duration: 0.25)) {
-                    keyboardHeight = keyboardFrame.height - safeAreaBottom + 16 // 16px margin
+               let animationDuration = notification.userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey] as? Double {
+                // Get actual keyboard height
+                let animationTime = min(max(animationDuration, 0.25), 0.3)
+                withAnimation(.easeOut(duration: animationTime)) {
+                    keyboardHeight = keyboardFrame.height
                 }
             }
         }
-        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
-            withAnimation(.easeOut(duration: 0.25)) {
-                keyboardHeight = 0
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { notification in
+            if let animationDuration = notification.userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey] as? Double {
+                let animationTime = min(max(animationDuration, 0.25), 0.3)
+                withAnimation(.easeOut(duration: animationTime)) {
+                    keyboardHeight = 0
+                }
             }
         }
     }

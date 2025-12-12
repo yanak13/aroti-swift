@@ -21,7 +21,7 @@ struct OnboardingPageView<Hero: View, Content: View>: View {
     let paginationCurrentPage: Int?
     let paginationTotalPages: Int?
     let showHero: Bool
-    let keyboardPadding: CGFloat
+    let keyboardHeight: CGFloat
     
     init(
         coordinator: OnboardingCoordinator,
@@ -38,7 +38,7 @@ struct OnboardingPageView<Hero: View, Content: View>: View {
         paginationCurrentPage: Int? = nil,
         paginationTotalPages: Int? = nil,
         showHero: Bool = true,
-        keyboardPadding: CGFloat = 0
+        keyboardHeight: CGFloat = 0
     ) {
         self.coordinator = coordinator
         self.hero = hero()
@@ -54,7 +54,7 @@ struct OnboardingPageView<Hero: View, Content: View>: View {
         self.paginationCurrentPage = paginationCurrentPage
         self.paginationTotalPages = paginationTotalPages
         self.showHero = showHero
-        self.keyboardPadding = keyboardPadding
+        self.keyboardHeight = keyboardHeight
     }
     
     var body: some View {
@@ -68,7 +68,7 @@ struct OnboardingPageView<Hero: View, Content: View>: View {
                     .opacity(0.2)
                 
                 VStack(spacing: 0) {
-                    // Top navigation - back button + progress bar (position-locked)
+                    // Top navigation - back button + progress bar (position-locked, never moves)
                     VStack(spacing: DesignSpacing.xs) {
                         // Back button
                         if showBackButton && coordinator.canGoBack() {
@@ -104,66 +104,70 @@ struct OnboardingPageView<Hero: View, Content: View>: View {
                         }
                     }
                     
-                    // Main content area - optimized spacing, scrollable when keyboard is active
+                    // Main content area - scrollable when keyboard is active
                     ScrollView {
                         VStack(spacing: 0) {
-                            // Small top spacing after progress bar - mindful spacing
+                            // Small top spacing after progress bar
                             Spacer()
                                 .frame(height: DesignSpacing.lg)
                             
-                            // Hero area - only shown if showHero is true
-                            if showHero {
-                                ZStack {
-                                    hero
-                                        .frame(height: geometry.size.height * 0.20)
-                                        .frame(maxWidth: .infinity)
-                                        .padding(.horizontal, DesignSpacing.lg)
+                            // Content area including Hero - moves up together when keyboard is visible
+                            VStack(spacing: 0) {
+                                // Hero area - only shown if showHero is true (moves with keyboard)
+                                if showHero {
+                                    ZStack {
+                                        hero
+                                            .frame(height: geometry.size.height * 0.20)
+                                            .frame(maxWidth: .infinity)
+                                            .padding(.horizontal, DesignSpacing.lg)
+                                    }
+                                    .frame(height: geometry.size.height * 0.22)
+                                    
+                                    // Spacing from hero to content
+                                    Spacer()
+                                        .frame(height: DesignSpacing.md)
                                 }
-                                .frame(height: geometry.size.height * 0.22)
                                 
-                                // Spacing from hero to content - minimal
-                                Spacer()
-                                    .frame(height: DesignSpacing.md)
-                            }
-                            
-                            // Content area - starts right after progress bar/hero
-                            VStack(spacing: DesignSpacing.md) {
-                                // Title
-                                Text(title)
-                                    .font(ArotiTextStyle.largeTitle)
-                                    .fontWeight(.bold)
-                                    .foregroundColor(ArotiColor.textPrimary)
-                                    .multilineTextAlignment(.center)
-                                    .lineLimit(nil)
-                                    .fixedSize(horizontal: false, vertical: true)
-                                    .padding(.horizontal, DesignSpacing.xl)
-                                
-                                // Subtitle
-                                if let subtitle = subtitle {
-                                    Text(subtitle)
-                                        .font(ArotiTextStyle.body)
-                                        .foregroundColor(ArotiColor.textSecondary)
+                                // Title + input content
+                                VStack(spacing: DesignSpacing.md) {
+                                    // Title
+                                    Text(title)
+                                        .font(ArotiTextStyle.largeTitle)
+                                        .fontWeight(.bold)
+                                        .foregroundColor(ArotiColor.textPrimary)
                                         .multilineTextAlignment(.center)
-                                        .lineSpacing(4)
                                         .lineLimit(nil)
                                         .fixedSize(horizontal: false, vertical: true)
                                         .padding(.horizontal, DesignSpacing.xl)
+                                    
+                                    // Subtitle
+                                    if let subtitle = subtitle {
+                                        Text(subtitle)
+                                            .font(ArotiTextStyle.body)
+                                            .foregroundColor(ArotiColor.textSecondary)
+                                            .multilineTextAlignment(.center)
+                                            .lineSpacing(4)
+                                            .lineLimit(nil)
+                                            .fixedSize(horizontal: false, vertical: true)
+                                            .padding(.horizontal, DesignSpacing.xl)
+                                    }
+                                    
+                                    // Custom content
+                                    content
+                                        .padding(.horizontal, DesignSpacing.lg)
                                 }
-                                
-                                // Custom content
-                                content
-                                    .padding(.horizontal, DesignSpacing.lg)
+                                .frame(maxWidth: .infinity)
                             }
-                            .frame(maxWidth: .infinity)
+                            .offset(y: calculateContentOffset(geometry: geometry))
                             
-                            // Bottom padding for keyboard - ensures content and dropdown are visible
+                            // Bottom padding for scroll view - extra when keyboard visible to create space between input and button
                             Spacer()
-                                .frame(height: keyboardPadding > 0 ? keyboardPadding : DesignSpacing.xl)
+                                .frame(height: keyboardHeight > 0 ? calculateScrollBottomPadding(keyboardHeight: keyboardHeight, safeAreaBottom: geometry.safeAreaInsets.bottom) : DesignSpacing.xl)
                         }
                     }
                     .scrollDismissesKeyboard(.interactively)
                     
-                    // Bottom controls - position-locked
+                    // Bottom controls - Continue button (moves with keyboard)
                     VStack(spacing: DesignSpacing.md) {
                         // Pagination dots
                         if showPaginationDots, let current = paginationCurrentPage, let total = paginationTotalPages {
@@ -192,8 +196,8 @@ struct OnboardingPageView<Hero: View, Content: View>: View {
                         )
                         .padding(.horizontal, DesignSpacing.lg)
                     }
-                    .padding(.bottom, geometry.size.height * 0.11 + keyboardPadding) // Match carousel button position + keyboard padding
                     .frame(maxWidth: .infinity)
+                    .padding(.bottom, calculateButtonBottom(safeAreaBottom: geometry.safeAreaInsets.bottom))
                     .background(
                         // Subtle fade to blend with background
                         LinearGradient(
@@ -209,5 +213,46 @@ struct OnboardingPageView<Hero: View, Content: View>: View {
             }
         }
         .ignoresSafeArea(.all)
+    }
+    
+    // Calculate button bottom position based on keyboard state
+    private func calculateButtonBottom(safeAreaBottom: CGFloat) -> CGFloat {
+        if keyboardHeight > 0 {
+            // Keyboard shown: buttonBottom = keyboardHeight + safeAreaBottom + 12-16
+            return keyboardHeight + safeAreaBottom + 14 // Using 14pt (midpoint of 12-16 range)
+        } else {
+            // Keyboard hidden: buttonBottom = safeAreaBottom + 24
+            return safeAreaBottom + 24
+        }
+    }
+    
+    // Calculate scroll view bottom padding to create space between input and button
+    private func calculateScrollBottomPadding(keyboardHeight: CGFloat, safeAreaBottom: CGFloat) -> CGFloat {
+        // Add minimal padding when keyboard is visible to create tight gap between input and button
+        // Button is positioned separately below ScrollView, so we only need minimal spacing
+        // Using very tight spacing: 4pt for mindful, minimal gap (just enough to prevent visual merging)
+        let minimalSpacing: CGFloat = 4
+        return minimalSpacing
+    }
+    
+    // Calculate content offset to move content up when keyboard is visible
+    private func calculateContentOffset(geometry: GeometryProxy) -> CGFloat {
+        guard keyboardHeight > 0 else { return 0 }
+        
+        // Move content up minimally to position input close to button/keyboard
+        // Reduced offset to bring input closer to keyboard
+        let buttonHeight: CGFloat = 48
+        let inputHeight: CGFloat = 68
+        let minimalSpacing: CGFloat = 4 // Minimal spacing between input and button
+        
+        // Calculate minimal offset - just enough to position input above button
+        // Only account for button height and spacing, not title/hero (they'll follow naturally)
+        // Negative value moves content up
+        let offset = -(buttonHeight + minimalSpacing + inputHeight / 2)
+        
+        // Clamp to reasonable range to prevent content from going too high
+        // But allow enough movement to prevent Hero from overlapping with title
+        let maxOffset: CGFloat = -150 // Reduced maximum upward movement
+        return max(offset, maxOffset)
     }
 }

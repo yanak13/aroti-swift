@@ -1,8 +1,7 @@
 //
 //  OnboardingView.swift
-//  Aroti
 //
-//  Main onboarding view that coordinates welcome and carousel screens
+//  Main onboarding view that coordinates all onboarding screens
 //
 
 import SwiftUI
@@ -13,10 +12,8 @@ struct OnboardingView: View {
     var body: some View {
         ZStack {
             switch coordinator.currentPage {
-            case 0:
-                OnboardingWelcomeView(coordinator: coordinator)
-                    .transition(.opacity)
-            case 1...3:
+            case 0...3:
+                // Welcome carousel (4 pages: Welcome + 3 carousel pages)
                 OnboardingCarouselView(coordinator: coordinator)
                     .transition(.opacity)
             case 4:
@@ -59,7 +56,7 @@ struct OnboardingView: View {
                 OnboardingReadyView(coordinator: coordinator)
                     .transition(.opacity)
             default:
-                OnboardingWelcomeView(coordinator: coordinator)
+                OnboardingCarouselView(coordinator: coordinator)
                     .transition(.opacity)
             }
         }

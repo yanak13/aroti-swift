@@ -221,8 +221,8 @@ struct OnboardingPageView<Hero: View, Content: View>: View {
             // Keyboard shown: buttonBottom = keyboardHeight + safeAreaBottom + 12-16
             return keyboardHeight + safeAreaBottom + 14 // Using 14pt (midpoint of 12-16 range)
         } else {
-            // Keyboard hidden: buttonBottom = safeAreaBottom + 24
-            return safeAreaBottom + 24
+            // Keyboard hidden: buttonBottom = safeAreaBottom + 16 (moved higher/closer to content)
+            return safeAreaBottom + 16
         }
     }
     

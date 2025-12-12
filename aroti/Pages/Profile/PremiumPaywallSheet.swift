@@ -1,11 +1,5 @@
-//
-//  PremiumPaywallSheet.swift
-//  Aroti
-//
-//  Premium upgrade paywall screen - high-conversion design
-//
-
 import SwiftUI
+import Combine
 
 struct PremiumPaywallSheet: View {
     @Environment(\.dismiss) var dismiss
@@ -18,13 +12,11 @@ struct PremiumPaywallSheet: View {
     @State private var isProcessingPurchase: Bool = false
     @State private var showError: Bool = false
     @State private var errorMessage: String?
-    @State private var expandedFAQItems: Set<String> = []
     @State private var ctaButtonScale: CGFloat = 1.0
+    @State private var currentSlide: Int = 0
+    @State private var autoRotateCancellable: AnyCancellable?
     
-    // Pricing
-    private let monthlyPrice = "$9.99"
-    private let yearlyPrice = "$59.99"
-    private let yearlyMonthlyEquivalent = "$4.99"
+    private let autoRotateInterval: TimeInterval = 3.5
     
     init(context: String? = nil, title: String? = nil, description: String? = nil) {
         self.context = context
@@ -35,44 +27,25 @@ struct PremiumPaywallSheet: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                CelestialBackground()
+                deepGradientBackground
+                    .ignoresSafeArea()
+                vignetteOverlay
+                    .ignoresSafeArea()
                 
-                ScrollView {
-                    VStack(spacing: DesignSpacing.lg) {
-                        // Hero Section
-                        heroSection
-                        
-                        // Emotional Benefits
-                        emotionalBenefitsSection
-                        
-                        // Feature Preview Cards
-                        featurePreviewCards
-                        
-                        // Free vs Premium Comparison
-                        comparisonTable
-                        
-                        // Social Proof / Testimonials
-                        testimonialsSection
-                        
-                        // Pricing Selector
-                        pricingSelector
-                        
-                        // Primary CTA
-                        primaryCTA
-                        
-                        // Trust & Safety
-                        trustSection
-                        
-                        // FAQ
-                        faqSection
-                    }
-                    .padding(.horizontal, DesignSpacing.sm)
-                    .padding(.vertical, DesignSpacing.md)
+                VStack(spacing: DesignSpacing.lg) {
+                    headerSection
+                    
+                    carouselSection
+                    
+                    trustBadge
+                    
+                    ctaSection
                 }
+                .padding(.horizontal, DesignSpacing.md)
+                .padding(.vertical, DesignSpacing.lg)
             }
             .navigationTitle("Premium")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(ArotiColor.surface.opacity(0.9), for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .preferredColorScheme(.dark)
@@ -91,531 +64,197 @@ struct PremiumPaywallSheet: View {
                 Text(errorMessage ?? "Something went wrong while upgrading. Please try again or check your App Store connection.")
             }
             .onAppear {
+                startAutoRotate()
                 startCTAAnimation()
+            }
+            .onDisappear {
+                stopAutoRotate()
             }
         }
     }
     
-    // MARK: - Hero Section
+    // MARK: - Background
     
-    private var heroSection: some View {
+    private var deepGradientBackground: some View {
+        LinearGradient(
+            colors: [
+                Color(red: 18/255, green: 12/255, blue: 26/255),
+                Color(red: 10/255, green: 8/255, blue: 20/255),
+                Color(red: 4/255, green: 4/255, blue: 12/255)
+            ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+    }
+    
+    private var vignetteOverlay: some View {
         ZStack {
-            // Cosmic gradient background
+            RadialGradient(
+                colors: [
+                    Color.white.opacity(0.08),
+                    Color.clear
+                ],
+                center: .center,
+                startRadius: 0,
+                endRadius: 380
+            )
+            .blendMode(.screen)
+            
             LinearGradient(
                 colors: [
-                    Color(red: 185/255, green: 110/255, blue: 70/255).opacity(0.25),
-                    Color(red: 185/255, green: 110/255, blue: 70/255).opacity(0.15),
-                    Color(red: 120/255, green: 80/255, blue: 100/255).opacity(0.1)
+                    Color.black.opacity(0.35),
+                    Color.clear,
+                    Color.black.opacity(0.35)
                 ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
+                startPoint: .top,
+                endPoint: .bottom
             )
+            .blendMode(.overlay)
+        }
+    }
+    
+    // MARK: - Header
+    
+    private var headerSection: some View {
+        VStack(alignment: .leading, spacing: DesignSpacing.sm) {
+            Text("Your Premium Toolkit Is Ready")
+                .font(ArotiTextStyle.title1)
+                .foregroundColor(ArotiColor.textPrimary)
+                .multilineTextAlignment(.leading)
             
-            // Glassmorphism overlay
-            Color.white.opacity(0.05)
+            Text("These tools are locked on the free plan")
+                .font(ArotiTextStyle.caption1)
+                .foregroundColor(ArotiColor.textSecondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+    
+    // MARK: - Carousel
+    
+    private var carouselSection: some View {
+        let slides = Slide.allCases
+        
+        return ZStack {
+            RoundedRectangle(cornerRadius: ArotiRadius.lg)
+                .fill(Color.white.opacity(0.04))
+                .background(.ultraThinMaterial)
+                .overlay(
+                    RoundedRectangle(cornerRadius: ArotiRadius.lg)
+                        .stroke(
+                            LinearGradient(
+                                colors: [
+                                    Color.white.opacity(0.2),
+                                    Color.white.opacity(0.05)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 1
+                        )
+                )
+                .shadow(color: Color.black.opacity(0.25), radius: 18, x: 0, y: 12)
             
-            // Content
-            VStack(alignment: .leading, spacing: DesignSpacing.md) {
-                // Icon
-                HStack {
-                    Image(systemName: "crown.fill")
-                        .font(.system(size: 32))
+            TabView(selection: $currentSlide) {
+                ForEach(slides.indices, id: \.self) { index in
+                    let slide = slides[index]
+                    carouselCard(for: slide)
+                        .padding(DesignSpacing.md)
+                        .tag(index)
+                        .onChange(of: currentSlide) { _ in
+                            triggerSlideHaptic()
+                        }
+                }
+            }
+            .tabViewStyle(.page(indexDisplayMode: .never))
+            .frame(height: 280)
+            .onChange(of: currentSlide) { _ in
+                // keeps animation smooth on manual swipe
+            }
+        }
+        .frame(maxWidth: .infinity)
+    }
+    
+    private func carouselCard(for slide: Slide) -> some View {
+        VStack(alignment: .leading, spacing: DesignSpacing.md) {
+            slide.visual
+            
+            VStack(alignment: .leading, spacing: DesignSpacing.xs) {
+                HStack(spacing: DesignSpacing.xs) {
+                    Text(slide.label)
+                        .font(ArotiTextStyle.caption2)
                         .foregroundColor(ArotiColor.accent)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(
+                            Capsule()
+                                .fill(ArotiColor.accent.opacity(0.12))
+                        )
+                    
                     Spacer()
                 }
                 
-                // Title
-                Text("Unlock your higher clarity")
-                    .font(ArotiTextStyle.largeTitle)
-                    .foregroundColor(ArotiColor.textPrimary)
-                    .multilineTextAlignment(.leading)
-                
-                // Subtitle
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Premium rituals, deep insights, and cosmic guidance — fully unlimited.")
-                        .font(ArotiTextStyle.body)
-                        .foregroundColor(ArotiColor.textSecondary)
-                    
-                    Text("Feel aligned, grounded, and guided every day.")
-                        .font(ArotiTextStyle.body)
-                        .foregroundColor(ArotiColor.textSecondary)
-                }
-            }
-            .padding(DesignSpacing.lg)
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .clipShape(RoundedRectangle(cornerRadius: ArotiRadius.lg))
-        .overlay(
-            RoundedRectangle(cornerRadius: ArotiRadius.lg)
-                .stroke(Color.white.opacity(0.15), lineWidth: 1)
-        )
-        .shadow(color: ArotiColor.accent.opacity(0.2), radius: 16, x: 0, y: 8)
-    }
-    
-    // MARK: - Emotional Benefits Section
-    
-    private var emotionalBenefitsSection: some View {
-        BaseCard {
-            VStack(alignment: .leading, spacing: DesignSpacing.md) {
-                Text("With Aroti Premium, you will…")
-                    .font(ArotiTextStyle.caption1)
-                    .foregroundColor(ArotiColor.textSecondary)
-                
-                VStack(alignment: .leading, spacing: DesignSpacing.sm) {
-                    benefitRow(icon: "leaf.fill", text: "Feel grounded with rituals made for your exact cosmic blueprint")
-                    benefitRow(icon: "chart.bar.fill", text: "Go deeper into your advanced astrology + numerology")
-                    benefitRow(icon: "brain.head.profile", text: "Access powerful interpretations for clarity and decision-making")
-                    benefitRow(icon: "moon.stars.fill", text: "Stay aligned with your monthly cosmic guidance")
-                    benefitRow(icon: "sparkles", text: "Experience a sense of purpose, structure, and inner peace")
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-    }
-    
-    private func benefitRow(icon: String, text: String) -> some View {
-        HStack(alignment: .top, spacing: 16) {
-            // Premium icon badge
-            ZStack {
-                // Glow effect
-                Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                ArotiColor.accent.opacity(0.3),
-                                ArotiColor.accent.opacity(0.1)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(width: 44, height: 44)
-                    .blur(radius: 4)
-                
-                // Icon container
-                Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                ArotiColor.accent.opacity(0.25),
-                                ArotiColor.accent.opacity(0.15)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(width: 40, height: 40)
-                    .overlay(
-                        Circle()
-                            .stroke(
-                                LinearGradient(
-                                    colors: [
-                                        ArotiColor.accent.opacity(0.4),
-                                        ArotiColor.accent.opacity(0.2)
-                                    ],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                ),
-                                lineWidth: 1.5
-                            )
-                    )
-                
-                // Icon
-                Image(systemName: icon)
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(ArotiColor.accent)
-            }
-            
-            Text(text)
-                .font(ArotiTextStyle.body)
-                .foregroundColor(ArotiColor.textPrimary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-    }
-    
-    // MARK: - Feature Preview Cards
-    
-    private var featurePreviewCards: some View {
-        VStack(alignment: .leading, spacing: DesignSpacing.sm) {
-            Text("Premium Features")
-                .font(ArotiTextStyle.title3)
-                .foregroundColor(ArotiColor.textPrimary)
-                .padding(.horizontal, DesignSpacing.sm)
-            
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: DesignSpacing.sm) {
-                    featureCard(
-                        icon: "moon.stars.fill",
-                        title: "Deep Rituals",
-                        description: "Access advanced step-by-step rituals tailored to your energy."
-                    )
-                    
-                    featureCard(
-                        icon: "chart.bar.fill",
-                        title: "Astrology Profile",
-                        description: "See your full cosmic chart with detailed explanations."
-                    )
-                    
-                    featureCard(
-                        icon: "sparkles",
-                        title: "Premium Guidance",
-                        description: "Chat with Aroti for unlimited, personalized insights."
-                    )
-                }
-                .padding(.horizontal, DesignSpacing.sm)
-            }
-            .padding(.horizontal, -DesignSpacing.sm)
-        }
-    }
-    
-    private func featureCard(icon: String, title: String, description: String) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Image(systemName: icon)
-                .font(.system(size: 32))
-                .foregroundColor(ArotiColor.accent)
-            
-            Text(title)
-                .font(ArotiTextStyle.headline)
-                .foregroundColor(ArotiColor.textPrimary)
-            
-            Text(description)
-                .font(ArotiTextStyle.caption1)
-                .foregroundColor(ArotiColor.textSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .padding(DesignSpacing.md)
-        .frame(width: 240)
-        .background(
-            RoundedRectangle(cornerRadius: ArotiRadius.md)
-                .fill(ArotiColor.surface)
-                .overlay(
-                    RoundedRectangle(cornerRadius: ArotiRadius.md)
-                        .stroke(ArotiColor.border, lineWidth: 1)
-                )
-        )
-        .shadow(color: Color.black.opacity(0.3), radius: 8, x: 0, y: 4)
-    }
-    
-    // MARK: - Comparison Table
-    
-    private var comparisonTable: some View {
-        BaseCard {
-            VStack(alignment: .leading, spacing: DesignSpacing.md) {
-                Text("Free vs Premium")
+                Text(slide.title)
                     .font(ArotiTextStyle.title3)
                     .foregroundColor(ArotiColor.textPrimary)
                 
-                VStack(spacing: 0) {
-                    // Header
-                    HStack(spacing: 0) {
-                        Text("Feature")
-                            .font(ArotiTextStyle.subhead)
-                            .foregroundColor(ArotiColor.textSecondary)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        
-                        Text("Free")
-                            .font(ArotiTextStyle.subhead)
-                            .foregroundColor(ArotiColor.textSecondary)
-                            .frame(width: 80, alignment: .center)
-                        
-                        Text("Premium")
-                            .font(ArotiTextStyle.subhead)
-                            .foregroundColor(ArotiColor.accent)
-                            .frame(width: 80, alignment: .center)
-                    }
-                    .padding(.bottom, DesignSpacing.sm)
-                    
-                    Divider()
-                        .background(Color.white.opacity(0.1))
-                        .padding(.bottom, DesignSpacing.sm)
-                    
-                    // Rows
-                    comparisonRow(feature: "Daily rituals", free: true, premium: true, premiumNote: "Deep version")
-                    comparisonRow(feature: "Advanced rituals", free: false, premium: true)
-                    comparisonRow(feature: "Full astrology profile", free: false, premium: true)
-                    comparisonRow(feature: "Full numerology blueprint", free: false, premium: true)
-                    comparisonRow(feature: "Unlimited AI guidance", free: false, premium: true)
-                    comparisonRow(feature: "Monthly cosmic forecast", free: false, premium: true)
-                    comparisonRow(feature: "Priority support", free: false, premium: true)
-                    comparisonRow(feature: "No ads", free: false, premium: true)
-                }
-                
-                Text("Premium removes limits and unlocks your full cosmic journey.")
+                Text(slide.description)
                     .font(ArotiTextStyle.caption1)
                     .foregroundColor(ArotiColor.textSecondary)
-                    .padding(.top, DesignSpacing.xs)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
         }
-    }
-    
-    private func comparisonRow(feature: String, free: Bool, premium: Bool, premiumNote: String? = nil) -> some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 0) {
-                Text(feature)
-                    .font(ArotiTextStyle.body)
-                    .foregroundColor(ArotiColor.textPrimary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                
-                HStack {
-                    if free {
-                        Image(systemName: "checkmark")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(ArotiColor.textSecondary)
-                    } else {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(ArotiColor.textMuted)
-                    }
-                }
-                .frame(width: 80, alignment: .center)
-                
-                HStack {
-                    if premium {
-                        Image(systemName: "checkmark")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(ArotiColor.accent)
-                    } else {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(ArotiColor.textMuted)
-                    }
-                }
-                .frame(width: 80, alignment: .center)
-            }
-            .padding(.vertical, 10)
-            
-            if let note = premiumNote {
-                Text(note)
-                    .font(ArotiTextStyle.caption2)
-                    .foregroundColor(ArotiColor.textMuted)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.leading, 0)
-                    .padding(.bottom, 4)
-            }
-            
-            Divider()
-                .background(Color.white.opacity(0.05))
-        }
-    }
-    
-    // MARK: - Testimonials Section
-    
-    private var testimonialsSection: some View {
-        BaseCard {
-            VStack(alignment: .leading, spacing: DesignSpacing.md) {
-                Text("What our members say")
-                    .font(ArotiTextStyle.title3)
-                    .foregroundColor(ArotiColor.textPrimary)
-                
-                // Star rating
-                HStack(spacing: 4) {
-                    ForEach(0..<5) { _ in
-                        Image(systemName: "star.fill")
-                            .font(.system(size: 14))
-                            .foregroundColor(ArotiColor.accent)
-                    }
-                    Text("4.8 average rating")
-                        .font(ArotiTextStyle.caption1)
-                        .foregroundColor(ArotiColor.textSecondary)
-                }
-                .padding(.bottom, DesignSpacing.xs)
-                
-                // Testimonials
-                VStack(spacing: DesignSpacing.md) {
-                    testimonialQuote(
-                        text: "Premium feels like having a personal spiritual guide with me every day.",
-                        author: "Anna"
-                    )
-                    
-                    testimonialQuote(
-                        text: "My rituals finally make sense. The clarity is unreal.",
-                        author: "Maria"
-                    )
-                    
-                    testimonialQuote(
-                        text: "Life-changing depth. It's worth every cent.",
-                        author: "Sophia"
-                    )
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-    }
-    
-    private func testimonialQuote(text: String, author: String) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("\"\(text)\"")
-                .font(ArotiTextStyle.body)
-                .foregroundColor(ArotiColor.textPrimary)
-                .italic()
-            
-            Text("— \(author)")
-                .font(ArotiTextStyle.caption1)
-                .foregroundColor(ArotiColor.textSecondary)
-        }
-        .padding(DesignSpacing.sm)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: ArotiRadius.sm)
-                .fill(Color.white.opacity(0.03))
-        )
     }
     
-    // MARK: - Pricing Selector
+    // MARK: - Trust Badge
     
-    private var pricingSelector: some View {
-        VStack(spacing: DesignSpacing.md) {
-            // Toggle
-            HStack(spacing: 0) {
-                pricingToggleOption(plan: .monthly, label: "Monthly")
-                pricingToggleOption(plan: .yearly, label: "Yearly", badge: "Save 20%")
-            }
-            .background(
-                RoundedRectangle(cornerRadius: ArotiRadius.pill)
-                    .fill(Color.white.opacity(0.05))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: ArotiRadius.pill)
-                    .stroke(ArotiColor.border, lineWidth: 1)
-            )
-            
-            // Pricing Cards
-            HStack(spacing: DesignSpacing.sm) {
-                pricingCard(
-                    plan: .monthly,
-                    label: "Monthly",
-                    price: monthlyPrice,
-                    period: "/ month",
-                    subtext: "Flexible monthly billing",
-                    isPopular: false
-                )
-                
-                pricingCard(
-                    plan: .yearly,
-                    label: "Yearly · Save 20%",
-                    price: yearlyPrice,
-                    period: "/ year",
-                    subtext: "Only \(yearlyMonthlyEquivalent) per month, billed annually",
-                    isPopular: true
-                )
-            }
-        }
-    }
-    
-    private func pricingToggleOption(plan: PremiumPlan, label: String, badge: String? = nil) -> some View {
-        Button(action: {
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                selectedPlan = plan
-            }
-        }) {
-            VStack(spacing: 4) {
-                HStack(spacing: 4) {
-                    Text(label)
-                        .font(ArotiTextStyle.subhead)
-                        .foregroundColor(selectedPlan == plan ? ArotiColor.textPrimary : ArotiColor.textSecondary)
-                    
-                    if let badge = badge {
-                        Text(badge)
-                            .font(ArotiTextStyle.caption2)
-                            .foregroundColor(ArotiColor.accent)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(
-                                Capsule()
-                                    .fill(ArotiColor.accent.opacity(0.15))
-                            )
-                    }
-                }
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 12)
-            .background(
-                Group {
-                    if selectedPlan == plan {
-                        RoundedRectangle(cornerRadius: ArotiRadius.pill)
-                            .fill(ArotiColor.accent.opacity(0.2))
-                    }
-                }
-            )
-        }
-        .buttonStyle(PlainButtonStyle())
-    }
-    
-    private func pricingCard(plan: PremiumPlan, label: String, price: String, period: String, subtext: String, isPopular: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                if isPopular {
-                    Text("Most popular")
-                        .font(ArotiTextStyle.caption2)
-                        .foregroundColor(ArotiColor.accent)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(
+    private var trustBadge: some View {
+        VStack(spacing: 4) {
+            Text("Included with Premium")
+                .font(ArotiTextStyle.caption1)
+                .foregroundColor(ArotiColor.textPrimary)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(
+                    Capsule()
+                        .fill(Color.white.opacity(0.06))
+                        .overlay(
                             Capsule()
-                                .fill(ArotiColor.accent.opacity(0.15))
+                                .stroke(Color.white.opacity(0.08), lineWidth: 1)
                         )
-                }
-                Spacer()
-            }
+                )
             
-            Text(label)
-                .font(ArotiTextStyle.subhead)
-                .foregroundColor(ArotiColor.textSecondary)
-            
-            HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Text(price)
-                    .font(ArotiTextStyle.title1)
-                    .foregroundColor(ArotiColor.textPrimary)
-                
-                Text(period)
-                    .font(ArotiTextStyle.body)
+            if let context, !context.isEmpty {
+                Text("Based on your profile and activity")
+                    .font(ArotiTextStyle.caption2)
                     .foregroundColor(ArotiColor.textSecondary)
             }
-            
-            Text(subtext)
-                .font(ArotiTextStyle.caption1)
-                .foregroundColor(ArotiColor.textSecondary)
-                .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(DesignSpacing.md)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: ArotiRadius.md)
-                .fill(selectedPlan == plan ? ArotiColor.accent.opacity(0.1) : ArotiColor.surface)
-                .overlay(
-                    RoundedRectangle(cornerRadius: ArotiRadius.md)
-                        .stroke(selectedPlan == plan ? ArotiColor.accent.opacity(0.5) : ArotiColor.border, lineWidth: selectedPlan == plan ? 2 : 1)
-                )
-        )
-        .scaleEffect(selectedPlan == plan ? 1.02 : 1.0)
-        .opacity(selectedPlan == plan ? 1.0 : 0.7)
-        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: selectedPlan)
     }
     
-    // MARK: - Primary CTA
+    // MARK: - CTA Section
     
-    private var primaryCTA: some View {
+    private var ctaSection: some View {
         VStack(spacing: DesignSpacing.sm) {
             ArotiButton(
                 kind: .custom(ArotiButtonStyle(
                     foregroundColor: ArotiColor.accentText,
                     backgroundGradient: LinearGradient(
                         colors: [
-                            ArotiColor.accent,
-                            ArotiColor.accent.opacity(0.9),
-                            Color(red: 185/255, green: 110/255, blue: 70/255).opacity(0.8)
+                            Color(red: 255/255, green: 188/255, blue: 120/255),
+                            Color(red: 255/255, green: 140/255, blue: 102/255),
+                            Color(red: 195/255, green: 98/255, blue: 140/255)
                         ],
-                        startPoint: .leading,
-                        endPoint: .trailing
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
                     ),
-                    cornerRadius: ArotiRadius.md,
+                    cornerRadius: ArotiRadius.lg,
                     height: ArotiButtonHeight.large,
                     shadow: ArotiButtonShadow(
-                        color: ArotiColor.accent.opacity(0.4),
-                        radius: 12,
+                        color: Color(red: 255/255, green: 188/255, blue: 120/255).opacity(0.35),
+                        radius: 16,
                         x: 0,
-                        y: 6
+                        y: 10
                     )
                 )),
                 isDisabled: isProcessingPurchase,
@@ -631,7 +270,7 @@ struct PremiumPaywallSheet: View {
                                 .font(ArotiTextStyle.subhead)
                         }
                     } else {
-                        Text("Unlock Premium")
+                        Text("Start Free Trial")
                             .font(ArotiTextStyle.subhead)
                             .fontWeight(.semibold)
                     }
@@ -639,126 +278,290 @@ struct PremiumPaywallSheet: View {
             )
             .scaleEffect(isProcessingPurchase ? 1.0 : ctaButtonScale)
             
-            Text("No commitment. Cancel anytime in your App Store settings.")
+            Text("Full access · Cancel anytime")
                 .font(ArotiTextStyle.caption2)
-                .foregroundColor(ArotiColor.textMuted)
-                .multilineTextAlignment(.center)
+                .foregroundColor(ArotiColor.textSecondary)
             
-            Text("Subscriptions are managed by Apple.")
-                .font(ArotiTextStyle.caption2)
-                .foregroundColor(ArotiColor.textMuted.opacity(0.7))
-                .multilineTextAlignment(.center)
+            Button(action: {
+                dismiss()
+            }) {
+                Text("Continue with Free Version")
+                    .font(ArotiTextStyle.caption1)
+                    .foregroundColor(ArotiColor.textMuted)
+            }
+            .buttonStyle(.plain)
         }
     }
     
-    // MARK: - Trust Section
+    // MARK: - Slide Model
     
-    private var trustSection: some View {
-        BaseCard {
-            VStack(alignment: .leading, spacing: DesignSpacing.sm) {
-                Text("Your journey is safe")
-                    .font(ArotiTextStyle.headline)
-                    .foregroundColor(ArotiColor.textPrimary)
+    private enum Slide: CaseIterable {
+        case guidance
+        case cycles
+        case reports
+        case unlimited
+        
+        var title: String {
+            switch self {
+            case .guidance:
+                return "Daily Personalized Guidance"
+            case .cycles:
+                return "Emotional Cycles Analysis"
+            case .reports:
+                return "Monthly Personalized Reports"
+            case .unlimited:
+                return "Unlimited Access Mode"
+            }
+        }
+        
+        var description: String {
+            switch self {
+            case .guidance:
+                return "Unlimited AI guidance tailored to your profile, mood, and daily context."
+            case .cycles:
+                return "Understand emotional patterns across days, weeks, and months — not just today."
+            case .reports:
+                return "In-depth summaries combining guidance, emotions, and behavioral patterns."
+            case .unlimited:
+                return "No daily limits. No blocked messages. Full access to all tools."
+            }
+        }
+        
+        var label: String {
+            switch self {
+            case .guidance:
+                return "Unlimited"
+            case .cycles:
+                return "Analysis"
+            case .reports:
+                return "Reports"
+            case .unlimited:
+                return "Access"
+            }
+        }
+        
+        @ViewBuilder
+        var visual: some View {
+            switch self {
+            case .guidance:
+                GuidanceVisual()
+            case .cycles:
+                CyclesVisual()
+            case .reports:
+                ReportsVisual()
+            case .unlimited:
+                UnlockVisual()
+            }
+        }
+    }
+    
+    // MARK: - Visual Components
+    
+    private struct GuidanceVisual: View {
+        var body: some View {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Text("Unlimited")
+                        .font(ArotiTextStyle.caption2)
+                        .foregroundColor(ArotiColor.accent)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(
+                            Capsule()
+                                .fill(ArotiColor.accent.opacity(0.16))
+                        )
+                    Spacer()
+                }
                 
-                Text("Payments are handled securely by Apple. You can manage or cancel your subscription at any time in your App Store settings. No hidden fees.")
-                    .font(ArotiTextStyle.body)
+                VStack(spacing: 8) {
+                    messageBubble("Morning check-in · tailored to your mood", alignment: .leading, opacity: 1.0)
+                    messageBubble("Action steps · clarity for decisions", alignment: .trailing, opacity: 0.9)
+                    messageBubble("Evening reset · calm guidance", alignment: .leading, opacity: 0.8)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        
+        private func messageBubble(_ text: String, alignment: HorizontalAlignment, opacity: Double) -> some View {
+            HStack {
+                if alignment == .trailing { Spacer(minLength: 24) }
+                Text(text)
+                    .font(ArotiTextStyle.caption1)
+                    .foregroundColor(ArotiColor.textPrimary)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
+                    .background(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .fill(Color.white.opacity(0.08))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                    )
+                    .shadow(color: Color.black.opacity(0.18), radius: 10, x: 0, y: 8)
+                    .opacity(opacity)
+                if alignment == .leading { Spacer(minLength: 24) }
+            }
+        }
+    }
+    
+    private struct CyclesVisual: View {
+        var body: some View {
+            HStack(spacing: 16) {
+                ZStack {
+                    Circle()
+                        .stroke(Color.white.opacity(0.06), lineWidth: 10)
+                    Circle()
+                        .trim(from: 0.08, to: 0.62)
+                        .stroke(
+                            LinearGradient(
+                                colors: [ArotiColor.accent, Color.purple.opacity(0.7)],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            ),
+                            style: StrokeStyle(lineWidth: 12, lineCap: .round)
+                        )
+                        .rotationEffect(.degrees(-90))
+                    Circle()
+                        .trim(from: 0.65, to: 0.92)
+                        .stroke(
+                            LinearGradient(
+                                colors: [Color.blue.opacity(0.8), Color.cyan.opacity(0.7)],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            ),
+                            style: StrokeStyle(lineWidth: 8, lineCap: .round)
+                        )
+                        .rotationEffect(.degrees(-90))
+                    
+                    VStack(spacing: 2) {
+                        Text("Cycles")
+                            .font(ArotiTextStyle.caption2)
+                            .foregroundColor(ArotiColor.textSecondary)
+                        Text("Weekly focus")
+                            .font(ArotiTextStyle.caption1)
+                            .foregroundColor(ArotiColor.textPrimary)
+                    }
+                }
+                .frame(width: 140, height: 140)
+                
+                VStack(alignment: .leading, spacing: 10) {
+                    phaseRow("Stability phase", color: ArotiColor.accent)
+                    phaseRow("Adjustment window", color: Color.blue.opacity(0.8))
+                    phaseRow("Recharge days", color: Color.cyan.opacity(0.75))
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        
+        private func phaseRow(_ title: String, color: Color) -> some View {
+            HStack(spacing: 8) {
+                Circle()
+                    .fill(color.opacity(0.7))
+                    .frame(width: 10, height: 10)
+                Text(title)
+                    .font(ArotiTextStyle.caption1)
+                    .foregroundColor(ArotiColor.textPrimary)
+            }
+        }
+    }
+    
+    private struct ReportsVisual: View {
+        var body: some View {
+            VStack(alignment: .leading, spacing: 12) {
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color.white.opacity(0.06))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                    )
+                    .shadow(color: Color.black.opacity(0.22), radius: 12, x: 0, y: 10)
+                    .frame(height: 120)
+                    .overlay {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Monthly Report")
+                                .font(ArotiTextStyle.caption1)
+                                .foregroundColor(ArotiColor.textPrimary)
+                            
+                            blurredLine(width: 0.82)
+                            blurredLine(width: 0.6)
+                            blurredLine(width: 0.9)
+                            
+                            Spacer()
+                            
+                            HStack(spacing: 8) {
+                                Capsule().fill(Color.white.opacity(0.12)).frame(width: 90, height: 10)
+                                Capsule().fill(Color.white.opacity(0.08)).frame(width: 50, height: 10)
+                                Spacer()
+                            }
+                        }
+                        .padding(16)
+                    }
+                
+                Text("Blurred preview. Full report included in Premium.")
+                    .font(ArotiTextStyle.caption2)
                     .foregroundColor(ArotiColor.textSecondary)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-    }
-    
-    // MARK: - FAQ Section
-    
-    private var faqSection: some View {
-        VStack(alignment: .leading, spacing: DesignSpacing.sm) {
-            Text("Frequently Asked Questions")
-                .font(ArotiTextStyle.title3)
-                .foregroundColor(ArotiColor.textPrimary)
-                .padding(.horizontal, DesignSpacing.sm)
-            
-            VStack(spacing: DesignSpacing.xs) {
-                faqItem(
-                    question: "What happens after upgrading?",
-                    answer: "You immediately unlock all Premium rituals, full astrology + numerology profiles, and unlimited AI guidance, using the same account you have now."
-                )
-                
-                faqItem(
-                    question: "Can I cancel anytime?",
-                    answer: "Yes. You can manage or cancel your subscription directly through the App Store, without contacting support."
-                )
-                
-                faqItem(
-                    question: "Will I lose my data if I cancel?",
-                    answer: "Your rituals, readings, and history remain in your account. You simply lose access to Premium-only features."
-                )
-                
-                faqItem(
-                    question: "Is Premium personalized to me?",
-                    answer: "Yes. Aroti uses your birth details and personal inputs to tailor rituals and insights to your unique cosmic blueprint."
-                )
-            }
-        }
-    }
-    
-    private func faqItem(question: String, answer: String) -> some View {
-        let itemId = question
-        let isExpanded = expandedFAQItems.contains(itemId)
         
-        return VStack(spacing: 0) {
-            Button(action: {
-                withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
-                    if isExpanded {
-                        expandedFAQItems.remove(itemId)
-                    } else {
-                        expandedFAQItems.insert(itemId)
-                    }
-                }
-            }) {
-                HStack(spacing: 12) {
-                    Text(question)
-                        .font(ArotiTextStyle.subhead)
-                        .foregroundColor(ArotiColor.textPrimary)
-                        .multilineTextAlignment(.leading)
-                    
-                    Spacer()
-                    
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(ArotiColor.accent)
-                        .rotationEffect(.degrees(isExpanded ? 180 : 0))
-                        .animation(.spring(response: 0.32, dampingFraction: 0.86), value: isExpanded)
-                }
-                .padding(DesignSpacing.sm)
-                .contentShape(Rectangle())
+        private func blurredLine(width: CGFloat) -> some View {
+            Capsule()
+                .fill(Color.white.opacity(0.12))
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(width: UIScreen.main.bounds.width * width * 0.4, height: 12)
+                .overlay(
+                    Capsule()
+                        .fill(Color.white.opacity(0.04))
+                        .blur(radius: 2)
+                )
+        }
+    }
+    
+    private struct UnlockVisual: View {
+        @State private var animate = false
+        
+        var body: some View {
+            ZStack {
+                Circle()
+                    .strokeBorder(
+                        LinearGradient(
+                            colors: [
+                                Color.white.opacity(0.12),
+                                Color.white.opacity(0.04)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 2
+                    )
+                    .frame(width: 140, height: 140)
+                
+                Circle()
+                    .fill(
+                        RadialGradient(
+                            colors: [
+                                Color(red: 255/255, green: 180/255, blue: 120/255).opacity(0.25),
+                                Color.clear
+                            ],
+                            center: .center,
+                            startRadius: 0,
+                            endRadius: 120
+                        )
+                    )
+                    .scaleEffect(animate ? 1.08 : 0.96)
+                    .animation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: animate)
+                
+                Image(systemName: "lock.open.display")
+                    .font(.system(size: 42, weight: .semibold))
+                    .foregroundColor(ArotiColor.accent)
+                    .shadow(color: ArotiColor.accent.opacity(0.4), radius: 16, x: 0, y: 10)
             }
-            .buttonStyle(PlainButtonStyle())
-            
-            if isExpanded {
-                VStack(alignment: .leading, spacing: 0) {
-                    Divider()
-                        .background(Color.white.opacity(0.1))
-                    
-                    Text(answer)
-                        .font(ArotiTextStyle.body)
-                        .foregroundColor(ArotiColor.textSecondary)
-                        .padding(DesignSpacing.sm)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                .transition(.asymmetric(
-                    insertion: .opacity.combined(with: .move(edge: .top)),
-                    removal: .opacity
-                ))
+            .frame(maxWidth: .infinity, alignment: .center)
+            .onAppear {
+                animate = true
             }
         }
-        .background(
-            RoundedRectangle(cornerRadius: ArotiRadius.sm)
-                .fill(Color.white.opacity(0.02))
-                .overlay(
-                    RoundedRectangle(cornerRadius: ArotiRadius.sm)
-                        .stroke(Color.white.opacity(0.06), lineWidth: 1)
-                )
-        )
     }
     
     // MARK: - Purchase Handler
@@ -792,6 +595,37 @@ struct PremiumPaywallSheet: View {
                 }
             }
         }
+    }
+    
+    // MARK: - Carousel Rotation & Haptics
+    
+    private func startAutoRotate() {
+        stopAutoRotate()
+        
+        autoRotateCancellable = Timer.publish(every: autoRotateInterval, on: .main, in: .common)
+            .autoconnect()
+            .sink { _ in
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.9)) {
+                    advanceSlide()
+                }
+            }
+    }
+    
+    private func stopAutoRotate() {
+        autoRotateCancellable?.cancel()
+        autoRotateCancellable = nil
+    }
+    
+    private func advanceSlide() {
+        let next = (currentSlide + 1) % Slide.allCases.count
+        currentSlide = next
+        triggerSlideHaptic()
+    }
+    
+    private func triggerSlideHaptic() {
+        let generator = UIImpactFeedbackGenerator(style: .light)
+        generator.prepare()
+        generator.impactOccurred()
     }
     
     // MARK: - CTA Animation

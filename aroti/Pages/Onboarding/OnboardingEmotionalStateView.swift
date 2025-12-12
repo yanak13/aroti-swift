@@ -24,22 +24,27 @@ struct OnboardingEmotionalStateView: View {
                 EmptyView()
             },
             title: "How have you been feeling lately?",
-            subtitle: "Choose the option that reflects your current emotional state.",
+            subtitle: "Choose the option that fits you best.",
             content: {
                 VStack(spacing: DesignSpacing.sm) {
                     ForEach(Array(options.enumerated()), id: \.offset) { index, option in
                         SelectionOptionButton(
                             title: option.0,
                             icon: option.1,
-                            isSelected: coordinator.emotionalState == option.0,
+                            isSelected: coordinator.emotionalState.contains(option.0),
+                            isMultiSelect: true,
                             action: {
-                                coordinator.emotionalState = option.0
+                                if coordinator.emotionalState.contains(option.0) {
+                                    coordinator.emotionalState.removeAll { $0 == option.0 }
+                                } else {
+                                    coordinator.emotionalState.append(option.0)
+                                }
                             }
                         )
                     }
                 }
             },
-            canContinue: coordinator.emotionalState != nil,
+            canContinue: !coordinator.emotionalState.isEmpty,
             onContinue: {
                 coordinator.nextPage()
             },

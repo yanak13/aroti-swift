@@ -47,10 +47,10 @@ struct OnboardingView: View {
                 OnboardingGeneratingBlueprintView(coordinator: coordinator)
                     .transition(.opacity)
             case 14:
-                OnboardingPremiumOfferView(coordinator: coordinator)
+                OnboardingCreateAccountView(coordinator: coordinator)
                     .transition(.opacity)
             case 15:
-                OnboardingCreateAccountView(coordinator: coordinator)
+                OnboardingPremiumOfferView(coordinator: coordinator)
                     .transition(.opacity)
             case 16:
                 OnboardingReadyView(coordinator: coordinator)

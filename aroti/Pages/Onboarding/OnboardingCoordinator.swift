@@ -12,7 +12,7 @@ class OnboardingCoordinator: ObservableObject {
     @Published var isOnboardingComplete: Bool = false
     
     // Onboarding data
-    @Published var emotionalState: String?
+    @Published var emotionalState: [String] = []
     @Published var personalFocus: [String] = []
     @Published var guidanceFrequency: String?
     @Published var relationshipFocus: String?
@@ -66,6 +66,6 @@ class OnboardingCoordinator: ObservableObject {
     }
     
     func canGoBack() -> Bool {
-        return currentPage > 0 && currentPage != 14 // Premium offer page disables back button
+        return currentPage > 0 && currentPage != 15 // Premium offer page disables back button (now at index 15)
     }
 }

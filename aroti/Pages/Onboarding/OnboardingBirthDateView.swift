@@ -21,6 +21,7 @@ struct OnboardingBirthDateView: View {
                 BirthDateHero()
             },
             title: "What's your birth date?",
+            subtitle: "We use this to calculate your chart and tailor the guidance you receive.",
             content: {
                 OnboardingInputCard(
                     placeholder: "MM / DD / YYYY",

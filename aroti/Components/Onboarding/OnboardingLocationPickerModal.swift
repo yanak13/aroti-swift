@@ -58,7 +58,7 @@ struct OnboardingLocationPickerModal: View {
                         .font(.system(size: 18, weight: .medium))
                         .foregroundColor(ArotiColor.textSecondary)
                     
-                    TextField("", text: $searchText, prompt: Text("Search for city").foregroundColor(ArotiColor.textPrimary.opacity(0.6)))
+                    TextField("", text: $searchText, prompt: Text("Search for location").foregroundColor(ArotiColor.textPrimary.opacity(0.6)))
                         .font(ArotiTextStyle.body)
                         .foregroundColor(ArotiColor.textPrimary)
                         .autocapitalization(.words)
@@ -135,13 +135,12 @@ struct OnboardingLocationPickerModal: View {
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if results.isEmpty && searchText.count >= 3 {
-                    // No results state
-                    VStack(spacing: DesignSpacing.md) {
-                        Spacer()
-                        
+                    // No results state - compact, doesn't fill entire sheet
+                    VStack(spacing: DesignSpacing.sm) {
                         Image(systemName: "magnifyingglass")
-                            .font(.system(size: 32, weight: .medium))
+                            .font(.system(size: 24, weight: .medium))
                             .foregroundColor(ArotiColor.textSecondary.opacity(0.4))
+                            .padding(.top, DesignSpacing.lg)
                         
                         Text("No results")
                             .font(ArotiTextStyle.body)
@@ -152,11 +151,10 @@ struct OnboardingLocationPickerModal: View {
                             .font(ArotiTextStyle.caption1)
                             .foregroundColor(ArotiColor.textSecondary)
                             .multilineTextAlignment(.center)
-                        
-                        Spacer()
                     }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .frame(maxWidth: .infinity)
                     .padding(.horizontal, DesignSpacing.xl)
+                    .padding(.vertical, DesignSpacing.md)
                 } else {
                     // Results list
                     ScrollView {

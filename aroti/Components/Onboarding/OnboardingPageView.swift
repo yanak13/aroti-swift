@@ -22,6 +22,10 @@ struct OnboardingPageView<Hero: View, Content: View>: View {
     let paginationTotalPages: Int?
     let showHero: Bool
     let keyboardHeight: CGFloat
+    let titleTopPadding: CGFloat
+    let heroHeightFactor: CGFloat
+    let heroContainerHeightFactor: CGFloat
+    let useNavigationSpacing: Bool
     
     init(
         coordinator: OnboardingCoordinator,
@@ -38,7 +42,11 @@ struct OnboardingPageView<Hero: View, Content: View>: View {
         paginationCurrentPage: Int? = nil,
         paginationTotalPages: Int? = nil,
         showHero: Bool = true,
-        keyboardHeight: CGFloat = 0
+        keyboardHeight: CGFloat = 0,
+        titleTopPadding: CGFloat = 0,
+        heroHeightFactor: CGFloat = 0.20,
+        heroContainerHeightFactor: CGFloat = 0.22,
+        useNavigationSpacing: Bool = true
     ) {
         self.coordinator = coordinator
         self.hero = hero()
@@ -55,6 +63,10 @@ struct OnboardingPageView<Hero: View, Content: View>: View {
         self.paginationTotalPages = paginationTotalPages
         self.showHero = showHero
         self.keyboardHeight = keyboardHeight
+        self.titleTopPadding = titleTopPadding
+        self.heroHeightFactor = heroHeightFactor
+        self.heroContainerHeightFactor = heroContainerHeightFactor
+        self.useNavigationSpacing = useNavigationSpacing
     }
     
     var body: some View {
@@ -69,68 +81,83 @@ struct OnboardingPageView<Hero: View, Content: View>: View {
                 
                 VStack(spacing: 0) {
                     // Top navigation - back button + progress bar (position-locked, never moves)
-                    VStack(spacing: DesignSpacing.xs) {
-                        // Back button
-                        if showBackButton && coordinator.canGoBack() {
-                            HStack {
-                                Button(action: {
-                                    HapticFeedback.impactOccurred(.light)
-                                    coordinator.previousPage()
-                                }) {
-                                    HStack(spacing: 6) {
-                                        Image(systemName: "chevron.left")
-                                            .font(.system(size: 14, weight: .medium))
-                                        Text("Back")
-                                            .font(ArotiTextStyle.subhead)
+                    if useNavigationSpacing {
+                        VStack(spacing: DesignSpacing.xs) {
+                            // Back button
+                            if showBackButton && coordinator.canGoBack() {
+                                HStack {
+                                    Button(action: {
+                                        HapticFeedback.impactOccurred(.light)
+                                        coordinator.previousPage()
+                                    }) {
+                                        HStack(spacing: 6) {
+                                            Image(systemName: "chevron.left")
+                                                .font(.system(size: 14, weight: .medium))
+                                            Text("Back")
+                                                .font(ArotiTextStyle.subhead)
+                                        }
+                                        .foregroundColor(ArotiColor.textSecondary)
                                     }
-                                    .foregroundColor(ArotiColor.textSecondary)
+                                    .padding(.leading, DesignSpacing.lg)
+                                    
+                                    Spacer()
                                 }
-                                .padding(.leading, DesignSpacing.lg)
-                                
+                                .padding(.top, geometry.safeAreaInsets.top + DesignSpacing.xxl + DesignSpacing.md)
+                            } else {
+                                // Spacer to maintain consistent positioning
                                 Spacer()
+                                    .frame(height: geometry.safeAreaInsets.top + DesignSpacing.xxl + DesignSpacing.md)
                             }
-                            .padding(.top, geometry.safeAreaInsets.top + DesignSpacing.xxl + DesignSpacing.md)
-                        } else {
-                            // Spacer to maintain consistent positioning
-                            Spacer()
-                                .frame(height: geometry.safeAreaInsets.top + DesignSpacing.xxl + DesignSpacing.md)
+                            
+                            // Progress bar
+                            if showProgressBar {
+                                OnboardingProgressBar(progress: coordinator.getProgress())
+                                    .padding(.horizontal, DesignSpacing.lg)
+                                    .padding(.bottom, DesignSpacing.sm)
+                            }
                         }
-                        
-                        // Progress bar
-                        if showProgressBar {
-                            OnboardingProgressBar(progress: coordinator.getProgress())
-                                .padding(.horizontal, DesignSpacing.lg)
-                                .padding(.bottom, DesignSpacing.sm)
-                        }
+                    } else {
+                        // Minimal safe-area spacer when top navigation is hidden
+                        Spacer()
+                            .frame(height: geometry.safeAreaInsets.top + DesignSpacing.lg)
                     }
                     
                     // Main content area - scrollable when keyboard is active
                     ScrollView {
                         VStack(spacing: 0) {
-                            // Small top spacing after progress bar
+                            // Fixed top spacing after progress bar - consistent across all pages
                             Spacer()
                                 .frame(height: DesignSpacing.lg)
                             
-                            // Content area including Hero - moves up together when keyboard is visible
+                            // Content area - Tier A/B positioning system
                             VStack(spacing: 0) {
-                                // Hero area - only shown if showHero is true (moves with keyboard)
+                                // Tier A: Hero icon starts at position X, then title below
+                                // Tier B: Title starts at position X (where hero would start)
+                                
                                 if showHero {
+                                    // TIER A: Hero icon centered, starts at fixed position
                                     ZStack {
                                         hero
-                                            .frame(height: geometry.size.height * 0.20)
+                                            .frame(height: geometry.size.height * heroHeightFactor)
                                             .frame(maxWidth: .infinity)
                                             .padding(.horizontal, DesignSpacing.lg)
                                     }
-                                    .frame(height: geometry.size.height * 0.22)
+                                    .frame(height: geometry.size.height * heroContainerHeightFactor)
                                     
-                                    // Spacing from hero to content
+                                    // Fixed spacing from hero to title (Tier A)
                                     Spacer()
                                         .frame(height: DesignSpacing.md)
+                                } else {
+                                    // TIER B: No hero, title starts at same position where hero would start
+                                    // This ensures all content starts from the same vertical point
                                 }
                                 
-                                // Title + input content
+                                // Title + subtitle + content
                                 VStack(spacing: DesignSpacing.md) {
-                                    // Title
+                                    Spacer()
+                                        .frame(height: titleTopPadding)
+                                    
+                                    // Title - positioned consistently
                                     Text(title)
                                         .font(ArotiTextStyle.largeTitle)
                                         .fontWeight(.bold)
@@ -140,7 +167,7 @@ struct OnboardingPageView<Hero: View, Content: View>: View {
                                         .fixedSize(horizontal: false, vertical: true)
                                         .padding(.horizontal, DesignSpacing.xl)
                                     
-                                    // Subtitle
+                                    // Subtitle - directly under title, same spacing
                                     if let subtitle = subtitle {
                                         Text(subtitle)
                                             .font(ArotiTextStyle.body)
@@ -152,7 +179,7 @@ struct OnboardingPageView<Hero: View, Content: View>: View {
                                             .padding(.horizontal, DesignSpacing.xl)
                                     }
                                     
-                                    // Custom content
+                                    // Custom content - cards, inputs, etc.
                                     content
                                         .padding(.horizontal, DesignSpacing.lg)
                                 }
@@ -160,7 +187,7 @@ struct OnboardingPageView<Hero: View, Content: View>: View {
                             }
                             .offset(y: calculateContentOffset(geometry: geometry))
                             
-                            // Bottom padding for scroll view - extra when keyboard visible to create space between input and button
+                            // Bottom padding for scroll view - minimal when keyboard visible
                             Spacer()
                                 .frame(height: keyboardHeight > 0 ? calculateScrollBottomPadding(keyboardHeight: keyboardHeight, safeAreaBottom: geometry.safeAreaInsets.bottom) : DesignSpacing.xl)
                         }
@@ -240,19 +267,19 @@ struct OnboardingPageView<Hero: View, Content: View>: View {
         guard keyboardHeight > 0 else { return 0 }
         
         // Move content up minimally to position input close to button/keyboard
-        // Reduced offset to bring input closer to keyboard
+        // Avoid excessive upward movement - only shift enough to keep input visible
+        // Hero icon and title should stay relatively still
         let buttonHeight: CGFloat = 48
         let inputHeight: CGFloat = 68
         let minimalSpacing: CGFloat = 4 // Minimal spacing between input and button
         
         // Calculate minimal offset - just enough to position input above button
-        // Only account for button height and spacing, not title/hero (they'll follow naturally)
         // Negative value moves content up
         let offset = -(buttonHeight + minimalSpacing + inputHeight / 2)
         
         // Clamp to reasonable range to prevent content from going too high
-        // But allow enough movement to prevent Hero from overlapping with title
-        let maxOffset: CGFloat = -150 // Reduced maximum upward movement
+        // Keep hero and title visible - avoid moving them too far up
+        let maxOffset: CGFloat = -120 // Limit upward movement
         return max(offset, maxOffset)
     }
 }

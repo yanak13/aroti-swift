@@ -67,17 +67,6 @@ struct OnboardingCreateAccountView: View {
                         }
                     }
                     
-                    // Email Sign Up
-                    ArotiButton(
-                        kind: .secondary,
-                        action: {
-                            // Handle email sign up
-                            coordinator.nextPage()
-                        }
-                    ) {
-                        Text("Email Sign Up")
-                            .font(ArotiTextStyle.subhead)
-                    }
                 }
             },
             canContinue: false, // Disable main continue, use individual buttons

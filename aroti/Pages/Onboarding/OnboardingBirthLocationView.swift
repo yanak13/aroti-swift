@@ -21,7 +21,7 @@ struct OnboardingBirthLocationView: View {
                 BirthLocationHero()
             },
             title: "Where were you born?",
-            subtitle: "Selecting your birth location improves your natal chart accuracy.",
+            subtitle: "Selecting your birth location improves your chart accuracy.",
             content: {
                 OnboardingInputCard(
                     placeholder: "Select your birth location",

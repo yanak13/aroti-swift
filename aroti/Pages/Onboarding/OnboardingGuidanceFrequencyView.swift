@@ -11,9 +11,10 @@ struct OnboardingGuidanceFrequencyView: View {
     
     private let options = [
         "Daily",
+        "Every morning",
+        "Every evening",
         "A few times a week",
-        "Weekly",
-        "Only when I need it"
+        "Weekly"
     ]
     
     var body: some View {
@@ -23,7 +24,7 @@ struct OnboardingGuidanceFrequencyView: View {
                 EmptyView()
             },
             title: "How often do you want guidance?",
-            subtitle: "We'll tune Aroti to support your daily rhythm.",
+            subtitle: "Frequency influences notifications and your experience.",
             content: {
                 VStack(spacing: DesignSpacing.sm) {
                     ForEach(options, id: \.self) { option in

@@ -16,13 +16,19 @@ struct OnboardingPersonalizationIntroView: View {
                 PersonalizationIntroHero()
             },
             title: "Let's Make Your Insights Truly Personal",
-            subtitle: "Your answers help Aroti shape the emotional tone, depth, and clarity of your daily guidance.",
+            subtitle: "Your answers help Aroti create guidance uniquely shaped for you.",
             content: {
                 EmptyView()
             },
             onContinue: {
                 coordinator.nextPage()
-            }
+            },
+            showBackButton: false,
+            showProgressBar: false,
+            titleTopPadding: 0,
+            heroHeightFactor: 0.42,
+            heroContainerHeightFactor: 0.45,
+            useNavigationSpacing: false
         )
     }
 }

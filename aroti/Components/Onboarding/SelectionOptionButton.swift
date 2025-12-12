@@ -54,6 +54,7 @@ struct SelectionOptionButton: View {
             }
             .padding(.horizontal, DesignSpacing.lg)
             .padding(.vertical, DesignSpacing.md)
+            .frame(height: 68) // Fixed height to match OnboardingInputCard
             .background(
                 RoundedRectangle(cornerRadius: ArotiRadius.md)
                     .fill(isSelected ? ArotiColor.accent.opacity(0.15) : ArotiColor.surface.opacity(0.6))

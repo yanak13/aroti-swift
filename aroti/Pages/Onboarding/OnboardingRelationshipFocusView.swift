@@ -9,7 +9,12 @@ import SwiftUI
 struct OnboardingRelationshipFocusView: View {
     @ObservedObject var coordinator: OnboardingCoordinator
     
-    private let options = ["Yes", "No", "Unsure"]
+    private let options = [
+        "Single",
+        "In a relationship",
+        "It’s complicated",
+        "Prefer not to say"
+    ]
     
     var body: some View {
         OnboardingPageView(
@@ -17,7 +22,7 @@ struct OnboardingRelationshipFocusView: View {
             hero: {
                 RelationshipFocusHero()
             },
-            title: "Are relationships a priority for you right now?",
+            title: "Are you currently in a relationship?",
             content: {
                 VStack(spacing: DesignSpacing.sm) {
                     ForEach(options, id: \.self) { option in

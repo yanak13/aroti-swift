@@ -9,6 +9,7 @@ import SwiftUI
 struct OnboardingCarouselView: View {
     @ObservedObject var coordinator: OnboardingCoordinator
     @State private var carouselPage: Int = 0
+    @State private var isProgrammaticNavigation: Bool = false
     
     private let carouselPages: [(title: String, subtitle: String, hero: AnyView)] = [
         // Page 0: Welcome
@@ -63,8 +64,12 @@ struct OnboardingCarouselView: View {
                     }
                     .tabViewStyle(.page(indexDisplayMode: .never))
                     .onChange(of: carouselPage) { oldValue, newValue in
-                        // Update coordinator to match carousel page
-                        coordinator.currentPage = newValue
+                        // Only update coordinator when user swipes (not programmatic navigation)
+                        if !isProgrammaticNavigation {
+                            coordinator.currentPage = newValue
+                        }
+                        // Reset flag after change
+                        isProgrammaticNavigation = false
                     }
                     
                     // Bottom controls - pinned at same position as Welcome screen button
@@ -82,14 +87,19 @@ struct OnboardingCarouselView: View {
                         }
                         .padding(.vertical, DesignSpacing.sm)
                         
-                        // Continue button - only enabled on last page (page 3)
+                        // Continue button - always enabled, advances pages or proceeds to onboarding
                         ArotiButton(
                             kind: .primary,
                             title: "Continue",
-                            isDisabled: carouselPage < 3,
+                            isDisabled: false,
                             action: {
-                                if carouselPage == 3 {
-                                    HapticFeedback.impactOccurred(.medium)
+                                HapticFeedback.impactOccurred(.medium)
+                                if carouselPage < 3 {
+                                    // Advance to next page programmatically
+                                    isProgrammaticNavigation = true
+                                    carouselPage += 1
+                                } else {
+                                    // Proceed to onboarding
                                     coordinator.nextPage() // Go to Personalization Intro (page 4)
                                 }
                             }

@@ -65,7 +65,8 @@ struct OnboardingCarouselView: View {
                     .tabViewStyle(.page(indexDisplayMode: .never))
                     .onChange(of: carouselPage) { oldValue, newValue in
                         // Only update coordinator when user swipes (not programmatic navigation)
-                        if !isProgrammaticNavigation {
+                        // Also ensure we're still in carousel range (0-3)
+                        if !isProgrammaticNavigation && newValue >= 0 && newValue < carouselPages.count {
                             coordinator.currentPage = newValue
                         }
                         // Reset flag after change
@@ -99,8 +100,16 @@ struct OnboardingCarouselView: View {
                                     isProgrammaticNavigation = true
                                     carouselPage += 1
                                 } else {
-                                    // Proceed to onboarding
-                                    coordinator.nextPage() // Go to Personalization Intro (page 4)
+                                    // Proceed to onboarding - ensure we're on the last page
+                                    guard carouselPage == 3 else { return }
+                                    // Prevent multiple rapid clicks
+                                    guard coordinator.currentPage < 4 else { return }
+                                    // Set flag to prevent onChange interference
+                                    isProgrammaticNavigation = true
+                                    // Navigate to next onboarding step (page 4) with animation
+                                    withAnimation(.easeInOut(duration: 0.3)) {
+                                        coordinator.currentPage = 4
+                                    }
                                 }
                             }
                         )
@@ -124,8 +133,10 @@ struct OnboardingCarouselView: View {
         }
         .ignoresSafeArea(.all)
         .onAppear {
-            // Initialize carousel to match coordinator page
-            carouselPage = coordinator.currentPage
+            // Initialize carousel to match coordinator page (only if still in carousel range)
+            if coordinator.currentPage >= 0 && coordinator.currentPage < carouselPages.count {
+                carouselPage = coordinator.currentPage
+            }
         }
     }
 }

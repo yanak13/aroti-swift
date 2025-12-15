@@ -214,4 +214,56 @@ class IdentityContentGenerator {
         let deficientText = deficient.map { $0.rawValue.lowercased() }.joined(separator: " and ")
         return "To find greater balance, consider incorporating more \(deficientText) energy into your life. This doesn't mean changing who you are, but rather allowing these qualities to complement your natural strengths."
     }
+    
+    // MARK: - Core Theme Generation
+    
+    func generateAstrologyCoreTheme(
+        sunSign: String,
+        moonSign: String,
+        risingSign: String,
+        dominantElement: Element
+    ) -> String {
+        let elementTheme: String
+        switch dominantElement {
+        case .fire:
+            elementTheme = "Your fire-dominant nature brings passion and action to everything you do."
+        case .earth:
+            elementTheme = "Your earth-dominant nature brings stability and practicality to your approach to life."
+        case .air:
+            elementTheme = "Your air-dominant nature brings communication and intellectual curiosity to your interactions."
+        case .water:
+            elementTheme = "Your water-dominant nature brings emotional depth and intuition to your experiences."
+        }
+        
+        return "Together, your \(sunSign) Sun, \(moonSign) Moon, and \(risingSign) Rising create a unique cosmic signature. \(elementTheme) This combination shapes how you express yourself, process emotions, and connect with others."
+    }
+    
+    func generateNumerologyCoreTheme(
+        lifePath: Int,
+        archetype: String
+    ) -> String {
+        return "Your Life Path \(lifePath) as \(archetype) represents your core journey and the fundamental lessons you're here to learn. This number reflects your natural tendencies and the path that will bring you the most fulfillment and growth."
+    }
+    
+    func generateMatrixCoreTheme(
+        coreDestinyNumber: Int,
+        themes: [String]
+    ) -> String {
+        let themesText = themes.joined(separator: " and ")
+        return "Your Core Destiny \(coreDestinyNumber) centers on \(themesText). This number reveals the primary themes and energies that shape your life path and the lessons you're meant to master."
+    }
+    
+    func generateElementalCoreTheme(
+        dominant: [Element],
+        deficient: [Element]
+    ) -> String {
+        let dominantText = dominant.map { $0.rawValue }.joined(separator: " and ")
+        
+        if deficient.isEmpty {
+            return "Your elemental profile shows a strong emphasis on \(dominantText) energy, creating a balanced foundation that supports your natural expression and life path."
+        } else {
+            let deficientText = deficient.map { $0.rawValue }.joined(separator: " and ")
+            return "Your elemental profile emphasizes \(dominantText) energy, while \(deficientText) elements appear less frequently. This pattern often shows where you naturally excel and where you may seek balance through life experiences."
+        }
+    }
 }

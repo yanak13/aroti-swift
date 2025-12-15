@@ -1,3 +1,10 @@
+//
+//  PremiumPaywallSheet.swift
+//  Aroti
+//
+//  Premium paywall with Nebula-style structure
+//
+
 import SwiftUI
 
 struct PremiumPaywallSheet: View {
@@ -5,44 +12,66 @@ struct PremiumPaywallSheet: View {
     let context: String?
     let title: String?
     let description: String?
+    let onDismiss: (() -> Void)? // Optional callback for onboarding flow
     
     // State management
-    @State private var selectedPlan: PremiumPlan = .yearly
+    @State private var selectedPlan: PremiumPlan = .weekly
+    @State private var selectedSlideIndex: Int = 0
     @State private var isProcessingPurchase: Bool = false
     @State private var showError: Bool = false
     @State private var errorMessage: String?
     @State private var ctaButtonScale: CGFloat = 1.0
     
-    init(context: String? = nil, title: String? = nil, description: String? = nil) {
+    // Footer sheet states
+    @State private var showTermsOfService = false
+    @State private var showPrivacyPolicy = false
+    @State private var showSubscriptionTerms = false
+    @State private var isRestoring = false
+    
+    init(context: String? = nil, title: String? = nil, description: String? = nil, onDismiss: (() -> Void)? = nil) {
         self.context = context
         self.title = title
         self.description = description
+        self.onDismiss = onDismiss
     }
     
     var body: some View {
         NavigationStack {
             GeometryReader { geometry in
                 ZStack {
+                    // Background
                     deepGradientBackground
                         .ignoresSafeArea()
                     vignetteOverlay
                         .ignoresSafeArea()
                     
-                    VStack(spacing: DesignSpacing.lg) {
-                        headerSection
+                    // Fixed layout - no scrolling with proper spacing
+                    VStack(spacing: 0) {
+                        // Carousel section (48% of height) - reduced further to move content up
+                        PaywallCarouselView(selectedSlideIndex: $selectedSlideIndex)
+                            .frame(height: geometry.size.height * 0.48)
                         
-                        carouselSection
+                        // Plan selector (26% of height) - increased to accommodate taller cards
+                        PlanSelectorView(selectedPlan: $selectedPlan)
+                            .frame(height: geometry.size.height * 0.26)
                         
-                        trustBadge
-                        
-                        Spacer(minLength: 0)
-                        
-                        ctaSection
+                        // CTA + Footer (26% of height) - increased to prevent overlap
+                        VStack(spacing: DesignSpacing.xs) {
+                            // Primary CTA
+                            ctaButton
+                            
+                            // Trust row
+                            trustRow
+                            
+                            // Footer
+                            footerView
+                        }
+                        .padding(.horizontal, DesignSpacing.md)
+                        .padding(.top, DesignSpacing.xs) // Add gap from plan selector
+                        .padding(.bottom, geometry.safeAreaInsets.bottom + DesignSpacing.xs)
+                        .frame(height: geometry.size.height * 0.26)
                     }
-                    .padding(.horizontal, DesignSpacing.md)
-                    .padding(.top, geometry.safeAreaInsets.top + DesignSpacing.lg)
-                    .padding(.bottom, geometry.safeAreaInsets.bottom + DesignSpacing.lg)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .padding(.top, geometry.safeAreaInsets.top)
                 }
             }
             .navigationBarTitleDisplayMode(.inline)
@@ -51,17 +80,21 @@ struct PremiumPaywallSheet: View {
             .preferredColorScheme(.dark)
             .environment(\.colorScheme, .dark)
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Close") {
-                        dismiss()
-                    }
-                    .foregroundColor(ArotiColor.textPrimary)
-                }
+                // Close button removed
             }
             .alert("Purchase Error", isPresented: $showError) {
                 Button("OK", role: .cancel) { }
             } message: {
                 Text(errorMessage ?? "Something went wrong while upgrading. Please try again or check your App Store connection.")
+            }
+            .sheet(isPresented: $showTermsOfService) {
+                TermsOfUseSheet()
+            }
+            .sheet(isPresented: $showPrivacyPolicy) {
+                PrivacyPolicySheet()
+            }
+            .sheet(isPresented: $showSubscriptionTerms) {
+                SubscriptionTermsSheet()
             }
             .onAppear {
                 startCTAAnimation()
@@ -109,112 +142,137 @@ struct PremiumPaywallSheet: View {
         }
     }
     
-    // MARK: - Header
+    // MARK: - CTA Button
     
-    private var headerSection: some View {
-        VStack(alignment: .leading, spacing: DesignSpacing.sm) {
-            Text("Your Premium Toolkit Is Ready")
-                .font(ArotiTextStyle.title1)
-                .foregroundColor(ArotiColor.textPrimary)
-                .multilineTextAlignment(.leading)
-            
-            Text("These tools are locked on the free plan")
-                .font(ArotiTextStyle.caption1)
-                .foregroundColor(ArotiColor.textSecondary)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-    
-    // MARK: - Carousel
-    
-    private var carouselSection: some View {
-        PremiumToolkitCarousel()
-    }
-    
-    // MARK: - Trust Badge
-    
-    private var trustBadge: some View {
-        VStack(spacing: 4) {
-            Text("Included with Premium")
-                .font(ArotiTextStyle.caption1)
-                .foregroundColor(ArotiColor.textPrimary)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(
-                    Capsule()
-                        .fill(Color.white.opacity(0.06))
-                        .overlay(
-                            Capsule()
-                                .stroke(Color.white.opacity(0.08), lineWidth: 1)
-                        )
+    private var ctaButton: some View {
+        ArotiButton(
+            kind: .custom(ArotiButtonStyle(
+                foregroundColor: ArotiColor.accentText,
+                backgroundGradient: LinearGradient(
+                    colors: [
+                        ArotiColor.accent,
+                        ArotiColor.accent.opacity(0.85)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                ),
+                cornerRadius: ArotiRadius.lg,
+                height: ArotiButtonHeight.large,
+                shadow: ArotiButtonShadow(
+                    color: ArotiColor.accent.opacity(0.35),
+                    radius: 16,
+                    x: 0,
+                    y: 10
                 )
-            
-            if let context, !context.isEmpty {
-                Text("Based on your profile and activity")
-                    .font(ArotiTextStyle.caption2)
-                    .foregroundColor(ArotiColor.textSecondary)
-            }
-        }
-    }
-    
-    // MARK: - CTA Section
-    
-    private var ctaSection: some View {
-        VStack(spacing: DesignSpacing.sm) {
-            ArotiButton(
-                kind: .custom(ArotiButtonStyle(
-                    foregroundColor: ArotiColor.accentText,
-                    backgroundGradient: LinearGradient(
-                        colors: [
-                            Color(red: 255/255, green: 188/255, blue: 120/255),
-                            Color(red: 255/255, green: 140/255, blue: 102/255),
-                            Color(red: 195/255, green: 98/255, blue: 140/255)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    cornerRadius: ArotiRadius.lg,
-                    height: ArotiButtonHeight.large,
-                    shadow: ArotiButtonShadow(
-                        color: Color(red: 255/255, green: 188/255, blue: 120/255).opacity(0.35),
-                        radius: 16,
-                        x: 0,
-                        y: 10
-                    )
-                )),
-                isDisabled: isProcessingPurchase,
-                action: {
-                    handlePurchase()
-                },
-                label: {
-                    if isProcessingPurchase {
-                        HStack {
-                            ProgressView()
-                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                            Text("Processing...")
-                                .font(ArotiTextStyle.subhead)
-                        }
-                    } else {
-                        Text("Start Free Trial")
+            )),
+            isDisabled: isProcessingPurchase || isRestoring,
+            action: {
+                HapticFeedback.impactOccurred(.medium)
+                handlePurchase()
+            },
+            label: {
+                if isProcessingPurchase {
+                    HStack {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                        Text("Processing...")
                             .font(ArotiTextStyle.subhead)
                             .fontWeight(.semibold)
                     }
+                } else {
+                    Text(ctaButtonText)
+                        .font(ArotiTextStyle.subhead)
+                        .fontWeight(.semibold)
                 }
-            )
-            .scaleEffect(isProcessingPurchase ? 1.0 : ctaButtonScale)
+            }
+        )
+        .scaleEffect(isProcessingPurchase ? 1.0 : ctaButtonScale)
+    }
+    
+    private var ctaButtonText: String {
+        if selectedPlan == .weekly {
+            return "Start Free Trial"
+        }
+        return "Continue"
+    }
+    
+    // MARK: - Trust Row
+    
+    private var trustRow: some View {
+        Text("No ads • Secured with App Store • Cancel anytime.")
+            .font(ArotiTextStyle.caption2)
+            .foregroundColor(ArotiColor.textSecondary)
+            .multilineTextAlignment(.center)
+            .lineLimit(2)
+    }
+    
+    // MARK: - Footer
+    
+    private var footerView: some View {
+        VStack(spacing: DesignSpacing.xs) {
+            // "Continue with Free Version" button (shown in onboarding)
+            if onDismiss != nil {
+                Button(action: {
+                    HapticFeedback.impactOccurred(.light)
+                    onDismiss?()
+                }) {
+                    Text("Continue with Free Version")
+                        .font(ArotiTextStyle.caption1)
+                        .foregroundColor(ArotiColor.textMuted)
+                }
+                .buttonStyle(.plain)
+                .padding(.bottom, DesignSpacing.xs)
+            }
             
-            Text("Full access · Cancel anytime")
-                .font(ArotiTextStyle.caption2)
-                .foregroundColor(ArotiColor.textSecondary)
-            
+            // Restore button
             Button(action: {
-                dismiss()
+                HapticFeedback.impactOccurred(.light)
+                handleRestore()
             }) {
-                Text("Continue with Free Version")
+                Text("Restore Purchases")
                     .font(ArotiTextStyle.caption1)
-                    .foregroundColor(ArotiColor.textMuted)
+                    .foregroundColor(ArotiColor.textSecondary)
             }
             .buttonStyle(.plain)
+            .disabled(isRestoring || isProcessingPurchase)
+            
+            // Legal links
+            HStack(spacing: DesignSpacing.xs) {
+                Button(action: {
+                    showTermsOfService = true
+                }) {
+                    Text("Terms of Service")
+                        .font(ArotiTextStyle.caption2)
+                        .foregroundColor(ArotiColor.textMuted)
+                }
+                .buttonStyle(.plain)
+                
+                Text("•")
+                    .font(ArotiTextStyle.caption2)
+                    .foregroundColor(ArotiColor.textMuted)
+                
+                Button(action: {
+                    showPrivacyPolicy = true
+                }) {
+                    Text("Privacy Policy")
+                        .font(ArotiTextStyle.caption2)
+                        .foregroundColor(ArotiColor.textMuted)
+                }
+                .buttonStyle(.plain)
+                
+                Text("•")
+                    .font(ArotiTextStyle.caption2)
+                    .foregroundColor(ArotiColor.textMuted)
+                
+                Button(action: {
+                    showSubscriptionTerms = true
+                }) {
+                    Text("Subscription Terms")
+                        .font(ArotiTextStyle.caption2)
+                        .foregroundColor(ArotiColor.textMuted)
+                }
+                .buttonStyle(.plain)
+            }
         }
     }
     
@@ -234,8 +292,12 @@ struct PremiumPaywallSheet: View {
                         // Update premium status
                         UserSubscriptionService.shared.setPremium(true)
                         
-                        // Dismiss and refresh
-                        dismiss()
+                        // Call onDismiss callback if provided (for onboarding), otherwise dismiss
+                        if let onDismiss = onDismiss {
+                            onDismiss()
+                        } else {
+                            dismiss()
+                        }
                     } else {
                         showError = true
                         errorMessage = "Purchase was not completed. Please try again."
@@ -244,6 +306,46 @@ struct PremiumPaywallSheet: View {
             } catch {
                 await MainActor.run {
                     isProcessingPurchase = false
+                    showError = true
+                    errorMessage = error.localizedDescription
+                }
+            }
+        }
+    }
+    
+    // MARK: - Restore Handler
+    
+    private func handleRestore() {
+        isRestoring = true
+        
+        Task {
+            do {
+                let success = try await StoreKitService.shared.restorePurchases()
+                
+                await MainActor.run {
+                    isRestoring = false
+                    
+                    if success {
+                        // Check if user has premium now
+                        if UserSubscriptionService.shared.isPremium {
+                            // Call onDismiss callback if provided (for onboarding), otherwise dismiss
+                            if let onDismiss = onDismiss {
+                                onDismiss()
+                            } else {
+                                dismiss()
+                            }
+                        } else {
+                            showError = true
+                            errorMessage = "No previous purchases found to restore."
+                        }
+                    } else {
+                        showError = true
+                        errorMessage = "Failed to restore purchases. Please try again."
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    isRestoring = false
                     showError = true
                     errorMessage = error.localizedDescription
                 }

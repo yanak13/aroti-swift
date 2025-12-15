@@ -15,54 +15,41 @@ struct OnboardingPremiumOfferView: View {
             hero: {
                 PremiumOfferHero()
             },
-            title: "Unlock Your Full Guidance Experience",
-            subtitle: "Deeper insights, unlimited clarity messages, and personalized reports.",
+            title: "Your Premium Toolkit Is Ready",
+            subtitle: "These tools are locked on the free plan",
             content: {
-                VStack(spacing: DesignSpacing.md) {
-                    // Comparison section
-                    VStack(spacing: DesignSpacing.sm) {
-                        // Header
-                        HStack {
-                            Text("Free")
-                                .font(ArotiTextStyle.subhead)
-                                .foregroundColor(ArotiColor.textSecondary)
-                                .frame(maxWidth: .infinity)
-                            
-                            Text("Premium")
-                                .font(ArotiTextStyle.subhead)
-                                .foregroundColor(ArotiColor.accent)
-                                .frame(maxWidth: .infinity)
-                        }
-                        .padding(.bottom, DesignSpacing.xs)
-                        
-                        Divider()
-                            .background(ArotiColor.border)
-                        
-                        // Features
-                        ComparisonRow(feature: "Daily messages", free: "Basic", premium: "Deep insights")
-                        ComparisonRow(feature: "AI guidance", free: "Limited", premium: "Unlimited")
-                        ComparisonRow(feature: "Emotional cycles", free: "No", premium: "Full analysis")
-                        ComparisonRow(feature: "Reports", free: "No", premium: "Monthly personalized")
-                    }
-                    .padding(DesignSpacing.lg)
-                    .background(
-                        RoundedRectangle(cornerRadius: ArotiRadius.md)
-                            .fill(ArotiColor.surface.opacity(0.6))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: ArotiRadius.md)
-                                    .stroke(ArotiColor.border, lineWidth: 1)
+                VStack(spacing: DesignSpacing.lg) {
+                    // Premium toolkit carousel
+                    PremiumToolkitCarousel()
+                    
+                    // Trust badge
+                    VStack(spacing: 4) {
+                        Text("Included with Premium")
+                            .font(ArotiTextStyle.caption1)
+                            .foregroundColor(ArotiColor.textPrimary)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(
+                                Capsule()
+                                    .fill(Color.white.opacity(0.06))
+                                    .overlay(
+                                        Capsule()
+                                            .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                                    )
                             )
-                    )
+                    }
+                    .padding(.top, DesignSpacing.sm)
                     
                     // Continue with Free Version link
                     Button(action: {
                         coordinator.nextPage()
                     }) {
                         Text("Continue with Free Version")
-                            .font(ArotiTextStyle.subhead)
-                            .foregroundColor(ArotiColor.textSecondary)
+                            .font(ArotiTextStyle.caption1)
+                            .foregroundColor(ArotiColor.textMuted)
                     }
-                    .padding(.top, DesignSpacing.sm)
+                    .buttonStyle(.plain)
+                    .padding(.top, DesignSpacing.xs)
                 }
             },
             continueButtonTitle: "Start Free Trial",
@@ -75,32 +62,3 @@ struct OnboardingPremiumOfferView: View {
     }
 }
 
-struct ComparisonRow: View {
-    let feature: String
-    let free: String
-    let premium: String
-    
-    var body: some View {
-        VStack(spacing: DesignSpacing.xs) {
-            HStack {
-                Text(feature)
-                    .font(ArotiTextStyle.body)
-                    .foregroundColor(ArotiColor.textPrimary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                
-                Text(free)
-                    .font(ArotiTextStyle.body)
-                    .foregroundColor(ArotiColor.textSecondary)
-                    .frame(maxWidth: .infinity)
-                
-                Text(premium)
-                    .font(ArotiTextStyle.body)
-                    .foregroundColor(ArotiColor.accent)
-                    .frame(maxWidth: .infinity)
-            }
-            
-            Divider()
-                .background(ArotiColor.border.opacity(0.5))
-        }
-    }
-}

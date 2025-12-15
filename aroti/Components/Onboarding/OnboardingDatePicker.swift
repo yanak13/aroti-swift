@@ -12,6 +12,7 @@ struct OnboardingDatePicker: View {
     let displayedComponents: DatePickerComponents
     let placeholder: String
     let title: String
+    let dateRange: ClosedRange<Date>?
     
     @State private var isModalPresented = false
     @State private var tempDate: Date
@@ -21,14 +22,24 @@ struct OnboardingDatePicker: View {
         isPickerOpen: Binding<Bool> = .constant(false),
         displayedComponents: DatePickerComponents,
         placeholder: String,
-        title: String
+        title: String,
+        dateRange: ClosedRange<Date>? = nil
     ) {
         self._date = date
         self._isPickerOpen = isPickerOpen
         self.displayedComponents = displayedComponents
         self.placeholder = placeholder
         self.title = title
-        self._tempDate = State(initialValue: date.wrappedValue ?? Date())
+        self.dateRange = dateRange
+        // Initialize tempDate within the date range if provided
+        let initialDate = date.wrappedValue ?? Date()
+        if let dateRange = dateRange {
+            // Clamp the initial date to the valid range
+            let clampedDate = min(max(initialDate, dateRange.lowerBound), dateRange.upperBound)
+            self._tempDate = State(initialValue: clampedDate)
+        } else {
+            self._tempDate = State(initialValue: initialDate)
+        }
     }
     
     var body: some View {
@@ -54,7 +65,13 @@ struct OnboardingDatePicker: View {
         .contentShape(Rectangle())
         .onTapGesture {
             HapticFeedback.impactOccurred(.light)
-            tempDate = date ?? Date()
+            let initialDate = date ?? Date()
+            if let dateRange = dateRange {
+                // Clamp the date to the valid range
+                tempDate = min(max(initialDate, dateRange.lowerBound), dateRange.upperBound)
+            } else {
+                tempDate = initialDate
+            }
             isModalPresented = true
             isPickerOpen = true
         }
@@ -70,7 +87,8 @@ struct OnboardingDatePicker: View {
                     }
                 ),
                 displayedComponents: displayedComponents,
-                title: title
+                title: title,
+                dateRange: dateRange
             )
         }
     }

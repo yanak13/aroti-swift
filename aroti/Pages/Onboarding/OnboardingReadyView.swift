@@ -2,6 +2,7 @@
 //  OnboardingReadyView.swift
 //
 //  Page 17 - Final Ready Page
+//  Arrival moment: completion, readiness, and anticipation
 //
 
 import SwiftUI
@@ -15,16 +16,22 @@ struct OnboardingReadyView: View {
             hero: {
                 ReadyHero()
             },
-            title: "Your Journey Begins Now",
-            subtitle: "Aroti is ready to guide you with clarity, intuition, and meaning.",
+            title: "You're all set",
+            subtitle: "Your personal insights are ready to explore.",
             content: {
                 EmptyView()
             },
-            continueButtonTitle: "Start My Journey",
+            continueButtonTitle: "Enter Aroti",
             onContinue: {
                 coordinator.completeOnboarding()
             },
             showBackButton: false // Final page - no back button
         )
+        .onAppear {
+            // Single soft haptic tap on screen appear - subtle confirmation
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                HapticFeedback.impactOccurred(.light)
+            }
+        }
     }
 }

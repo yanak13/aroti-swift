@@ -26,6 +26,8 @@ struct OnboardingPageView<Hero: View, Content: View>: View {
     let heroHeightFactor: CGFloat
     let heroContainerHeightFactor: CGFloat
     let useNavigationSpacing: Bool
+    let buttonScale: CGFloat
+    let buttonGlow: Bool
     
     init(
         coordinator: OnboardingCoordinator,
@@ -46,7 +48,9 @@ struct OnboardingPageView<Hero: View, Content: View>: View {
         titleTopPadding: CGFloat = 0,
         heroHeightFactor: CGFloat = 0.20,
         heroContainerHeightFactor: CGFloat = 0.22,
-        useNavigationSpacing: Bool = true
+        useNavigationSpacing: Bool = true,
+        buttonScale: CGFloat = 1.0,
+        buttonGlow: Bool = false
     ) {
         self.coordinator = coordinator
         self.hero = hero()
@@ -67,6 +71,8 @@ struct OnboardingPageView<Hero: View, Content: View>: View {
         self.heroHeightFactor = heroHeightFactor
         self.heroContainerHeightFactor = heroContainerHeightFactor
         self.useNavigationSpacing = useNavigationSpacing
+        self.buttonScale = buttonScale
+        self.buttonGlow = buttonGlow
     }
     
     var body: some View {
@@ -83,9 +89,9 @@ struct OnboardingPageView<Hero: View, Content: View>: View {
                     // Top navigation - back button + progress bar (position-locked, never moves)
                     if useNavigationSpacing {
                         VStack(spacing: DesignSpacing.xs) {
-                            // Back button
-                            if showBackButton && coordinator.canGoBack() {
-                                HStack {
+                            // Back button and Skip button
+                            HStack {
+                                if showBackButton && coordinator.canGoBack() {
                                     Button(action: {
                                         HapticFeedback.impactOccurred(.light)
                                         coordinator.previousPage()
@@ -99,15 +105,26 @@ struct OnboardingPageView<Hero: View, Content: View>: View {
                                         .foregroundColor(ArotiColor.textSecondary)
                                     }
                                     .padding(.leading, DesignSpacing.lg)
-                                    
+                                } else {
+                                    // Spacer to maintain consistent positioning when no back button
                                     Spacer()
+                                        .frame(width: 0)
                                 }
-                                .padding(.top, geometry.safeAreaInsets.top + DesignSpacing.xxl + DesignSpacing.md)
-                            } else {
-                                // Spacer to maintain consistent positioning
+                                
                                 Spacer()
-                                    .frame(height: geometry.safeAreaInsets.top + DesignSpacing.xxl + DesignSpacing.md)
+                                
+                                // Skip button
+                                Button(action: {
+                                    HapticFeedback.impactOccurred(.light)
+                                    coordinator.completeOnboarding()
+                                }) {
+                                    Text("Skip")
+                                        .font(ArotiTextStyle.subhead)
+                                        .foregroundColor(ArotiColor.textSecondary)
+                                }
+                                .padding(.trailing, DesignSpacing.lg)
                             }
+                            .padding(.top, geometry.safeAreaInsets.top + DesignSpacing.xxl + DesignSpacing.md)
                             
                             // Progress bar
                             if showProgressBar {
@@ -177,6 +194,8 @@ struct OnboardingPageView<Hero: View, Content: View>: View {
                                             .lineLimit(nil)
                                             .fixedSize(horizontal: false, vertical: true)
                                             .padding(.horizontal, DesignSpacing.xl)
+                                            .id(subtitle)  // Force animation on subtitle change
+                                            .animation(.easeInOut(duration: 0.3), value: subtitle)
                                     }
                                     
                                     // Custom content - cards, inputs, etc.
@@ -220,6 +239,13 @@ struct OnboardingPageView<Hero: View, Content: View>: View {
                                 HapticFeedback.impactOccurred(.medium)
                                 onContinue()
                             }
+                        )
+                        .scaleEffect(buttonScale)
+                        .shadow(
+                            color: buttonGlow ? ArotiColor.accent.opacity(0.3) : .clear,
+                            radius: buttonGlow ? 8 : 0,
+                            x: 0,
+                            y: 0
                         )
                         .padding(.horizontal, DesignSpacing.lg)
                     }

@@ -54,10 +54,6 @@ struct OnboardingLocationPickerModal: View {
                 
                 // Sticky search bar
                 HStack(spacing: DesignSpacing.sm) {
-                    Image(systemName: "mappin.circle.fill")
-                        .font(.system(size: 18, weight: .medium))
-                        .foregroundColor(ArotiColor.textSecondary)
-                    
                     TextField("", text: $searchText, prompt: Text("Search for location").foregroundColor(ArotiColor.textPrimary.opacity(0.6)))
                         .font(ArotiTextStyle.body)
                         .foregroundColor(ArotiColor.textPrimary)

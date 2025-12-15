@@ -14,6 +14,22 @@ struct OnboardingBirthDateView: View {
         coordinator.birthDate != nil
     }
     
+    private var maximumBirthDate: Date {
+        let calendar = Calendar.current
+        let today = Date()
+        // Maximum date is 16 years ago from today
+        return calendar.date(byAdding: .year, value: -16, to: today) ?? today
+    }
+    
+    private var dateRange: ClosedRange<Date> {
+        // Allow dates from a reasonable past (e.g., 120 years ago) to 16 years ago
+        let calendar = Calendar.current
+        let today = Date()
+        let minDate = calendar.date(byAdding: .year, value: -120, to: today) ?? today
+        let maxDate = maximumBirthDate
+        return minDate...maxDate
+    }
+    
     var body: some View {
         OnboardingPageView(
             coordinator: coordinator,
@@ -37,11 +53,12 @@ struct OnboardingBirthDateView: View {
                         isPickerOpen: $isPickerOpen,
                         displayedComponents: [.date],
                         placeholder: "MM / DD / YYYY",
-                        title: "Select Birth Date"
+                        title: "Select Birth Date",
+                        dateRange: dateRange
                     )
                 }
             },
-            canContinue: coordinator.birthDate != nil,
+            canContinue: hasDateSelected,
             onContinue: {
                 coordinator.nextPage()
             }

@@ -23,7 +23,7 @@ struct OnboardingNameInputView: View {
             hero: {
                 NameInputHero()
             },
-            title: "What should we call you?",
+            title: "What's your name?",
             content: {
                 OnboardingInputCard(
                     placeholder: "Enter your name",

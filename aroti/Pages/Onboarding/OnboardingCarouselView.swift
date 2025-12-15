@@ -49,6 +49,21 @@ struct OnboardingCarouselView: View {
                     .opacity(0.2)
                 
                 VStack(spacing: 0) {
+                    // Skip button at top
+                    HStack {
+                        Spacer()
+                        Button(action: {
+                            HapticFeedback.impactOccurred(.light)
+                            coordinator.completeOnboarding()
+                        }) {
+                            Text("Skip")
+                                .font(ArotiTextStyle.subhead)
+                                .foregroundColor(ArotiColor.textSecondary)
+                        }
+                        .padding(.trailing, DesignSpacing.lg)
+                        .padding(.top, geometry.safeAreaInsets.top + DesignSpacing.xxl + DesignSpacing.md)
+                    }
+                    
                     // Carousel - fills remaining space, no clipping
                     TabView(selection: $carouselPage) {
                         ForEach(0..<carouselPages.count, id: \.self) { index in

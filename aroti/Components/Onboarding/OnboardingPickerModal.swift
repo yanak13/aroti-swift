@@ -12,17 +12,20 @@ struct OnboardingPickerModal: View {
     @Binding var date: Date
     let displayedComponents: DatePickerComponents
     let title: String
+    let dateRange: ClosedRange<Date>?
     
     @State private var tempDate: Date
     
     init(
         date: Binding<Date>,
         displayedComponents: DatePickerComponents,
-        title: String
+        title: String,
+        dateRange: ClosedRange<Date>? = nil
     ) {
         self._date = date
         self.displayedComponents = displayedComponents
         self.title = title
+        self.dateRange = dateRange
         self._tempDate = State(initialValue: date.wrappedValue)
     }
     
@@ -61,17 +64,34 @@ struct OnboardingPickerModal: View {
                 .padding(.bottom, DesignSpacing.md)
                 
                 // Picker with transparent background
-                DatePicker(
-                    "",
-                    selection: $tempDate,
-                    displayedComponents: displayedComponents
-                )
-                .datePickerStyle(.wheel)
-                .accentColor(ArotiColor.accent)
-                .tint(ArotiColor.accent)
-                .colorScheme(.dark)
-                .labelsHidden()
-                .background(Color.clear)
+                Group {
+                    if let dateRange = dateRange {
+                        DatePicker(
+                            "",
+                            selection: $tempDate,
+                            in: dateRange,
+                            displayedComponents: displayedComponents
+                        )
+                        .datePickerStyle(.wheel)
+                        .accentColor(ArotiColor.accent)
+                        .tint(ArotiColor.accent)
+                        .colorScheme(.dark)
+                        .labelsHidden()
+                        .background(Color.clear)
+                    } else {
+                        DatePicker(
+                            "",
+                            selection: $tempDate,
+                            displayedComponents: displayedComponents
+                        )
+                        .datePickerStyle(.wheel)
+                        .accentColor(ArotiColor.accent)
+                        .tint(ArotiColor.accent)
+                        .colorScheme(.dark)
+                        .labelsHidden()
+                        .background(Color.clear)
+                    }
+                }
                 .padding(.horizontal, DesignSpacing.lg)
                 .padding(.bottom, DesignSpacing.lg)
             }

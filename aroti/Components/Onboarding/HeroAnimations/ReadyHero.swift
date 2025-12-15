@@ -1,25 +1,27 @@
 //
 //  ReadyHero.swift
 //
-//  Subtle constellation final glow animation
+//  Completed Blueprint Seal - closed, symmetrical geometric emblem
+//  One-time resolve animation signaling completion and readiness
 //
 
 import SwiftUI
 
 struct ReadyHero: View {
-    @State private var finalGlow: Double = 0
-    @State private var glowPulse: Double = 0.5
-    @State private var breathingScale: Double = 1.0
+    @State private var sealOpacity: Double = 0
+    @State private var sealScale: Double = 0.95
+    @State private var glowIntensity: Double = 0
+    @State private var innerGlow: Double = 0
     
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                // Soft outer glow - final gentle pulse
+                // Soft outer glow - settles after initial pulse
                 RadialGradient(
                     colors: [
-                        ArotiColor.accent.opacity(0.12 * glowPulse * finalGlow),
-                        ArotiColor.accent.opacity(0.06 * glowPulse * finalGlow),
-                        ArotiColor.accent.opacity(0.02 * glowPulse * finalGlow),
+                        ArotiColor.accent.opacity(0.08 * glowIntensity),
+                        ArotiColor.accent.opacity(0.04 * glowIntensity),
+                        ArotiColor.accent.opacity(0.02 * glowIntensity),
                         Color.clear
                     ],
                     center: .center,
@@ -29,8 +31,8 @@ struct ReadyHero: View {
                 .blur(radius: 20)
                 .blendMode(.plusLighter)
                 
-                // Final constellation
-                FinalConstellationShape(progress: finalGlow)
+                // Completed Blueprint Seal
+                CompletedBlueprintSealShape()
                     .stroke(
                         LinearGradient(
                             colors: [
@@ -39,55 +41,81 @@ struct ReadyHero: View {
                                 ArotiColor.accent.opacity(0.75),
                                 ArotiColor.accent.opacity(0.65)
                             ],
-                            startPoint: .center,
+                            startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         ),
                         style: StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round)
                     )
-                    .scaleEffect(breathingScale)
-                    .shadow(color: ArotiColor.accent.opacity(0.5 * glowPulse * finalGlow), radius: 12, x: 0, y: 0)
-                    .blur(radius: 0.5)
+                    .opacity(sealOpacity)
+                    .scaleEffect(sealScale)
+                    .shadow(color: ArotiColor.accent.opacity(0.4 * glowIntensity), radius: 12, x: 0, y: 0)
+                    
+                // Subtle inner glow - almost imperceptible
+                CompletedBlueprintSealShape()
+                    .fill(
+                        RadialGradient(
+                            colors: [
+                                ArotiColor.accent.opacity(0.15 * innerGlow),
+                                ArotiColor.accent.opacity(0.05 * innerGlow),
+                                Color.clear
+                            ],
+                            center: .center,
+                            startRadius: 0,
+                            endRadius: min(geometry.size.width, geometry.size.height) * 0.15
+                        )
+                    )
+                    .opacity(sealOpacity)
+                    .scaleEffect(sealScale)
             }
         }
         .onAppear {
-            withAnimation(.easeInOut(duration: 2.5)) {
-                finalGlow = 1.0
+            // One-time resolve animation: shape softly resolves into place
+            withAnimation(.easeOut(duration: 1.8)) {
+                sealOpacity = 1.0
+                sealScale = 1.0
             }
             
-            // Continuous gentle glow pulse
-            withAnimation(.easeInOut(duration: 5.0).repeatForever(autoreverses: true)) {
-                glowPulse = 1.0
+            // Micro glow pulse that settles
+            withAnimation(.easeInOut(duration: 1.2)) {
+                glowIntensity = 1.0
             }
             
-            // Breathing animation
-            withAnimation(.easeInOut(duration: 8.0).repeatForever(autoreverses: true)) {
-                breathingScale = 1.02
+            // Inner glow appears gently
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                withAnimation(.easeOut(duration: 1.0)) {
+                    innerGlow = 1.0
+                }
+            }
+            
+            // Glow settles to final state
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                withAnimation(.easeOut(duration: 1.3)) {
+                    glowIntensity = 0.7
+                }
             }
         }
     }
 }
 
-struct FinalConstellationShape: Shape {
-    var progress: Double
-    
+struct CompletedBlueprintSealShape: Shape {
     func path(in rect: CGRect) -> Path {
         var path = Path()
         let center = CGPoint(x: rect.midX, y: rect.midY)
-        let radius = min(rect.width, rect.height) * 0.3 * progress
+        let radius = min(rect.width, rect.height) * 0.3
         
-        // Simple elegant star
-        let points = 6
-        var starPoints: [CGPoint] = []
+        // Closed hexagon - perfectly symmetrical seal
+        let sides = 6
+        var hexPoints: [CGPoint] = []
         
-        for i in 0..<points {
-            let angle = Double(i) * 2 * .pi / Double(points) - .pi / 2
+        for i in 0..<sides {
+            let angle = Double(i) * 2 * .pi / Double(sides) - .pi / 2
             let x = center.x + radius * cos(angle)
             let y = center.y + radius * sin(angle)
-            starPoints.append(CGPoint(x: x, y: y))
+            hexPoints.append(CGPoint(x: x, y: y))
         }
         
-        // Draw star
-        for (index, point) in starPoints.enumerated() {
+        // Draw closed hexagon
+        for (index, point) in hexPoints.enumerated() {
             if index == 0 {
                 path.move(to: point)
             } else {
@@ -95,6 +123,15 @@ struct FinalConstellationShape: Shape {
             }
         }
         path.closeSubpath()
+        
+        // Subtle inner detail: small center point
+        let centerRadius = radius * 0.12
+        path.addEllipse(in: CGRect(
+            x: center.x - centerRadius,
+            y: center.y - centerRadius,
+            width: centerRadius * 2,
+            height: centerRadius * 2
+        ))
         
         return path
     }

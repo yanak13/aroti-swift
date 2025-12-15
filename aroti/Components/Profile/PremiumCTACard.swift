@@ -14,7 +14,7 @@ struct PremiumCTACard: View {
     
     var body: some View {
         BaseCard {
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 10) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(title)
                         .font(DesignTypography.subheadFont(weight: .semibold))
@@ -22,7 +22,7 @@ struct PremiumCTACard: View {
                     
                     Text(subtitle)
                         .font(DesignTypography.footnoteFont())
-                        .foregroundColor(DesignColors.mutedForeground)
+                        .foregroundColor(DesignColors.mutedForeground.opacity(0.65))
                 }
                 
                 Button(action: onUnlockClick) {
@@ -33,13 +33,14 @@ struct PremiumCTACard: View {
                             .foregroundColor(.white)
                         Spacer()
                     }
-                    .padding(.vertical, 12)
+                    .padding(.vertical, 10)
                     .background(
                         RoundedRectangle(cornerRadius: 10)
                             .fill(DesignColors.accent)
                     )
                 }
             }
+            .padding(.vertical, 4)
         }
     }
 }

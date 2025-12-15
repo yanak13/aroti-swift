@@ -266,4 +266,56 @@ class IdentityContentGenerator {
             return "Your elemental profile emphasizes \(dominantText) energy, while \(deficientText) elements appear less frequently. This pattern often shows where you naturally excel and where you may seek balance through life experiences."
         }
     }
+    
+    // MARK: - Free Insight Generation (Concise, Max 3 Lines)
+    
+    func generateAstrologyFreeInsight(
+        sunSign: String,
+        moonSign: String,
+        risingSign: String,
+        dominantElement: Element
+    ) -> String {
+        let elementInsight: String
+        switch dominantElement {
+        case .fire:
+            elementInsight = "Passion and action drive your approach to life."
+        case .earth:
+            elementInsight = "Stability and practicality ground your decisions."
+        case .air:
+            elementInsight = "Communication and curiosity shape your interactions."
+        case .water:
+            elementInsight = "Emotional depth and intuition guide your experiences."
+        }
+        
+        return "Cosmic signature blends \(sunSign.lowercased()) identity with \(moonSign.lowercased()) emotions and \(risingSign.lowercased()) presence.\n\(elementInsight)\nThis combination influences how you express yourself and connect with others."
+    }
+    
+    func generateNumerologyFreeInsight(
+        lifePath: Int,
+        archetype: String
+    ) -> String {
+        return "Life Path \(lifePath) reveals core journey and fundamental lessons.\nAs \(archetype), natural tendencies guide your path.\nThis number reflects the direction that brings fulfillment and growth."
+    }
+    
+    func generateMatrixFreeInsight(
+        coreDestinyNumber: Int,
+        themes: [String]
+    ) -> String {
+        let themesText = themes.prefix(2).joined(separator: " and ")
+        return "Core Destiny \(coreDestinyNumber) centers on \(themesText).\nThis number reveals primary themes shaping your life path."
+    }
+    
+    func generateElementalFreeInsight(
+        dominant: [Element],
+        deficient: [Element]
+    ) -> String {
+        let dominantText = dominant.map { $0.rawValue }.joined(separator: " and ")
+        
+        if deficient.isEmpty {
+            return "Strong emphasis on \(dominantText) energy creates balanced foundation.\nThis supports natural expression and life path.\nElemental harmony reflects in daily experiences."
+        } else {
+            let deficientText = deficient.map { $0.rawValue }.joined(separator: " and ")
+            return "Emphasis on \(dominantText) energy, while \(deficientText) appear less frequently.\nPattern shows where natural strengths lie.\nBalance may be sought through life experiences."
+        }
+    }
 }

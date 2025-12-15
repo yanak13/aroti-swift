@@ -32,6 +32,9 @@ struct ProfileView: View {
     // Category selector state
     @State private var selectedCategory: BlueprintCategory = .astrology
     
+    // Premium unlock state (for demo/testing - shows premium content when unlocked)
+    @State private var unlockedPremiumContent: Set<BlueprintCategory> = []
+    
     // Modal states
     @State private var showEditProfile = false
     @State private var showAstrologyModal = false
@@ -385,66 +388,77 @@ struct ProfileView: View {
         }
     }
     
-    // MARK: - Modern Profile Header (No Card Background)
+    // MARK: - Modern Profile Header (Premium Card)
     private var modernProfileHeader: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Header Identity Block - No heavy card background
+            // Header Identity Block - Premium Card Container
             VStack(alignment: .leading, spacing: 0) {
-                // User Info Row
-                HStack(alignment: .top, spacing: 12) {
-                    // Small Modern Avatar (44px)
-                    Group {
-                        if let image = UIImage(named: profileAvatar) {
-                            Image(uiImage: image)
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                        } else {
-                            Image(systemName: "person.circle.fill")
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                                .foregroundColor(DesignColors.accent.opacity(0.5))
+                // Premium User Card - Tappable
+                ZStack(alignment: .topTrailing) {
+                    BaseCard(
+                        variant: .interactive,
+                        action: {
+                            showEditProfile = true
                         }
+                    ) {
+                        HStack(alignment: .top, spacing: 16) {
+                            // Premium Avatar with Gradient Ring
+                            PremiumAvatarView(
+                                imageName: profileAvatar,
+                                userName: userName,
+                                size: 50
+                            )
+                            
+                            // User Info - Premium Typography Hierarchy
+                            VStack(alignment: .leading, spacing: 5) {
+                                // Name (Primary) - Increased size by +1 step
+                                Text(userName)
+                                    .font(DesignTypography.title2Font(weight: .semibold))
+                                    .foregroundColor(DesignColors.foreground)
+                                    .lineLimit(1)
+                                
+                                // Subtitle (Secondary - Required Copy) - Constrained to 2 lines
+                                Text("Your chart reveals how you connect, grow, and transform")
+                                    .font(DesignTypography.subheadFont())
+                                    .foregroundColor(DesignColors.mutedForeground)
+                                    .lineLimit(2)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                
+                                // Location (Tertiary - Only if exists)
+                                if !userLocation.isEmpty {
+                                    Text("Based in \(userLocation)")
+                                        .font(DesignTypography.footnoteFont())
+                                        .foregroundColor(DesignColors.mutedForeground.opacity(0.65))
+                                        .lineLimit(1)
+                                }
+                            }
+                            .padding(.top, 2)
+                            
+                            Spacer()
+                            
+                            // Spacer for edit button area
+                            Color.clear
+                                .frame(width: 44, height: 44)
+                        }
+                        .padding(.vertical, 8) // Extra vertical padding for taller card
                     }
-                    .frame(width: 44, height: 44)
-                    .clipShape(Circle())
-                    .shadow(color: Color.black.opacity(0.2), radius: 4, x: 0, y: 2)
                     
-                    // User Info - Clean Typography
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(userName)
-                            .font(DesignTypography.title2Font(weight: .medium))
-                            .foregroundColor(DesignColors.foreground)
-                            .lineLimit(1)
-                        
-                        Text(userLocation)
-                            .font(DesignTypography.footnoteFont())
-                            .foregroundColor(DesignColors.mutedForeground.opacity(0.7))
-                            .lineLimit(1)
-                        
-                        Text("Your personal cosmic blueprint")
-                            .font(DesignTypography.footnoteFont(weight: .light))
-                            .foregroundColor(DesignColors.mutedForeground.opacity(0.5))
-                            .lineLimit(1)
-                    }
-                    .padding(.top, 2)
-                    
-                    Spacer()
-                    
-                    // Minimal Edit Button
+                    // Subtle Edit Button (overlaid to prevent card tap)
                     Button(action: {
                         showEditProfile = true
                     }) {
                         Image(systemName: "pencil")
-                            .font(.system(size: 16))
-                            .foregroundColor(DesignColors.mutedForeground.opacity(0.6))
-                            .frame(width: 32, height: 32)
-                            .background(
-                                Circle()
-                                    .fill(Color.white.opacity(0.05))
-                            )
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(DesignColors.mutedForeground.opacity(0.5))
+                            .frame(width: 44, height: 44)
                     }
                     .buttonStyle(PlainButtonStyle())
+                    .accessibilityLabel("Edit profile")
+                    .padding(.trailing, 16)
+                    .padding(.top, 16)
                 }
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Profile. \(userName). Your chart reveals how you connect, grow, and transform. \(userLocation.isEmpty ? "" : "Based in \(userLocation).")")
                 .padding(.bottom, 16)
                 
                 // Category Tabs - Integrated with header (horizontally scrollable)
@@ -537,6 +551,12 @@ struct ProfileView: View {
         }
         
         let contentGenerator = IdentityContentGenerator.shared
+        let freeInsight = contentGenerator.generateAstrologyFreeInsight(
+            sunSign: identity.sunSign,
+            moonSign: identity.moonSign,
+            risingSign: identity.risingSign,
+            dominantElement: identity.dominantElement
+        )
         let coreTheme = contentGenerator.generateAstrologyCoreTheme(
             sunSign: identity.sunSign,
             moonSign: identity.moonSign,
@@ -544,85 +564,71 @@ struct ProfileView: View {
             dominantElement: identity.dominantElement
         )
         
-        // Build premium preview rows
-        var previewRows: [PremiumPreviewRow] = []
-        
-        if let lifeFocusAreas = identity.lifeFocusAreas, !lifeFocusAreas.isEmpty {
-            let areasText = lifeFocusAreas.prefix(3).map { $0.title }.joined(separator: " · ")
-            previewRows.append(PremiumPreviewRow(
-                title: "Life Focus Areas",
-                preview: areasText
-            ))
-        } else if !identity.hasAccurateBirthTime || !identity.hasAccurateBirthPlace {
-            previewRows.append(PremiumPreviewRow(
-                title: "Life Focus Areas",
-                preview: "Requires birth time and place"
-            ))
-        }
-        
-        if let familiarPatterns = identity.familiarPatterns {
-            previewRows.append(PremiumPreviewRow(
-                title: "Familiar Patterns",
-                preview: String(familiarPatterns.shortMeaning.prefix(80)) + "..."
-            ))
-        }
-        
-        if let growthDirection = identity.growthDirection {
-            previewRows.append(PremiumPreviewRow(
-                title: "Growth Direction",
-                preview: String(growthDirection.shortMeaning.prefix(80)) + "..."
-            ))
-        }
-        
-        if let strengths = identity.strengths, !strengths.isEmpty,
-           let blindSpots = identity.blindSpots, !blindSpots.isEmpty {
-            let combined = (strengths.prefix(2) + blindSpots.prefix(1)).joined(separator: " · ")
-            previewRows.append(PremiumPreviewRow(
-                title: "Strengths & Blind Spots",
-                preview: combined
-            ))
-        }
-        
         return AnyView(
             VStack(alignment: .leading, spacing: 20) {
-                // Free Identity Block (60-70%)
-                VStack(alignment: .leading, spacing: 16) {
+                // A. Identity Header Block (Free)
+                BaseCard {
                     IdentityHeaderCard(
                         title: "Astrology",
                         primaryLine: "\(identity.sunSign) Sun · \(identity.moonSign) Moon · \(identity.risingSign) Rising",
-                        secondaryLine: "Dominant element: \(identity.dominantElement.rawValue)",
-                        summary: ""
-                    )
-                    
-                    TextCard(
-                        title: nil,
-                        content: identity.freeSummary
-                    )
-                    
-                    TextCard(
-                        title: "Core Theme",
-                        content: coreTheme
+                        secondaryLine: "Dominant element: \(identity.dominantElement.rawValue)"
                     )
                 }
                 
-                if isPremium {
-                    // Premium Expanded Content
+                // B. Free Insight Block (Free)
+                TextCard(
+                    title: nil,
+                    content: freeInsight
+                )
+                
+                // C. Core Theme Block (Free)
+                TextCard(
+                    title: "Core Theme",
+                    content: coreTheme
+                )
+                
+                // D. Premium CTA Block (if !isPremium) OR E. Premium Content (if isPremium)
+                if unlockedPremiumContent.contains(.astrology) {
+                    // Premium Content (inline, no headers)
                     VStack(alignment: .leading, spacing: 16) {
                         if let lifeFocusAreas = identity.lifeFocusAreas, !lifeFocusAreas.isEmpty {
-                            PremiumSection(title: "Life Focus Areas") {
-                                ForEach(lifeFocusAreas) { area in
-                                    LifeFocusAreaCard(area: area)
+                            BaseCard {
+                                VStack(alignment: .leading, spacing: 12) {
+                                    Text("Life Focus Areas")
+                                        .font(DesignTypography.bodyFont(weight: .semibold))
+                                        .foregroundColor(DesignColors.foreground)
+                                    
+                                    ForEach(lifeFocusAreas) { area in
+                                        HStack(alignment: .top, spacing: 8) {
+                                            Text("•")
+                                                .foregroundColor(DesignColors.accent)
+                                            VStack(alignment: .leading, spacing: 4) {
+                                                Text(area.title)
+                                                    .font(DesignTypography.bodyFont(weight: .medium))
+                                                    .foregroundColor(DesignColors.foreground)
+                                                Text(area.shortMeaning)
+                                                    .font(DesignTypography.footnoteFont())
+                                                    .foregroundColor(DesignColors.mutedForeground)
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         } else if !identity.hasAccurateBirthTime || !identity.hasAccurateBirthPlace {
-                            BirthDataPromptCard {
-                                showEditProfile = true
+                            BaseCard {
+                                Text("Add birth time to refine this insight.")
+                                    .font(DesignTypography.footnoteFont())
+                                    .foregroundColor(DesignColors.mutedForeground)
                             }
                         }
                         
                         if let familiarPatterns = identity.familiarPatterns {
-                            PremiumSection(title: "Familiar Patterns") {
-                                BaseCard {
+                            BaseCard {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("Familiar Patterns")
+                                        .font(DesignTypography.bodyFont(weight: .semibold))
+                                        .foregroundColor(DesignColors.foreground)
+                                    
                                     Text(familiarPatterns.shortMeaning)
                                         .font(DesignTypography.footnoteFont())
                                         .foregroundColor(DesignColors.mutedForeground)
@@ -631,8 +637,12 @@ struct ProfileView: View {
                         }
                         
                         if let growthDirection = identity.growthDirection {
-                            PremiumSection(title: "Growth Direction") {
-                                BaseCard {
+                            BaseCard {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("Growth Direction")
+                                        .font(DesignTypography.bodyFont(weight: .semibold))
+                                        .foregroundColor(DesignColors.foreground)
+                                    
                                     Text(growthDirection.shortMeaning)
                                         .font(DesignTypography.footnoteFont())
                                         .foregroundColor(DesignColors.mutedForeground)
@@ -641,17 +651,19 @@ struct ProfileView: View {
                         }
                         
                         if let strengths = identity.strengths, !strengths.isEmpty {
-                            PremiumSection(title: "Strengths") {
-                                BaseCard {
-                                    VStack(alignment: .leading, spacing: 8) {
-                                        ForEach(strengths, id: \.self) { strength in
-                                            HStack(alignment: .top, spacing: 8) {
-                                                Text("•")
-                                                    .foregroundColor(DesignColors.accent)
-                                                Text(strength)
-                                                    .font(DesignTypography.footnoteFont())
-                                                    .foregroundColor(DesignColors.mutedForeground)
-                                            }
+                            BaseCard {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("Strengths")
+                                        .font(DesignTypography.bodyFont(weight: .semibold))
+                                        .foregroundColor(DesignColors.foreground)
+                                    
+                                    ForEach(strengths, id: \.self) { strength in
+                                        HStack(alignment: .top, spacing: 8) {
+                                            Text("•")
+                                                .foregroundColor(DesignColors.accent)
+                                            Text(strength)
+                                                .font(DesignTypography.footnoteFont())
+                                                .foregroundColor(DesignColors.mutedForeground)
                                         }
                                     }
                                 }
@@ -659,48 +671,32 @@ struct ProfileView: View {
                         }
                         
                         if let blindSpots = identity.blindSpots, !blindSpots.isEmpty {
-                            PremiumSection(title: "Blind Spots") {
-                                BaseCard {
-                                    VStack(alignment: .leading, spacing: 8) {
-                                        ForEach(blindSpots, id: \.self) { spot in
-                                            HStack(alignment: .top, spacing: 8) {
-                                                Text("•")
-                                                    .foregroundColor(DesignColors.mutedForeground)
-                                                Text(spot)
-                                                    .font(DesignTypography.footnoteFont())
-                                                    .foregroundColor(DesignColors.mutedForeground)
-                                            }
+                            BaseCard {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("Blind Spots")
+                                        .font(DesignTypography.bodyFont(weight: .semibold))
+                                        .foregroundColor(DesignColors.foreground)
+                                    
+                                    ForEach(blindSpots, id: \.self) { spot in
+                                        HStack(alignment: .top, spacing: 8) {
+                                            Text("•")
+                                                .foregroundColor(DesignColors.mutedForeground)
+                                            Text(spot)
+                                                .font(DesignTypography.footnoteFont())
+                                                .foregroundColor(DesignColors.mutedForeground)
                                         }
                                     }
                                 }
                             }
                         }
-                        
-                        if let premiumSummary = identity.premiumSummary {
-                            PremiumSection(title: "Your Summary") {
-                                BaseCard {
-                                    Text(premiumSummary)
-                                        .font(DesignTypography.footnoteFont())
-                                        .foregroundColor(DesignColors.mutedForeground)
-                                }
-                            }
-                        }
                     }
                 } else {
-                    // Free users: Premium Preview + Single CTA
-                    if !previewRows.isEmpty {
-                        PremiumPreviewCard(
-                            title: "Deeper Astrological Insights",
-                            rows: previewRows
-                        )
-                    }
-                    
+                    // Premium CTA Block (footer-like)
                     PremiumCTACard(
                         title: "Unlock your full Astrology blueprint",
-                        subtitle: "Access Life Focus Areas, Familiar Patterns, Growth Direction, and more",
+                        subtitle: "Explore life focus areas, patterns, and growth direction.",
                         onUnlockClick: {
-                            paywallContext = "astrology"
-                            showPaywall = true
+                            unlockedPremiumContent.insert(.astrology)
                         }
                     )
                 }
@@ -715,106 +711,87 @@ struct ProfileView: View {
         }
         
         let contentGenerator = IdentityContentGenerator.shared
+        let freeInsight = contentGenerator.generateNumerologyFreeInsight(
+            lifePath: identity.lifePath,
+            archetype: identity.archetypeLabel
+        )
         let coreTheme = contentGenerator.generateNumerologyCoreTheme(
             lifePath: identity.lifePath,
             archetype: identity.archetypeLabel
         )
         
-        // Build premium preview rows
-        var previewRows: [PremiumPreviewRow] = []
-        
-        if let destiny = identity.destinyExpression,
-           let soulUrge = identity.soulUrge,
-           let personality = identity.personality {
-            previewRows.append(PremiumPreviewRow(
-                title: "Core Numbers",
-                preview: "Destiny \(destiny) · Soul Urge \(soulUrge) · Personality \(personality)"
-            ))
-        }
-        
-        if let karmicDebt = identity.karmicDebt, !karmicDebt.isEmpty {
-            previewRows.append(PremiumPreviewRow(
-                title: "Karmic Themes",
-                preview: "Lessons and repeating patterns: \(karmicDebt.map { String($0) }.joined(separator: ", "))"
-            ))
-        } else {
-            previewRows.append(PremiumPreviewRow(
-                title: "Karmic Themes",
-                preview: "Lessons and repeating patterns"
-            ))
-        }
-        
-        if let synthesis = identity.premiumSynthesis {
-            previewRows.append(PremiumPreviewRow(
-                title: "Synthesis",
-                preview: String(synthesis.prefix(80)) + "..."
-            ))
-        }
-        
         return AnyView(
             VStack(alignment: .leading, spacing: 20) {
-                // Free Identity Block (60-70%)
-                VStack(alignment: .leading, spacing: 16) {
+                // A. Identity Header Block (Free)
+                BaseCard {
                     IdentityHeaderCard(
                         title: "Numerology",
                         primaryLine: "Life Path \(identity.lifePath)",
-                        secondaryLine: "Archetype: \(identity.archetypeLabel)",
-                        summary: ""
-                    )
-                    
-                    TextCard(
-                        title: nil,
-                        content: identity.freeSummary
-                    )
-                    
-                    TextCard(
-                        title: "Core Theme",
-                        content: coreTheme
+                        secondaryLine: "Archetype: \(identity.archetypeLabel)"
                     )
                 }
                 
-                if isPremium {
-                    // Premium Expanded Content
+                // B. Free Insight Block (Free)
+                TextCard(
+                    title: nil,
+                    content: freeInsight
+                )
+                
+                // C. Core Theme Block (Free)
+                TextCard(
+                    title: "Core Theme",
+                    content: coreTheme
+                )
+                
+                // D. Premium CTA Block (if !isPremium) OR E. Premium Content (if isPremium)
+                if unlockedPremiumContent.contains(.numerology) {
+                    // Premium Content (inline, no headers)
                     VStack(alignment: .leading, spacing: 16) {
                         if let destiny = identity.destinyExpression,
                            let soulUrge = identity.soulUrge,
                            let personality = identity.personality {
-                            PremiumSection(title: "Your Core Numbers") {
-                                BaseCard {
-                                    VStack(alignment: .leading, spacing: 8) {
-                                        HStack {
-                                            Text("Destiny/Expression:")
-                                                .font(DesignTypography.footnoteFont())
-                                                .foregroundColor(DesignColors.mutedForeground)
-                                            Text("\(destiny)")
-                                                .font(DesignTypography.bodyFont(weight: .medium))
-                                                .foregroundColor(DesignColors.foreground)
-                                        }
-                                        
-                                        HStack {
-                                            Text("Soul Urge:")
-                                                .font(DesignTypography.footnoteFont())
-                                                .foregroundColor(DesignColors.mutedForeground)
-                                            Text("\(soulUrge)")
-                                                .font(DesignTypography.bodyFont(weight: .medium))
-                                                .foregroundColor(DesignColors.foreground)
-                                        }
-                                        
-                                        HStack {
-                                            Text("Personality:")
-                                                .font(DesignTypography.footnoteFont())
-                                                .foregroundColor(DesignColors.mutedForeground)
-                                            Text("\(personality)")
-                                                .font(DesignTypography.bodyFont(weight: .medium))
-                                                .foregroundColor(DesignColors.foreground)
-                                        }
+                            BaseCard {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("Your Core Numbers")
+                                        .font(DesignTypography.bodyFont(weight: .semibold))
+                                        .foregroundColor(DesignColors.foreground)
+                                    
+                                    HStack {
+                                        Text("Destiny/Expression:")
+                                            .font(DesignTypography.footnoteFont())
+                                            .foregroundColor(DesignColors.mutedForeground)
+                                        Text("\(destiny)")
+                                            .font(DesignTypography.bodyFont(weight: .medium))
+                                            .foregroundColor(DesignColors.foreground)
+                                    }
+                                    
+                                    HStack {
+                                        Text("Soul Urge:")
+                                            .font(DesignTypography.footnoteFont())
+                                            .foregroundColor(DesignColors.mutedForeground)
+                                        Text("\(soulUrge)")
+                                            .font(DesignTypography.bodyFont(weight: .medium))
+                                            .foregroundColor(DesignColors.foreground)
+                                    }
+                                    
+                                    HStack {
+                                        Text("Personality:")
+                                            .font(DesignTypography.footnoteFont())
+                                            .foregroundColor(DesignColors.mutedForeground)
+                                        Text("\(personality)")
+                                            .font(DesignTypography.bodyFont(weight: .medium))
+                                            .foregroundColor(DesignColors.foreground)
                                     }
                                 }
                             }
                         }
                         
-                        PremiumSection(title: "Karmic Themes") {
-                            BaseCard {
+                        BaseCard {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Karmic Themes")
+                                    .font(DesignTypography.bodyFont(weight: .semibold))
+                                    .foregroundColor(DesignColors.foreground)
+                                
                                 if let karmicDebt = identity.karmicDebt, !karmicDebt.isEmpty {
                                     Text("Karmic Debt Numbers: \(karmicDebt.map { String($0) }.joined(separator: ", "))")
                                         .font(DesignTypography.footnoteFont())
@@ -828,8 +805,12 @@ struct ProfileView: View {
                         }
                         
                         if let synthesis = identity.premiumSynthesis {
-                            PremiumSection(title: "How Your Numbers Work Together") {
-                                BaseCard {
+                            BaseCard {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("How Your Numbers Work Together")
+                                        .font(DesignTypography.bodyFont(weight: .semibold))
+                                        .foregroundColor(DesignColors.foreground)
+                                    
                                     Text(synthesis)
                                         .font(DesignTypography.footnoteFont())
                                         .foregroundColor(DesignColors.mutedForeground)
@@ -838,20 +819,12 @@ struct ProfileView: View {
                         }
                     }
                 } else {
-                    // Free users: Premium Preview + Single CTA
-                    if !previewRows.isEmpty {
-                        PremiumPreviewCard(
-                            title: "Deeper Insights",
-                            rows: previewRows
-                        )
-                    }
-                    
+                    // Premium CTA Block (footer-like)
                     PremiumCTACard(
                         title: "Unlock your full Numerology blueprint",
-                        subtitle: "Access all core numbers, karmic themes, and synthesis",
+                        subtitle: "Access all core numbers, karmic themes, and synthesis.",
                         onUnlockClick: {
-                            paywallContext = "numerology"
-                            showPaywall = true
+                            unlockedPremiumContent.insert(.numerology)
                         }
                     )
                 }
@@ -866,79 +839,56 @@ struct ProfileView: View {
         }
         
         let contentGenerator = IdentityContentGenerator.shared
+        let freeInsight = contentGenerator.generateMatrixFreeInsight(
+            coreDestinyNumber: identity.coreDestinyNumber,
+            themes: identity.freeThemes
+        )
         let coreTheme = contentGenerator.generateMatrixCoreTheme(
             coreDestinyNumber: identity.coreDestinyNumber,
             themes: identity.freeThemes
         )
         
-        let summaryText = identity.freeThemes.joined(separator: " • ")
-        
-        // Build premium preview rows
-        var previewRows: [PremiumPreviewRow] = []
-        
-        if let strengthZones = identity.strengthZones, !strengthZones.isEmpty {
-            previewRows.append(PremiumPreviewRow(
-                title: "Strength Zones",
-                preview: "Where you thrive"
-            ))
-        }
-        
-        if let challengeZones = identity.challengeZones, !challengeZones.isEmpty {
-            previewRows.append(PremiumPreviewRow(
-                title: "Challenge Zones",
-                preview: "Where you grow"
-            ))
-        }
-        
-        if let karmicLessons = identity.karmicLessons, !karmicLessons.isEmpty {
-            previewRows.append(PremiumPreviewRow(
-                title: "Karmic Lessons",
-                preview: "Core lessons"
-            ))
-        }
-        
-        if let repeatingPatterns = identity.repeatingPatterns, !repeatingPatterns.isEmpty {
-            previewRows.append(PremiumPreviewRow(
-                title: "Repeating Patterns",
-                preview: "Recurring dynamics"
-            ))
-        }
-        
         return AnyView(
             VStack(alignment: .leading, spacing: 20) {
-                // Free Identity Block (60-70%)
-                VStack(alignment: .leading, spacing: 16) {
+                // A. Identity Header Block (Free)
+                BaseCard {
                     IdentityHeaderCard(
                         title: "Matrix of Fate",
                         primaryLine: "Core Destiny \(identity.coreDestinyNumber)",
-                        secondaryLine: nil,
-                        summary: ""
-                    )
-                    
-                    // Matrix Visual
-                    MatrixVisualView(matrix: identity.matrixVisual, coreDestinyNumber: identity.coreDestinyNumber)
-                    
-                    TextCard(
-                        title: nil,
-                        content: summaryText
-                    )
-                    
-                    TextCard(
-                        title: "Core Theme",
-                        content: coreTheme
+                        secondaryLine: nil
                     )
                 }
                 
-                if isPremium {
-                    // Premium Expanded Content
+                // Matrix Visual
+                MatrixVisualView(matrix: identity.matrixVisual, coreDestinyNumber: identity.coreDestinyNumber)
+                
+                // B. Free Insight Block (Free)
+                TextCard(
+                    title: nil,
+                    content: freeInsight
+                )
+                
+                // C. Core Theme Block (Free)
+                TextCard(
+                    title: "Core Theme",
+                    content: coreTheme
+                )
+                
+                // D. Premium CTA Block (if !isPremium) OR E. Premium Content (if isPremium)
+                if unlockedPremiumContent.contains(.matrix) {
+                    // Premium Content (inline, no headers)
                     VStack(alignment: .leading, spacing: 16) {
                         if let strengthZones = identity.strengthZones, !strengthZones.isEmpty {
-                            PremiumSection(title: "Strength Zones") {
-                                ForEach(strengthZones) { zone in
-                                    BaseCard {
-                                        VStack(alignment: .leading, spacing: 8) {
+                            BaseCard {
+                                VStack(alignment: .leading, spacing: 12) {
+                                    Text("Strength Zones")
+                                        .font(DesignTypography.bodyFont(weight: .semibold))
+                                        .foregroundColor(DesignColors.foreground)
+                                    
+                                    ForEach(strengthZones) { zone in
+                                        VStack(alignment: .leading, spacing: 4) {
                                             Text(zone.title)
-                                                .font(DesignTypography.bodyFont(weight: .semibold))
+                                                .font(DesignTypography.bodyFont(weight: .medium))
                                                 .foregroundColor(DesignColors.foreground)
                                             
                                             Text(zone.shortMeaning)
@@ -951,12 +901,16 @@ struct ProfileView: View {
                         }
                         
                         if let challengeZones = identity.challengeZones, !challengeZones.isEmpty {
-                            PremiumSection(title: "Challenge Zones") {
-                                ForEach(challengeZones) { zone in
-                                    BaseCard {
-                                        VStack(alignment: .leading, spacing: 8) {
+                            BaseCard {
+                                VStack(alignment: .leading, spacing: 12) {
+                                    Text("Challenge Zones")
+                                        .font(DesignTypography.bodyFont(weight: .semibold))
+                                        .foregroundColor(DesignColors.foreground)
+                                    
+                                    ForEach(challengeZones) { zone in
+                                        VStack(alignment: .leading, spacing: 4) {
                                             Text(zone.title)
-                                                .font(DesignTypography.bodyFont(weight: .semibold))
+                                                .font(DesignTypography.bodyFont(weight: .medium))
                                                 .foregroundColor(DesignColors.foreground)
                                             
                                             Text(zone.shortMeaning)
@@ -969,17 +923,19 @@ struct ProfileView: View {
                         }
                         
                         if let karmicLessons = identity.karmicLessons, !karmicLessons.isEmpty {
-                            PremiumSection(title: "Karmic Lessons") {
-                                BaseCard {
-                                    VStack(alignment: .leading, spacing: 8) {
-                                        ForEach(karmicLessons, id: \.self) { lesson in
-                                            HStack(alignment: .top, spacing: 8) {
-                                                Text("•")
-                                                    .foregroundColor(DesignColors.mutedForeground)
-                                                Text(lesson)
-                                                    .font(DesignTypography.footnoteFont())
-                                                    .foregroundColor(DesignColors.mutedForeground)
-                                            }
+                            BaseCard {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("Karmic Lessons")
+                                        .font(DesignTypography.bodyFont(weight: .semibold))
+                                        .foregroundColor(DesignColors.foreground)
+                                    
+                                    ForEach(karmicLessons, id: \.self) { lesson in
+                                        HStack(alignment: .top, spacing: 8) {
+                                            Text("•")
+                                                .foregroundColor(DesignColors.mutedForeground)
+                                            Text(lesson)
+                                                .font(DesignTypography.footnoteFont())
+                                                .foregroundColor(DesignColors.mutedForeground)
                                         }
                                     }
                                 }
@@ -987,17 +943,19 @@ struct ProfileView: View {
                         }
                         
                         if let repeatingPatterns = identity.repeatingPatterns, !repeatingPatterns.isEmpty {
-                            PremiumSection(title: "Repeating Patterns") {
-                                BaseCard {
-                                    VStack(alignment: .leading, spacing: 8) {
-                                        ForEach(repeatingPatterns, id: \.self) { pattern in
-                                            HStack(alignment: .top, spacing: 8) {
-                                                Text("•")
-                                                    .foregroundColor(DesignColors.accent)
-                                                Text(pattern)
-                                                    .font(DesignTypography.footnoteFont())
-                                                    .foregroundColor(DesignColors.mutedForeground)
-                                            }
+                            BaseCard {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("Repeating Patterns")
+                                        .font(DesignTypography.bodyFont(weight: .semibold))
+                                        .foregroundColor(DesignColors.foreground)
+                                    
+                                    ForEach(repeatingPatterns, id: \.self) { pattern in
+                                        HStack(alignment: .top, spacing: 8) {
+                                            Text("•")
+                                                .foregroundColor(DesignColors.accent)
+                                            Text(pattern)
+                                                .font(DesignTypography.footnoteFont())
+                                                .foregroundColor(DesignColors.mutedForeground)
                                         }
                                     }
                                 }
@@ -1005,8 +963,12 @@ struct ProfileView: View {
                         }
                         
                         if let interpretation = identity.premiumInterpretation {
-                            PremiumSection(title: "Interpretation") {
-                                BaseCard {
+                            BaseCard {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("Interpretation")
+                                        .font(DesignTypography.bodyFont(weight: .semibold))
+                                        .foregroundColor(DesignColors.foreground)
+                                    
                                     Text(interpretation)
                                         .font(DesignTypography.footnoteFont())
                                         .foregroundColor(DesignColors.mutedForeground)
@@ -1015,20 +977,12 @@ struct ProfileView: View {
                         }
                     }
                 } else {
-                    // Free users: Premium Preview + Single CTA
-                    if !previewRows.isEmpty {
-                        PremiumPreviewCard(
-                            title: "Deeper Insights",
-                            rows: previewRows
-                        )
-                    }
-                    
+                    // Premium CTA Block (footer-like)
                     PremiumCTACard(
                         title: "Unlock your full Matrix of Fate blueprint",
-                        subtitle: "Access strength zones, challenge zones, and deeper insights",
+                        subtitle: "Access strength zones, challenge zones, and deeper insights.",
                         onUnlockClick: {
-                            paywallContext = "matrix"
-                            showPaywall = true
+                            unlockedPremiumContent.insert(.matrix)
                         }
                     )
                 }
@@ -1043,79 +997,63 @@ struct ProfileView: View {
         }
         
         let contentGenerator = IdentityContentGenerator.shared
+        let freeInsight = contentGenerator.generateElementalFreeInsight(
+            dominant: identity.dominant,
+            deficient: identity.deficient
+        )
         let coreTheme = contentGenerator.generateElementalCoreTheme(
             dominant: identity.dominant,
             deficient: identity.deficient
         )
         
-        // Build premium preview rows
-        var previewRows: [PremiumPreviewRow] = []
-        
-        if let imbalanceSignals = identity.imbalanceSignals, !imbalanceSignals.isEmpty {
-            previewRows.append(PremiumPreviewRow(
-                title: "Imbalance Signals",
-                preview: "How it shows up in life"
-            ))
-        }
-        
-        if identity.supportingElements != nil || identity.drainingElements != nil {
-            previewRows.append(PremiumPreviewRow(
-                title: "Supporting vs Draining",
-                preview: "What restores balance"
-            ))
-        }
-        
-        if let crossSystem = identity.crossSystemInfluence {
-            previewRows.append(PremiumPreviewRow(
-                title: "Cross-System Influence",
-                preview: "How systems reinforce the same theme"
-            ))
-        }
-        
         return AnyView(
             VStack(alignment: .leading, spacing: 20) {
-                // Free Identity Block (60-70%)
-                VStack(alignment: .leading, spacing: 16) {
+                // A. Identity Header Block (Free)
+                BaseCard {
                     IdentityHeaderCard(
                         title: "Elemental Profile",
                         primaryLine: "Dominant: \(identity.dominant.map { $0.rawValue }.joined(separator: ", "))",
-                        secondaryLine: identity.deficient.isEmpty ? nil : "Deficient: \(identity.deficient.map { $0.rawValue }.joined(separator: ", "))",
-                        summary: ""
-                    )
-                    
-                    // Element Pills
-                    ElementPillRow(elements: identity.dominant, label: "Your Dominant Elements")
-                    
-                    if !identity.deficient.isEmpty {
-                        ElementPillRow(elements: identity.deficient, label: "Your Deficient Elements")
-                    }
-                    
-                    TextCard(
-                        title: nil,
-                        content: identity.freeInsight
-                    )
-                    
-                    TextCard(
-                        title: "Core Theme",
-                        content: coreTheme
+                        secondaryLine: identity.deficient.isEmpty ? nil : "Deficient: \(identity.deficient.map { $0.rawValue }.joined(separator: ", "))"
                     )
                 }
                 
-                if isPremium {
-                    // Premium Expanded Content
+                // Element Pills
+                ElementPillRow(elements: identity.dominant, label: "Your Dominant Elements")
+                
+                if !identity.deficient.isEmpty {
+                    ElementPillRow(elements: identity.deficient, label: "Your Deficient Elements")
+                }
+                
+                // B. Free Insight Block (Free)
+                TextCard(
+                    title: nil,
+                    content: freeInsight
+                )
+                
+                // C. Core Theme Block (Free)
+                TextCard(
+                    title: "Core Theme",
+                    content: coreTheme
+                )
+                
+                // D. Premium CTA Block (if !isPremium) OR E. Premium Content (if isPremium)
+                if unlockedPremiumContent.contains(.elements) {
+                    // Premium Content (inline, no headers)
                     VStack(alignment: .leading, spacing: 16) {
                         if let imbalanceSignals = identity.imbalanceSignals, !imbalanceSignals.isEmpty {
-                            PremiumSection(title: "How Imbalance Shows Up") {
-                                BaseCard {
-                                    VStack(alignment: .leading, spacing: 8) {
-                                        ForEach(imbalanceSignals, id: \.self) { signal in
-                                            HStack(alignment: .top, spacing: 8) {
-                                                Text("•")
-                                                    .foregroundColor(DesignColors.mutedForeground)
-                                                Text(signal)
-                                                    .font(DesignTypography.footnoteFont())
-                                                    .foregroundColor(DesignColors.mutedForeground)
-                                            }
+                            BaseCard {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("How Imbalance Shows Up")
+                                        .font(DesignTypography.bodyFont(weight: .semibold))
+                                        .foregroundColor(DesignColors.foreground)
+                                    
+                                    ForEach(imbalanceSignals, id: \.self) { signal in
+                                        HStack(alignment: .top, spacing: 8) {
+                                            Text("•")
+                                                .foregroundColor(DesignColors.mutedForeground)
+                                            Text(signal)
+                                                .font(DesignTypography.footnoteFont())
+                                                .foregroundColor(DesignColors.mutedForeground)
                                         }
                                     }
                                 }
@@ -1123,9 +1061,13 @@ struct ProfileView: View {
                         }
                         
                         if let supporting = identity.supportingElements, !supporting.isEmpty {
-                            PremiumSection(title: "Supporting Elements") {
-                                ForEach(supporting) { element in
-                                    BaseCard {
+                            BaseCard {
+                                VStack(alignment: .leading, spacing: 12) {
+                                    Text("Supporting Elements")
+                                        .font(DesignTypography.bodyFont(weight: .semibold))
+                                        .foregroundColor(DesignColors.foreground)
+                                    
+                                    ForEach(supporting) { element in
                                         VStack(alignment: .leading, spacing: 8) {
                                             ElementPill(element: element.element)
                                             
@@ -1140,9 +1082,13 @@ struct ProfileView: View {
                         }
                         
                         if let draining = identity.drainingElements, !draining.isEmpty {
-                            PremiumSection(title: "Draining Elements") {
-                                ForEach(draining) { element in
-                                    BaseCard {
+                            BaseCard {
+                                VStack(alignment: .leading, spacing: 12) {
+                                    Text("Draining Elements")
+                                        .font(DesignTypography.bodyFont(weight: .semibold))
+                                        .foregroundColor(DesignColors.foreground)
+                                    
+                                    ForEach(draining) { element in
                                         VStack(alignment: .leading, spacing: 8) {
                                             ElementPill(element: element.element)
                                             
@@ -1157,8 +1103,12 @@ struct ProfileView: View {
                         }
                         
                         if let crossSystem = identity.crossSystemInfluence {
-                            PremiumSection(title: "Cross-System Influence") {
-                                BaseCard {
+                            BaseCard {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("Cross-System Influence")
+                                        .font(DesignTypography.bodyFont(weight: .semibold))
+                                        .foregroundColor(DesignColors.foreground)
+                                    
                                     Text(crossSystem)
                                         .font(DesignTypography.footnoteFont())
                                         .foregroundColor(DesignColors.mutedForeground)
@@ -1167,8 +1117,12 @@ struct ProfileView: View {
                         }
                         
                         if let balanceGuidance = identity.balanceGuidance {
-                            PremiumSection(title: "Balance Guidance") {
-                                BaseCard {
+                            BaseCard {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("Balance Guidance")
+                                        .font(DesignTypography.bodyFont(weight: .semibold))
+                                        .foregroundColor(DesignColors.foreground)
+                                    
                                     Text(balanceGuidance)
                                         .font(DesignTypography.footnoteFont())
                                         .foregroundColor(DesignColors.mutedForeground)
@@ -1177,20 +1131,12 @@ struct ProfileView: View {
                         }
                     }
                 } else {
-                    // Free users: Premium Preview + Single CTA
-                    if !previewRows.isEmpty {
-                        PremiumPreviewCard(
-                            title: "Deeper Insights",
-                            rows: previewRows
-                        )
-                    }
-                    
+                    // Premium CTA Block (footer-like)
                     PremiumCTACard(
                         title: "Unlock your full Elemental Profile blueprint",
-                        subtitle: "Access imbalance insights, element relationships, and balance guidance",
+                        subtitle: "Access imbalance insights, element relationships, and balance guidance.",
                         onUnlockClick: {
-                            paywallContext = "elements"
-                            showPaywall = true
+                            unlockedPremiumContent.insert(.elements)
                         }
                     )
                 }

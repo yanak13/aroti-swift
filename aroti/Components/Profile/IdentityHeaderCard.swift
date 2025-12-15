@@ -11,7 +11,14 @@ struct IdentityHeaderCard: View {
     let title: String
     let primaryLine: String
     let secondaryLine: String?
-    let summary: String
+    let summary: String?
+    
+    init(title: String, primaryLine: String, secondaryLine: String? = nil, summary: String? = nil) {
+        self.title = title
+        self.primaryLine = primaryLine
+        self.secondaryLine = secondaryLine
+        self.summary = summary
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -32,11 +39,13 @@ struct IdentityHeaderCard: View {
                     .foregroundColor(DesignColors.mutedForeground)
             }
             
-            // Summary
-            Text(summary)
-                .font(DesignTypography.bodyFont())
-                .foregroundColor(DesignColors.mutedForeground)
-                .fixedSize(horizontal: false, vertical: true)
+            // Summary (optional, deprecated - use Free Insight card instead)
+            if let summary = summary, !summary.isEmpty {
+                Text(summary)
+                    .font(DesignTypography.bodyFont())
+                    .foregroundColor(DesignColors.mutedForeground)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }

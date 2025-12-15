@@ -28,6 +28,9 @@ struct PremiumPaywallSheet: View {
     @State private var showSubscriptionTerms = false
     @State private var isRestoring = false
     
+    // Payment method sheet state
+    @State private var showPaymentMethod = false
+    
     init(context: String? = nil, title: String? = nil, description: String? = nil, onDismiss: (() -> Void)? = nil) {
         self.context = context
         self.title = title
@@ -95,6 +98,14 @@ struct PremiumPaywallSheet: View {
             }
             .sheet(isPresented: $showSubscriptionTerms) {
                 SubscriptionTermsSheet()
+            }
+            .sheet(isPresented: $showPaymentMethod) {
+                PaymentMethodSheet(
+                    selectedPlan: selectedPlan,
+                    onConfirm: {
+                        handlePaymentMethodConfirm()
+                    }
+                )
             }
             .onAppear {
                 startCTAAnimation()
@@ -279,6 +290,13 @@ struct PremiumPaywallSheet: View {
     // MARK: - Purchase Handler
     
     private func handlePurchase() {
+        // Show payment method sheet instead of directly calling StoreKit
+        showPaymentMethod = true
+    }
+    
+    // MARK: - Payment Method Confirm Handler
+    
+    private func handlePaymentMethodConfirm() {
         isProcessingPurchase = true
         
         Task {

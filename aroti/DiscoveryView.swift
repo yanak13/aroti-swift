@@ -137,28 +137,51 @@ struct DiscoveryView: View {
 // MARK: - Premium Forecasts Section
 struct PremiumForecastsSection: View {
     @State private var showPaywall = false
+    @State private var dailyInsight: DailyInsight?
+    @State private var userData: UserData = UserData.default
+    @State private var showNumerologySheet = false
+    
     private let userSubscription = UserSubscriptionService.shared
+    private let contentService = DailyContentService.shared
+    private let stateManager = DailyStateManager.shared
     
     private var isPremium: Bool {
         userSubscription.isPremium
     }
     
-    let forecasts = [
-        ForecastItem(
-            id: "horoscope",
-            title: "Horoscope Forecast",
-            timeframe: "This month",
-            description: "Discover what the stars reveal about your path forward.",
-            forecastType: .horoscope
-        ),
-        ForecastItem(
-            id: "tarot",
-            title: "Tarot Forecast",
-            timeframe: "This month",
-            description: "Insights and guidance from the cards for the month ahead.",
-            forecastType: .tarot
-        )
-    ]
+    private var forecasts: [ForecastItem] {
+        var items = [
+            ForecastItem(
+                id: "horoscope",
+                title: "Horoscope Forecast",
+                timeframe: "This month",
+                description: "Discover what the stars reveal about your path forward.",
+                forecastType: .horoscope
+            ),
+            ForecastItem(
+                id: "tarot",
+                title: "Tarot Forecast",
+                timeframe: "This month",
+                description: "Insights and guidance from the cards for the month ahead.",
+                forecastType: .tarot
+            )
+        ]
+        
+        // Add Numerology if we have daily insight
+        if let insight = dailyInsight {
+            items.append(
+                ForecastItem(
+                    id: "numerology",
+                    title: "Numerology",
+                    timeframe: "Today",
+                    description: insight.numerology.preview,
+                    forecastType: .numerology
+                )
+            )
+        }
+        
+        return items
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -179,15 +202,22 @@ struct PremiumForecastsSection: View {
                 HStack(spacing: DiscoveryLayout.interCardSpacing) {
                     ForEach(forecasts) { forecast in
                         Group {
-                            if isPremium {
+                            if forecast.forecastType == .numerology {
+                                // Numerology always shows sheet, not navigation
+                                Button(action: {
+                                    showNumerologySheet = true
+                                }) {
+                                    PremiumForecastCard(forecast: forecast, isPremium: isPremium, numerologyNumber: dailyInsight?.numerology.number)
+                                }
+                            } else if isPremium {
                                 NavigationLink(destination: forecastDestination(for: forecast)) {
-                                    PremiumForecastCard(forecast: forecast, isPremium: isPremium)
+                                    PremiumForecastCard(forecast: forecast, isPremium: isPremium, numerologyNumber: nil)
                                 }
                             } else {
                                 Button(action: {
                                     showPaywall = true
                                 }) {
-                                    PremiumForecastCard(forecast: forecast, isPremium: isPremium)
+                                    PremiumForecastCard(forecast: forecast, isPremium: isPremium, numerologyNumber: nil)
                                 }
                             }
                         }
@@ -201,6 +231,23 @@ struct PremiumForecastsSection: View {
         .sheet(isPresented: $showPaywall) {
             PremiumPaywallSheet(context: "forecast")
         }
+        .sheet(isPresented: $showNumerologySheet) {
+            if let insight = dailyInsight {
+                HomeNumerologyDetailSheet(numerology: insight.numerology)
+                    .presentationDetents([.large])
+                    .presentationDragIndicator(.visible)
+            }
+        }
+        .onAppear {
+            loadDailyInsight()
+        }
+    }
+    
+    private func loadDailyInsight() {
+        if let loadedUserData = stateManager.loadUserData() {
+            userData = loadedUserData
+        }
+        dailyInsight = contentService.generateDailyInsight(userData: userData)
     }
     
     @ViewBuilder
@@ -210,7 +257,10 @@ struct PremiumForecastsSection: View {
             HoroscopeForecastPage()
         case .tarot:
             TarotForecastPage()
-        case .numerology, .personalAI:
+        case .numerology:
+            // Return empty view - navigation handled by sheet
+            EmptyView()
+        case .personalAI:
             // Placeholder for future forecast types
             HoroscopeForecastPage()
         }
@@ -235,28 +285,52 @@ struct ForecastItem: Identifiable {
 struct PremiumForecastCard: View {
     let forecast: ForecastItem
     let isPremium: Bool
+    let numerologyNumber: Int?
+    
+    init(forecast: ForecastItem, isPremium: Bool, numerologyNumber: Int? = nil) {
+        self.forecast = forecast
+        self.isPremium = isPremium
+        self.numerologyNumber = numerologyNumber
+    }
     
     var body: some View {
         BaseCard {
             VStack(alignment: .leading, spacing: 12) {
-                // Top row: Timeframe chip (top right) and lock icon
+                // Top row: Timeframe chip or number badge (top right) and lock icon
                 HStack {
                     Spacer()
                     
-                    // Timeframe chip in top right
-                    Text(forecast.timeframe)
-                        .font(DesignTypography.footnoteFont(weight: .medium))
-                        .foregroundColor(DesignColors.mutedForeground)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(
-                            Capsule()
-                                .fill(Color.white.opacity(0.05))
-                                .overlay(
-                                    Capsule()
-                                        .stroke(Color.white.opacity(0.1), lineWidth: 1)
-                                )
-                        )
+                    // Show number badge for numerology, timeframe chip for others
+                    if forecast.forecastType == .numerology, let number = numerologyNumber {
+                        // Number badge with orange glow
+                        Text("\(number)")
+                            .font(.system(size: 32, weight: .bold))
+                            .foregroundColor(.white)
+                            .frame(width: 48, height: 48)
+                            .background(
+                                Circle()
+                                    .fill(DesignColors.accent.opacity(0.3))
+                                    .overlay(
+                                        Circle()
+                                            .stroke(DesignColors.accent.opacity(0.5), lineWidth: 1)
+                                    )
+                            )
+                    } else {
+                        // Timeframe chip in top right
+                        Text(forecast.timeframe)
+                            .font(DesignTypography.footnoteFont(weight: .medium))
+                            .foregroundColor(DesignColors.mutedForeground)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(
+                                Capsule()
+                                    .fill(Color.white.opacity(0.05))
+                                    .overlay(
+                                        Capsule()
+                                            .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                                    )
+                            )
+                    }
                     
                     // Lock icon for free users (soft, low contrast) - only if not premium
                     if !isPremium {
@@ -510,6 +584,12 @@ struct CategoryGridCard: View {
 
 // MARK: - Daily Rituals Section
 struct DailyRitualsSection: View {
+    @State private var dailyInsight: DailyInsight?
+    @State private var userData: UserData = UserData.default
+    
+    private let contentService = DailyContentService.shared
+    private let stateManager = DailyStateManager.shared
+    
     let practices = [
         PracticeItem(id: "1", title: "Morning Intention", duration: "5 min"),
         PracticeItem(id: "2", title: "Evening Reflection", duration: "8 min"),
@@ -546,6 +626,51 @@ struct DailyRitualsSection: View {
             
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: DiscoveryLayout.interCardSpacing) {
+                    // Today's Ritual - first item
+                    if let insight = dailyInsight {
+                        NavigationLink(destination: RitualDetailPage(ritual: insight.ritual)) {
+                            BaseCard {
+                                VStack(alignment: .leading, spacing: 12) {
+                                    // Top row: Chips in top right
+                                    HStack {
+                                        Spacer()
+                                        
+                                        HStack(spacing: 8) {
+                                            CategoryChip(label: insight.ritual.duration, isActive: true, action: {})
+                                            CategoryChip(label: insight.ritual.type, isActive: true, action: {})
+                                        }
+                                    }
+                                    
+                                    Spacer()
+                                    
+                                    // Title, Description, and CTA
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        Text("Today's Ritual")
+                                            .font(DesignTypography.headlineFont(weight: .medium))
+                                            .foregroundColor(DesignColors.foreground)
+                                            .lineLimit(2)
+                                        
+                                        Text(insight.ritual.description)
+                                            .font(.system(size: 14))
+                                            .foregroundColor(DesignColors.mutedForeground)
+                                            .lineLimit(2)
+                                            .padding(.top, 4)
+                                        
+                                        ArotiButton(
+                                            kind: .custom(.accentCard(height: 48)),
+                                            title: "Begin Practice",
+                                            action: {}
+                                        )
+                                        .padding(.top, 8)
+                                    }
+                                }
+                                .frame(width: DiscoveryLayout.wideCardWidth, height: 200, alignment: .topLeading)
+                            }
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                    
+                    // Existing practices
                     ForEach(practices) { practice in
                         NavigationLink(destination: PracticeDetailPage(practiceId: practice.id)) {
                             DiscoveryPracticeCard(practice: practice)
@@ -557,6 +682,16 @@ struct DailyRitualsSection: View {
             }
             .padding(.horizontal, -DiscoveryLayout.horizontalPadding)
         }
+        .onAppear {
+            loadDailyInsight()
+        }
+    }
+    
+    private func loadDailyInsight() {
+        if let loadedUserData = stateManager.loadUserData() {
+            userData = loadedUserData
+        }
+        dailyInsight = contentService.generateDailyInsight(userData: userData)
     }
 }
 

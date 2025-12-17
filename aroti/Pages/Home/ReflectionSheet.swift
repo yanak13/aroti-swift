@@ -30,7 +30,7 @@ struct ReflectionSheet: View {
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Your Reflection")
                             .font(DesignTypography.headlineFont(weight: .semibold))
-                            .foregroundColor(DesignColors.foreground)
+                            .foregroundColor(DesignColors.accent)
                         
                         Text("Share your thoughts and feelings about your day or energy.")
                             .font(DesignTypography.footnoteFont())
@@ -141,7 +141,15 @@ struct ReflectionSheet: View {
             }
             .navigationTitle("Your Reflection")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbarColorScheme(.dark, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
             .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Text("Your Reflection")
+                        .font(DesignTypography.headlineFont(weight: .semibold))
+                        .foregroundColor(DesignColors.accent)
+                }
+                
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Done") {
                         saveReflection()

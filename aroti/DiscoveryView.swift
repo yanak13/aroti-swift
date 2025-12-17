@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-private enum DiscoveryLayout {
+enum DiscoveryLayout {
     static let horizontalPadding: CGFloat = DesignSpacing.sm
     static let tarotWidth: CGFloat = TarotSpreadCardLayout.width
     static let interCardSpacing: CGFloat = 16

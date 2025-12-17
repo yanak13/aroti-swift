@@ -36,30 +36,24 @@ struct DiscoveryView: View {
                     ZStack(alignment: .top) {
                         ScrollView {
                             VStack(spacing: 24) {
-                                // 1. For You Section
-                                ForYouSection()
+                                // 1. Premium Forecasts Section
+                                PremiumForecastsSection()
                                 
-                                // 2. Tarot Spreads Section
-                                TarotSpreadsSection()
+                                // 2. Tarot Readings Section
+                                TarotReadingsSection()
                                 
-                                // 3. Browse by Category
-                                BrowseByCategorySection(
+                                // 3. Daily Rituals Section
+                                DailyRitualsSection()
+                                
+                                // 4. Learning by Categories
+                                LearningByCategoriesSection(
                                     selectedCategory: $selectedCategory
                                 )
                                 
-                                // 4. Category Grid
+                                // 5. Category Grid
                                 CategoryGridSection(selectedCategory: selectedCategory)
                                 
-                                // 5. Daily Practice
-                                DailyPracticeSection()
-                                
-                                // 6. Your Journey Section
-                                YourJourneySection()
-                                
-                                // 7. Recently Viewed Section
-                                RecentlyViewedSection()
-                                
-                                // 8. Courses Section
+                                // 6. Courses Section
                                 CoursesSection()
                             }
                             .padding(.horizontal, DiscoveryLayout.horizontalPadding)
@@ -140,199 +134,183 @@ struct DiscoveryView: View {
     }
 }
 
-// MARK: - For You Section
-struct ForYouSection: View {
-    let items = [
-        ForYouItem(
-            id: "1",
-            title: "Celtic Cross Reading",
-            subtitle: "A comprehensive 10-card spread for deep insights",
-            tag: "Daily Pick",
-            category: "Tarot"
+// MARK: - Premium Forecasts Section
+struct PremiumForecastsSection: View {
+    @State private var showPaywall = false
+    private let userSubscription = UserSubscriptionService.shared
+    
+    private var isPremium: Bool {
+        userSubscription.isPremium
+    }
+    
+    let forecasts = [
+        ForecastItem(
+            id: "horoscope",
+            title: "Horoscope Forecast",
+            timeframe: "This month",
+            description: "Discover what the stars reveal about your path forward.",
+            forecastType: .horoscope
         ),
-        ForYouItem(
-            id: "2",
-            title: "Love & Relationships",
-            subtitle: "Explore connections and understand dynamics",
-            tag: "Recommended",
-            category: "Astrology"
-        ),
-        ForYouItem(
-            id: "3",
-            title: "Moon Phase Meditation",
-            subtitle: "Align with lunar cycles for inner peace",
-            tag: "Trending",
-            category: "Moon Phases"
+        ForecastItem(
+            id: "tarot",
+            title: "Tarot Forecast",
+            timeframe: "This month",
+            description: "Insights and guidance from the cards for the month ahead.",
+            forecastType: .tarot
         )
     ]
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            // Section Header
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("For You")
+                    Text("Premium Forecasts")
                         .font(DesignTypography.title3Font(weight: .medium))
                         .foregroundColor(DesignColors.foreground)
-                    Text("Personalized recommendations")
+                    Text("Personalized insights for the month ahead")
                         .font(DesignTypography.footnoteFont())
                         .foregroundColor(DesignColors.mutedForeground)
                 }
                 
                 Spacer()
-                
-                NavigationLink(destination: ForYouListingPage()) {
-                    HStack(spacing: 4) {
-                        Text("View All")
-                            .font(DesignTypography.subheadFont())
-                            .foregroundColor(DesignColors.accent)
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 12))
-                            .foregroundColor(DesignColors.accent)
-                    }
-                }
             }
             
-            // Horizontal Scroll
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: DiscoveryLayout.interCardSpacing) {
-                    ForEach(items) { item in
-                        NavigationLink(destination: ArticleDetailPage(articleId: item.id)) {
-                            ForYouCard(item: item)
+                    ForEach(forecasts) { forecast in
+                        Group {
+                            if isPremium {
+                                NavigationLink(destination: forecastDestination(for: forecast)) {
+                                    PremiumForecastCard(forecast: forecast, isPremium: isPremium)
+                                }
+                            } else {
+                                Button(action: {
+                                    showPaywall = true
+                                }) {
+                                    PremiumForecastCard(forecast: forecast, isPremium: isPremium)
+                                }
+                            }
                         }
                         .buttonStyle(PlainButtonStyle())
                     }
-                    NavigationLink(destination: QuizPage()) {
-                        ForYouDailyQuizCard()
-                    }
-                    .buttonStyle(PlainButtonStyle())
                 }
                 .padding(.horizontal, DiscoveryLayout.horizontalPadding)
             }
             .padding(.horizontal, -DiscoveryLayout.horizontalPadding)
         }
-    }
-}
-
-struct ForYouItem: Identifiable {
-    let id: String
-    let title: String
-    let subtitle: String
-    let tag: String
-    let category: String
-}
-
-struct ForYouCard: View {
-    let item: ForYouItem
-    private let accessControl = AccessControlService.shared
-    
-    private func getUnlockStatus(for articleId: String) -> UnlockStatusPillType {
-        let access = accessControl.checkAccess(contentId: articleId, contentType: .article)
-        switch access {
-        case .free, .unlocked:
-            return .unlocked
-        case .unlockableWithPoints(let cost):
-            return .pointsCost(cost)
-        case .premiumOnly:
-            return .premium
+        .sheet(isPresented: $showPaywall) {
+            PremiumPaywallSheet(context: "forecast")
         }
     }
+    
+    @ViewBuilder
+    private func forecastDestination(for forecast: ForecastItem) -> some View {
+        switch forecast.forecastType {
+        case .horoscope:
+            HoroscopeForecastPage()
+        case .tarot:
+            TarotForecastPage()
+        case .numerology, .personalAI:
+            // Placeholder for future forecast types
+            HoroscopeForecastPage()
+        }
+    }
+}
+
+enum ForecastType {
+    case horoscope
+    case tarot
+    case numerology
+    case personalAI
+}
+
+struct ForecastItem: Identifiable {
+    let id: String
+    let title: String
+    let timeframe: String
+    let description: String
+    let forecastType: ForecastType
+}
+
+struct PremiumForecastCard: View {
+    let forecast: ForecastItem
+    let isPremium: Bool
     
     var body: some View {
         BaseCard {
             VStack(alignment: .leading, spacing: 12) {
-                // Tag
-                Text(item.tag)
-                    .font(DesignTypography.footnoteFont(weight: .medium))
-                    .foregroundColor(DesignColors.mutedForeground)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(
-                        Capsule()
-                            .fill(Color.white.opacity(0.05))
-                            .overlay(
-                                Capsule()
-                                    .stroke(Color.white.opacity(0.1), lineWidth: 1)
-                            )
-                    )
+                // Top row: Timeframe chip (top right) and lock icon
+                HStack {
+                    Spacer()
+                    
+                    // Timeframe chip in top right
+                    Text(forecast.timeframe)
+                        .font(DesignTypography.footnoteFont(weight: .medium))
+                        .foregroundColor(DesignColors.mutedForeground)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(
+                            Capsule()
+                                .fill(Color.white.opacity(0.05))
+                                .overlay(
+                                    Capsule()
+                                        .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                                )
+                        )
+                    
+                    // Lock icon for free users (soft, low contrast) - only if not premium
+                    if !isPremium {
+                        Image(systemName: "lock.fill")
+                            .font(.system(size: 14))
+                            .foregroundColor(DesignColors.mutedForeground.opacity(0.5))
+                            .padding(.leading, 8)
+                    }
+                }
                 
                 Spacer()
                 
-                // Title and Subtitle
+                // Title and Description
                 VStack(alignment: .leading, spacing: 8) {
-                    Text(item.title)
+                    Text(forecast.title)
                         .font(DesignTypography.headlineFont(weight: .medium))
                         .foregroundColor(DesignColors.foreground)
                         .lineLimit(2)
                     
-                    Text(item.subtitle)
-                        .font(.system(size: 15))
+                    Text(forecast.description)
+                        .font(.system(size: 14))
                         .foregroundColor(DesignColors.mutedForeground)
                         .lineLimit(2)
+                        .padding(.top, 4)
                 }
-                
-                // Unlock Status (articles don't earn points)
-                UnlockStatusPill(status: getUnlockStatus(for: item.id))
             }
             .frame(width: DiscoveryLayout.wideCardWidth, height: 200, alignment: .topLeading)
         }
     }
 }
 
-struct ForYouDailyQuizCard: View {
-    var body: some View {
-        BaseCard {
-            VStack(alignment: .leading, spacing: 16) {
-                quizChip
-                
-                Spacer()
-                
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Start Quiz")
-                        .font(DesignTypography.headlineFont(weight: .medium))
-                        .foregroundColor(DesignColors.foreground)
-                        .lineLimit(2)
-                    
-                    Text("Test your tarot knowledge and earn points")
-                        .font(.system(size: 15))
-                        .foregroundColor(DesignColors.mutedForeground)
-                        .lineLimit(2)
-                }
-            }
-            .frame(width: DiscoveryLayout.wideCardWidth, height: 200, alignment: .topLeading)
-        }
+// MARK: - For You Section (REMOVED)
+
+// MARK: - Tarot Readings Section
+struct TarotReadingsSection: View {
+    @State private var showPaywall = false
+    private let accessControl = AccessControlService.shared
+    private let userSubscription = UserSubscriptionService.shared
+    
+    private var isPremium: Bool {
+        userSubscription.isPremium
     }
     
-    private var quizChip: some View {
-        Text("Daily Quiz")
-            .font(DesignTypography.footnoteFont(weight: .medium))
-            .foregroundColor(DesignColors.mutedForeground)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
-            .background(
-                Capsule()
-                    .fill(Color.white.opacity(0.05))
-                    .overlay(
-                        Capsule()
-                            .stroke(Color.white.opacity(0.1), lineWidth: 1)
-                    )
-            )
-    }
-}
-
-// MARK: - Tarot Spreads Section
-struct TarotSpreadsSection: View {
     let spreads = [
-        SpreadItem(id: "celtic-cross", title: "Celtic Cross", cardCount: 10),
-        SpreadItem(id: "three-card", title: "Three Card Spread", cardCount: 3),
-        SpreadItem(id: "past-present-future", title: "Past Present Future", cardCount: 3)
+        SpreadItem(id: "quick-draw", title: "Quick Draw", cardCount: 1, isPremium: false),
+        SpreadItem(id: "three-card", title: "Three Card Spread", cardCount: 3, isPremium: false),
+        SpreadItem(id: "celtic-cross", title: "Celtic Cross", cardCount: 10, isPremium: true)
     ]
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Tarot Spreads")
+                    Text("Tarot Readings")
                         .font(DesignTypography.title3Font(weight: .medium))
                         .foregroundColor(DesignColors.foreground)
                     Text("Explore different reading layouts")
@@ -357,12 +335,26 @@ struct TarotSpreadsSection: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: DiscoveryLayout.interCardSpacing) {
                     ForEach(spreads) { spread in
-                        NavigationLink(destination: TarotSpreadDetailPage(spreadId: spread.id)) {
-                            TarotSpreadCard(
-                                name: spread.title,
-                                cardCount: spread.cardCount,
-                                action: nil
-                            )
+                        Group {
+                            if spread.isPremium && !isPremium {
+                                Button(action: {
+                                    showPaywall = true
+                                }) {
+                                    TarotSpreadCard(
+                                        name: spread.title,
+                                        cardCount: spread.cardCount,
+                                        action: nil
+                                    )
+                                }
+                            } else {
+                                NavigationLink(destination: TarotSpreadDetailPage(spreadId: spread.id)) {
+                                    TarotSpreadCard(
+                                        name: spread.title,
+                                        cardCount: spread.cardCount,
+                                        action: nil
+                                    )
+                                }
+                            }
                         }
                         .buttonStyle(PlainButtonStyle())
                         .contentShape(Rectangle())
@@ -372,6 +364,9 @@ struct TarotSpreadsSection: View {
             }
             .padding(.horizontal, -DiscoveryLayout.horizontalPadding)
         }
+        .sheet(isPresented: $showPaywall) {
+            PremiumPaywallSheet(context: "tarot_spread")
+        }
     }
 }
 
@@ -379,21 +374,20 @@ struct SpreadItem: Identifiable {
     let id: String
     let title: String
     let cardCount: Int
+    let isPremium: Bool
 }
 
-// MARK: - Browse by Category Section
-struct BrowseByCategorySection: View {
+// MARK: - Learning by Categories Section
+struct LearningByCategoriesSection: View {
     @Binding var selectedCategory: String?
     
-    // First row: 8 items
-    let firstRowCategories = ["All", "Tarot", "Numerology", "Meditation", "Crystals", "Astrology", "Moon Phases", "Rituals"]
-    // Second row: 7 items
-    let secondRowCategories = ["Candles", "Energy Work", "Divination", "Chakras", "Manifestation", "Spiritual Guides", "Angel Numbers"]
+    // Limited to 4 categories as per spec
+    let categories = ["All", "Tarot", "Astrology", "Numerology", "Compatibility"]
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Browse by Category")
+                Text("Learning by Categories")
                     .font(DesignTypography.title2Font(weight: .medium))
                     .foregroundColor(DesignColors.foreground)
                 Text("Explore your interests")
@@ -402,44 +396,22 @@ struct BrowseByCategorySection: View {
             }
             
             ScrollView(.horizontal, showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 8) {
-                    // First row
-                    HStack(spacing: 8) {
-                        ForEach(firstRowCategories, id: \.self) { category in
-                            let isAll = category == "All"
-                            CategoryChip(
-                                label: category,
-                                isActive: isAll ? selectedCategory == nil : selectedCategory == category,
-                                action: {
-                                    if isAll {
-                                        selectedCategory = nil
-                                    } else {
-                                        selectedCategory = selectedCategory == category ? nil : category
-                                    }
+                HStack(spacing: 8) {
+                    ForEach(categories, id: \.self) { category in
+                        let isAll = category == "All"
+                        CategoryChip(
+                            label: category,
+                            isActive: isAll ? selectedCategory == nil : selectedCategory == category,
+                            action: {
+                                if isAll {
+                                    selectedCategory = nil
+                                } else {
+                                    selectedCategory = selectedCategory == category ? nil : category
                                 }
-                            )
-                        }
-                    }
-                    
-                    // Second row
-                    HStack(spacing: 8) {
-                        ForEach(secondRowCategories, id: \.self) { category in
-                            let isAll = category == "All"
-                            CategoryChip(
-                                label: category,
-                                isActive: isAll ? selectedCategory == nil : selectedCategory == category,
-                                action: {
-                                    if isAll {
-                                        selectedCategory = nil
-                                    } else {
-                                        selectedCategory = selectedCategory == category ? nil : category
-                                    }
-                                }
-                            )
-                        }
+                            }
+                        )
                     }
                 }
-                .frame(minWidth: UIScreen.main.bounds.width - (DiscoveryLayout.horizontalPadding * 2))
                 .padding(.horizontal, DiscoveryLayout.horizontalPadding)
             }
             .padding(.horizontal, -DiscoveryLayout.horizontalPadding)
@@ -454,7 +426,8 @@ struct CategoryGridSection: View {
     let categoryItems = [
         CategoryGridItem(id: "1", title: "Three Card Spread", subtitle: "Past, present, future insights", category: "Tarot"),
         CategoryGridItem(id: "2", title: "Birth Chart", subtitle: "Discover your cosmic blueprint", category: "Astrology"),
-        CategoryGridItem(id: "3", title: "Life Path Number", subtitle: "Calculate your numerology", category: "Numerology")
+        CategoryGridItem(id: "3", title: "Life Path Number", subtitle: "Calculate your numerology", category: "Numerology"),
+        CategoryGridItem(id: "4", title: "Relationship Compatibility", subtitle: "Explore connections and dynamics", category: "Compatibility")
     ]
     
     var body: some View {
@@ -535,19 +508,21 @@ struct CategoryGridCard: View {
     }
 }
 
-// MARK: - Daily Practice Section
-struct DailyPracticeSection: View {
+// MARK: - Daily Rituals Section
+struct DailyRitualsSection: View {
     let practices = [
         PracticeItem(id: "1", title: "Morning Intention", duration: "5 min"),
-        PracticeItem(id: "2", title: "Breathing Exercise", duration: "10 min"),
-        PracticeItem(id: "3", title: "Evening Reflection", duration: "8 min")
+        PracticeItem(id: "2", title: "Evening Reflection", duration: "8 min"),
+        PracticeItem(id: "3", title: "Breath Reset", duration: "3 min"),
+        PracticeItem(id: "4", title: "Gratitude Prompt", duration: "2 min"),
+        PracticeItem(id: "5", title: "Grounding Practice", duration: "7 min")
     ]
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Daily Practice")
+                    Text("Daily Rituals")
                         .font(DesignTypography.title3Font(weight: .medium))
                         .foregroundColor(DesignColors.foreground)
                     Text("Morning routines & evening rituals")
@@ -752,188 +727,8 @@ struct CourseCard: View {
     }
 }
 
-// MARK: - Your Journey Section
-struct YourJourneySection: View {
-    
-    private let progress: CGFloat = 0.65
-    
-    var body: some View {
-        NavigationLink(destination: JourneyPage()) {
-            BaseCard {
-                VStack(alignment: .center, spacing: 16) {
-                    Text("Your Journey")
-                        .font(DesignTypography.headlineFont(weight: .semibold))
-                        .foregroundColor(DesignColors.foreground)
-                        .frame(maxWidth: .infinity)
-                    
-                    VStack(spacing: 12) {
-                        JourneyStatsRow(stats: [
-                            JourneyStatDisplay(topText: "7-day", bottomText: "streak"),
-                            JourneyStatDisplay(topText: "24", bottomText: "readings"),
-                            JourneyStatDisplay(topText: "12", bottomText: "reflections"),
-                            JourneyStatDisplay(topText: "8", bottomText: "rituals")
-                        ])
-                        
-                        GeometryReader { proxy in
-                            ZStack(alignment: .leading) {
-                                RoundedRectangle(cornerRadius: 10)
-                                    .fill(Color.white.opacity(0.08))
-                                    .frame(height: 6)
-                                
-                                RoundedRectangle(cornerRadius: 10)
-                                    .fill(
-                                        LinearGradient(
-                                            colors: [DesignColors.accent, DesignColors.accent.opacity(0.6)],
-                                            startPoint: .leading,
-                                            endPoint: .trailing
-                                        )
-                                    )
-                                    .frame(width: max(proxy.size.width * progress, 0), height: 6)
-                            }
-                        }
-                        .frame(height: 6)
-                        
-                        // View Your Journey Button
-                        HStack(spacing: 8) {
-                            Text("View Your Journey")
-                                .font(DesignTypography.subheadFont(weight: .medium))
-                                .foregroundColor(DesignColors.accent)
-                            Image(systemName: "chevron.right")
-                                .font(.system(size: 14))
-                                .foregroundColor(DesignColors.accent)
-                        }
-                        .padding(.top, 4)
-                    }
-                }
-            }
-        }
-        .buttonStyle(PlainButtonStyle())
-    }
-}
-
-struct JourneyStatDisplay: Identifiable {
-    let id = UUID()
-    let topText: String
-    let bottomText: String
-}
-
-struct JourneyStatsRow: View {
-    let stats: [JourneyStatDisplay]
-    
-    var body: some View {
-        HStack(alignment: .center, spacing: 0) {
-            ForEach(stats.indices, id: \.self) { index in
-                VStack(spacing: 4) {
-                    Text(stats[index].topText)
-                        .font(DesignTypography.subheadFont(weight: .semibold))
-                        .foregroundColor(DesignColors.foreground)
-                    Text(stats[index].bottomText)
-                        .font(DesignTypography.footnoteFont())
-                        .foregroundColor(DesignColors.mutedForeground)
-                }
-                .frame(maxWidth: .infinity)
-                
-                if index < stats.count - 1 {
-                    Text("•")
-                        .font(DesignTypography.headlineFont())
-                        .foregroundColor(DesignColors.mutedForeground)
-                        .padding(.horizontal, 8)
-                }
-            }
-        }
-        .frame(maxWidth: .infinity)
-    }
-}
-
-// MARK: - Recently Viewed Section
-struct RecentlyViewedSection: View {
-    let items = [
-        RecentlyViewedItem(id: "1", title: "Moon Guidance", type: "Spread"),
-        RecentlyViewedItem(id: "2", title: "The Fool", type: "Card"),
-        RecentlyViewedItem(id: "3", title: "Celtic Cross", type: "Spread")
-    ]
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Recently Viewed")
-                .font(DesignTypography.headlineFont(weight: .semibold))
-                .foregroundColor(DesignColors.foreground)
-            
-            // Separator line
-            Divider()
-                .overlay(Color.white.opacity(0.2))
-                .padding(.bottom, 4)
-            
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: DiscoveryLayout.interCardSpacing) {
-                    ForEach(items) { item in
-                        Group {
-                            if item.type == "Spread" {
-                                NavigationLink(destination: TarotSpreadDetailPage(spreadId: item.id)) {
-                                    RecentlyViewedCard(item: item)
-                                }
-                            } else if item.type == "Card" {
-                                NavigationLink(destination: ArticleDetailPage(articleId: item.id)) {
-                                    RecentlyViewedCard(item: item)
-                                }
-                            } else {
-                                NavigationLink(destination: ArticleDetailPage(articleId: item.id)) {
-                                    RecentlyViewedCard(item: item)
-                                }
-                            }
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                    }
-                }
-                .padding(.horizontal, DiscoveryLayout.horizontalPadding)
-            }
-            .padding(.horizontal, -DiscoveryLayout.horizontalPadding)
-        }
-    }
-}
-
-struct RecentlyViewedItem: Identifiable {
-    let id: String
-    let title: String
-    let type: String
-}
-
-struct RecentlyViewedCard: View {
-    let item: RecentlyViewedItem
-    
-    var body: some View {
-        BaseCard {
-            VStack(alignment: .leading, spacing: 12) {
-                // Type Tag
-                Text(item.type)
-                    .font(DesignTypography.footnoteFont(weight: .medium))
-                    .foregroundColor(DesignColors.mutedForeground)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(
-                        Capsule()
-                            .fill(Color.white.opacity(0.05))
-                            .overlay(
-                                Capsule()
-                                    .stroke(Color.white.opacity(0.1), lineWidth: 1)
-                            )
-                    )
-                
-                Spacer()
-                
-                Text(item.title)
-                    .font(DesignTypography.headlineFont(weight: .medium))
-                    .foregroundColor(DesignColors.foreground)
-                    .lineLimit(2)
-                
-                Text("Tap to explore")
-                    .font(.system(size: 15))
-                    .foregroundColor(DesignColors.mutedForeground)
-            }
-            .frame(width: DiscoveryLayout.wideCardWidth, height: 200, alignment: .topLeading)
-        }
-    }
-}
+// MARK: - Your Journey Section (REMOVED)
+// MARK: - Recently Viewed Section (REMOVED)
 
 #Preview {
     NavigationStack {

@@ -35,12 +35,8 @@ struct HomeView: View {
                 ZStack(alignment: .top) {
                             ScrollView {
                                 VStack(spacing: 24) {
-                                    // Greeting Section
+                                    // Energy Description
                                     VStack(alignment: .leading, spacing: 8) {
-                                        Text("Hi \(userData.name),")
-                                            .font(DesignTypography.title3Font())
-                                            .foregroundColor(DesignColors.foreground)
-                                        
                                         let energyText = generateEnergyDescription()
                                         Text(energyText)
                                             .font(DesignTypography.subheadFont())
@@ -49,7 +45,7 @@ struct HomeView: View {
                                     }
                                     .frame(maxWidth: .infinity, alignment: .leading)
                                     .padding(.horizontal, DesignSpacing.sm)
-                                    .padding(.top, DesignSpacing.lg + 8)
+                                    .padding(.top, DesignSpacing.lg + 16)
                                     
                                     // Main Content
                                     VStack(spacing: 24) {
@@ -125,7 +121,7 @@ struct HomeView: View {
                                             
                                             // Title and Description
                                             VStack(alignment: .leading, spacing: 8) {
-                                                Text("Daily Horoscope")
+                                                Text("Today's Context")
                                                     .font(DesignTypography.headlineFont(weight: .medium))
                                                     .foregroundColor(DesignColors.foreground)
                                                     .lineLimit(2)
@@ -171,19 +167,15 @@ struct HomeView: View {
                                         
                                         Spacer()
                                         
-                                        // CTA Button
+                                        // CTA Button - soft, secondary style
                                         ArotiButton(
-                                            kind: .custom(.accentCard(height: 48)),
+                                            kind: .custom(.glassCardButton(height: 40)),
                                             action: {
                                                 showReflectionSheet = true
                                             },
                                             label: {
-                                                HStack(spacing: 8) {
-                                                    Image(systemName: reflectionText.isEmpty ? "plus" : "pencil")
-                                                        .font(.system(size: 16))
-                                                    Text(reflectionText.isEmpty ? "Add Reflection" : "Edit Reflection")
-                                                        .font(DesignTypography.subheadFont(weight: .medium))
-                                                }
+                                                Text(reflectionText.isEmpty ? "Add a reflection" : "Edit reflection")
+                                                    .font(DesignTypography.footnoteFont(weight: .medium))
                                             }
                                         )
                                     }
@@ -195,16 +187,8 @@ struct HomeView: View {
                         }
                     }
                     .padding(.horizontal, DesignSpacing.sm)
-                    
-                    // Footer Message
-                    Text("Aroti is guiding you today.")
-                        .font(DesignTypography.footnoteFont())
-                        .foregroundColor(DesignColors.mutedForeground)
-                        .opacity(0.6)
-                        .padding(.top, DesignSpacing.md)
-                        .padding(.bottom, 60) // Reasonable padding to ensure visibility above nav bar
                         }
-                        .padding(.bottom, 60) // Reasonable padding to prevent content from going behind nav bar
+                        .padding(.bottom, 100) // Padding to prevent content from going behind nav bar
                     }
                     .padding(.top, 32) // Just header content height, safe area already handled
                     

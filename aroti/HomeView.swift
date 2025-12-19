@@ -22,6 +22,8 @@ struct HomeView: View {
     // Sheet presentation states
     @State private var showTarotSheet: Bool = false
     @State private var showHoroscopeSheet: Bool = false
+    @State private var showNumerologySheet: Bool = false
+    @State private var showAffirmationSheet: Bool = false
     @State private var showReflectionSheet: Bool = false
     @State private var reflectionText: String = ""
     
@@ -39,7 +41,7 @@ struct HomeView: View {
                 
                 ZStack(alignment: .top) {
                     ScrollView {
-                        VStack(spacing: 24) {
+                        VStack(spacing: 20) {
                             // Tarot Card Carousel Section
                             VStack(alignment: .leading, spacing: 8) {
                                 // Section Header - horizontal layout
@@ -78,143 +80,191 @@ struct HomeView: View {
                                     revealedCardIDs: hasRevealedToday && revealedCard != nil ? [revealedCard!.id] : []
                                 )
                                 
-                                // CTA to reopen insights (only in revealed stage)
-                                if hasRevealedToday, revealedCard != nil {
-                                    VStack(spacing: 0) {
-                                        ArotiButton(
-                                            kind: .secondary,
-                                            title: "View today's insight",
-                                            action: {
-                                                showTarotSheet = true
-                                            }
-                                        )
-                                        .padding(.bottom, 12)
-                                        
-                                        // Subtle hairline divider under CTA
-                                        Rectangle()
-                                            .fill(Color.white.opacity(0.12))
-                                            .frame(height: 0.5)
-                                            .frame(maxWidth: .infinity)
-                                    }
-                                    .padding(.horizontal, DesignSpacing.sm)
-                                    .padding(.top, 0)
+                                // CTA to open full tarot insight + divider separating from Daily Picks
+                                VStack(spacing: 0) {
+                                    ArotiButton(
+                                        kind: .secondary,
+                                        title: "View today's insight",
+                                        action: {
+                                            showTarotSheet = true
+                                        }
+                                    )
+                                    .padding(.bottom, 20)
+                                    
+                                    // Subtle hairline divider under CTA
+                                    Rectangle()
+                                        .fill(Color.white.opacity(0.12))
+                                        .frame(height: 0.5)
+                                        .frame(maxWidth: .infinity)
                                 }
-                                
-                                // Current card info (only in pre-revealed stage)
-                                if !hasRevealedToday && selectedCardIndex < carouselItems.count {
-                                    let currentItem = carouselItems[selectedCardIndex]
-                                    VStack(spacing: 6) {
-                                        Text(currentItem.title)
-                                            .font(DesignTypography.title3Font(weight: .semibold))
-                                            .foregroundColor(DesignColors.foreground)
-                                        
-                                        Text("Card \(selectedCardIndex + 1) of \(carouselItems.count)")
-                                            .font(DesignTypography.caption1Font())
-                                            .foregroundColor(DesignColors.mutedForeground)
-                                    }
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.top, 8)
-                                }
+                                .padding(.horizontal, DesignSpacing.sm)
+                                .padding(.top, 0)
                             }
                             .padding(.top, DesignSpacing.lg + 16)
                             
-                            // Daily Insights - Context and Reflection
-                            VStack(spacing: 16) {
-                                // Context Card (Horoscope)
-                                if let insight = dailyInsight {
-                                    Button(action: {
-                                        showHoroscopeSheet = true
-                                    }) {
-                                        BaseCard {
-                                            VStack(alignment: .leading, spacing: 12) {
-                                                // Top row: Icon in top right
-                                                HStack {
-                                                    Spacer()
-                                                    
-                                                    // Zodiac symbol in square with glow
-                                                    Text(getZodiacSymbol(userData.sunSign))
-                                                        .font(.system(size: 32))
+                            // Daily Picks section
+                            VStack(alignment: .leading, spacing: 12) {
+                                // Section header
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("Daily Picks")
+                                        .font(DesignTypography.title3Font(weight: .medium))
+                                        .foregroundColor(DesignColors.foreground)
+                                    
+                                    Text("Quick guidance for today")
+                                        .font(DesignTypography.footnoteFont())
+                                        .foregroundColor(DesignColors.mutedForeground)
+                                }
+                                .padding(.horizontal, DesignSpacing.sm)
+                                
+                                // Horizontal carousel
+                                ScrollView(.horizontal, showsIndicators: false) {
+                                    LazyHStack(spacing: 14) {
+                                        // Helper flags & data
+                                        let hasInsight = dailyInsight != nil
+                                        let horoscopeSubtitle = dailyInsight?.horoscope ?? "Loading today's horoscope..."
+                                        let numerologyNumber = dailyInsight?.numerology.number
+                                        let numerologyPreview = dailyInsight?.numerology.preview ?? "Loading today's number..."
+                                        let affirmationText = dailyInsight?.affirmation ?? "Loading today's affirmation..."
+                                        
+                                        // Horoscope card
+                                        Button(action: {
+                                            if hasInsight {
+                                                showHoroscopeSheet = true
+                                            }
+                                        }) {
+                                            DailyPickCard(
+                                                title: "Horoscope",
+                                                subtitle: horoscopeSubtitle
+                                            ) {
+                                                // Zodiac symbol in square with glow
+                                                Text(getZodiacSymbol(userData.sunSign))
+                                                    .font(.system(size: 32))
+                                                    .foregroundColor(.white)
+                                                    .frame(width: 48, height: 48)
+                                                    .background(
+                                                        RoundedRectangle(cornerRadius: 8)
+                                                            .fill(getZodiacColor(userData.sunSign).opacity(0.3))
+                                                            .overlay(
+                                                                RoundedRectangle(cornerRadius: 8)
+                                                                    .stroke(getZodiacColor(userData.sunSign).opacity(0.5), lineWidth: 1)
+                                                            )
+                                                    )
+                                            }
+                                            .frame(width: geometry.size.width * 0.78)
+                                        }
+                                        .buttonStyle(PlainButtonStyle())
+                                        .disabled(!hasInsight)
+                                        
+                                        // Numerology card
+                                        Button(action: {
+                                            if hasInsight {
+                                                showNumerologySheet = true
+                                            }
+                                        }) {
+                                            DailyPickCard(
+                                                title: "Numerology",
+                                                subtitle: numerologyPreview
+                                            ) {
+                                                if let number = numerologyNumber {
+                                                    Text("\(number)")
+                                                        .font(.system(size: 28, weight: .bold))
                                                         .foregroundColor(.white)
                                                         .frame(width: 48, height: 48)
                                                         .background(
-                                                            RoundedRectangle(cornerRadius: 8)
-                                                                .fill(getZodiacColor(userData.sunSign).opacity(0.3))
+                                                            Circle()
+                                                                .fill(DesignColors.accent.opacity(0.3))
                                                                 .overlay(
-                                                                    RoundedRectangle(cornerRadius: 8)
-                                                                        .stroke(getZodiacColor(userData.sunSign).opacity(0.5), lineWidth: 1)
+                                                                    Circle()
+                                                                        .stroke(DesignColors.accent.opacity(0.5), lineWidth: 1)
                                                                 )
                                                         )
-                                                }
-                                                
-                                                Spacer()
-                                                
-                                                // Title and Description
-                                                VStack(alignment: .leading, spacing: 8) {
-                                                    Text("Today's Context")
-                                                        .font(DesignTypography.headlineFont(weight: .medium))
-                                                        .foregroundColor(DesignColors.foreground)
-                                                        .lineLimit(2)
-                                                    
-                                                    Text(insight.horoscope)
-                                                        .font(.system(size: 14))
-                                                        .foregroundColor(DesignColors.mutedForeground)
-                                                        .lineLimit(2)
-                                                        .padding(.top, 4)
+                                                } else {
+                                                    // Placeholder badge
+                                                    Text("--")
+                                                        .font(.system(size: 20, weight: .medium))
+                                                        .foregroundColor(.white.opacity(0.7))
+                                                        .frame(width: 48, height: 48)
+                                                        .background(
+                                                            Circle()
+                                                                .fill(Color.white.opacity(0.08))
+                                                        )
                                                 }
                                             }
-                                            .frame(height: 200, alignment: .topLeading)
+                                            .frame(width: geometry.size.width * 0.78)
                                         }
-                                    }
-                                    .buttonStyle(PlainButtonStyle())
-                                    .contentShape(Rectangle())
-                                }
-                                
-                                // Reflection Card
-                                Button(action: {
-                                    showReflectionSheet = true
-                                }) {
-                                    BaseCard {
-                                        VStack(alignment: .leading, spacing: 8) {
-                                            // Title
-                                            Text("Your Reflection")
-                                                .font(DesignTypography.headlineFont(weight: .medium))
-                                                .foregroundColor(DesignColors.foreground)
-                                                .lineLimit(1)
-                                            
-                                            // Description
-                                            if reflectionText.isEmpty {
-                                                Text("Write something small about your day or energy.")
-                                                    .font(.system(size: 14))
-                                                    .foregroundColor(DesignColors.mutedForeground)
-                                                    .lineLimit(1)
-                                            } else {
-                                                Text(reflectionText)
-                                                    .font(.system(size: 14))
-                                                    .foregroundColor(DesignColors.mutedForeground)
-                                                    .lineLimit(1)
+                                        .buttonStyle(PlainButtonStyle())
+                                        .disabled(!hasInsight)
+                                        
+                                        // Affirmation card
+                                        Button(action: {
+                                            if hasInsight {
+                                                showAffirmationSheet = true
                                             }
-                                            
-                                            Spacer()
-                                            
-                                            // CTA Button - soft, secondary style
-                                            ArotiButton(
-                                                kind: .custom(.glassCardButton(height: 40)),
-                                                action: {
-                                                    showReflectionSheet = true
-                                                },
-                                                label: {
-                                                    Text(reflectionText.isEmpty ? "Add a reflection" : "Edit reflection")
-                                                        .font(DesignTypography.footnoteFont(weight: .medium))
-                                                }
-                                            )
+                                        }) {
+                                            DailyPickCard(
+                                                title: "Affirmation",
+                                                subtitle: affirmationText
+                                            ) {
+                                                Image(systemName: "quote.bubble")
+                                                    .font(.system(size: 22))
+                                                    .foregroundColor(.white)
+                                                    .frame(width: 44, height: 44)
+                                                    .background(
+                                                        RoundedRectangle(cornerRadius: 10)
+                                                            .fill(DesignColors.accent.opacity(0.3))
+                                                            .overlay(
+                                                                RoundedRectangle(cornerRadius: 10)
+                                                                    .stroke(DesignColors.accent.opacity(0.5), lineWidth: 1)
+                                                            )
+                                                    )
+                                            }
+                                            .frame(width: geometry.size.width * 0.78)
                                         }
-                                        .frame(height: 130, alignment: .topLeading)
+                                        .buttonStyle(PlainButtonStyle())
+                                        .disabled(!hasInsight)
                                     }
+                                    .padding(.horizontal, DesignSpacing.sm)
                                 }
-                                .buttonStyle(PlainButtonStyle())
-                                .contentShape(Rectangle())
                             }
-                            .padding(.horizontal, DesignSpacing.sm)
+                            
+                            // Hairline divider above Reflection (guidance → introspection)
+                            Rectangle()
+                                .fill(Color.white.opacity(0.08))
+                                .frame(height: 0.5)
+                                .frame(maxWidth: .infinity)
+                                .padding(.horizontal, DesignSpacing.sm)
+                            
+                            // Your Reflection section (typography only, no card)
+                            Button(action: {
+                                showReflectionSheet = true
+                            }) {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    // Title
+                                    Text("Your Reflection")
+                                        .font(DesignTypography.title3Font(weight: .medium))
+                                        .foregroundColor(DesignColors.foreground.opacity(0.9))
+                                    
+                                    // Subtitle - soft, emotional
+                                    Text("One thought. One feeling. Just for you.")
+                                        .font(DesignTypography.footnoteFont())
+                                        .foregroundColor(DesignColors.mutedForeground.opacity(0.9))
+                                    
+                                    // Text CTA row
+                                    HStack(spacing: 6) {
+                                        Text(reflectionText.isEmpty ? "Write a reflection" : "Open journal")
+                                            .font(DesignTypography.footnoteFont(weight: .medium))
+                                            .foregroundColor(DesignColors.accent.opacity(0.8))
+                                        
+                                        Image(systemName: "chevron.right")
+                                            .font(.system(size: 11, weight: .medium))
+                                            .foregroundColor(DesignColors.accent.opacity(0.6))
+                                    }
+                                    .padding(.top, 4)
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.horizontal, DesignSpacing.sm)
+                            }
+                            .buttonStyle(PlainButtonStyle())
                         }
                         .padding(.bottom, 100) // Padding to prevent content from going behind nav bar
                     }
@@ -300,6 +350,20 @@ struct HomeView: View {
                     if let insight = dailyInsight {
                         HoroscopeDetailSheet(horoscope: insight.horoscope, sign: userData.sunSign)
                             .presentationDetents([.large])
+                            .presentationDragIndicator(.visible)
+                    }
+                }
+                .sheet(isPresented: $showNumerologySheet) {
+                    if let insight = dailyInsight {
+                        HomeNumerologyDetailSheet(numerology: insight.numerology)
+                            .presentationDetents([.large])
+                            .presentationDragIndicator(.visible)
+                    }
+                }
+                .sheet(isPresented: $showAffirmationSheet) {
+                    if let insight = dailyInsight {
+                        AffirmationDetailSheet(affirmation: insight.affirmation)
+                            .presentationDetents([.medium, .large])
                             .presentationDragIndicator(.visible)
                     }
                 }

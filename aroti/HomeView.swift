@@ -63,30 +63,51 @@ struct HomeView: View {
                                     items: carouselItems,
                                     selectedIndex: $selectedCardIndex,
                                     onReveal: { item in
-                                        // Mark card as revealed
-                                        stateManager.markCardFlipped()
-                                        revealedCard = item
-                                        hasRevealedToday = true
+                                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                            // Mark card as revealed
+                                            stateManager.markCardFlipped()
+                                            revealedCard = item
+                                            hasRevealedToday = true
+                                        }
                                         HapticFeedback.impactOccurred(.medium)
                                         // Show detail sheet after reveal (only once)
                                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                                             showTarotSheet = true
                                         }
                                     },
-                                    onSelect: { item in
+                                    onSelect: { _ in
                                         HapticFeedback.impactOccurred(.light)
                                     },
                                     canRevealCenterCard: !hasRevealedToday,
                                     revealedCardIDs: hasRevealedToday && revealedCard != nil ? [revealedCard!.id] : []
                                 )
                                 
-                                // CTA to open full tarot insight + divider separating from Daily Picks
+                                // CTA for tarot (state-based) + divider separating from Daily Picks
                                 VStack(spacing: 0) {
                                     ArotiButton(
                                         kind: .secondary,
-                                        title: "View today's insight",
+                                        title: hasRevealedToday ? "View full insight" : "Reveal your card",
                                         action: {
-                                            showTarotSheet = true
+                                            if hasRevealedToday {
+                                                // Already revealed – reopen insight
+                                                HapticFeedback.impactOccurred(.light)
+                                                showTarotSheet = true
+                                            } else {
+                                                // Not revealed yet – reveal selected card and open insight
+                                                guard selectedCardIndex < carouselItems.count else { return }
+                                                let item = carouselItems[selectedCardIndex]
+                                                
+                                                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                                    stateManager.markCardFlipped()
+                                                    revealedCard = item
+                                                    hasRevealedToday = true
+                                                }
+                                                
+                                                HapticFeedback.impactOccurred(.medium)
+                                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                                    showTarotSheet = true
+                                                }
+                                            }
                                         }
                                     )
                                     .padding(.bottom, 20)
@@ -129,6 +150,7 @@ struct HomeView: View {
                                         // Horoscope card
                                         Button(action: {
                                             if hasInsight {
+                                                HapticFeedback.impactOccurred(.light)
                                                 showHoroscopeSheet = true
                                             }
                                         }) {
@@ -150,14 +172,15 @@ struct HomeView: View {
                                                             )
                                                     )
                                             }
-                                            .frame(width: geometry.size.width * 0.78)
+                                            .frame(width: geometry.size.width * 0.82)
                                         }
-                                        .buttonStyle(PlainButtonStyle())
+                                        .buttonStyle(CardTapButtonStyle(cornerRadius: ArotiRadius.md))
                                         .disabled(!hasInsight)
                                         
                                         // Numerology card
                                         Button(action: {
                                             if hasInsight {
+                                                HapticFeedback.impactOccurred(.light)
                                                 showNumerologySheet = true
                                             }
                                         }) {
@@ -190,14 +213,15 @@ struct HomeView: View {
                                                         )
                                                 }
                                             }
-                                            .frame(width: geometry.size.width * 0.78)
+                                            .frame(width: geometry.size.width * 0.82)
                                         }
-                                        .buttonStyle(PlainButtonStyle())
+                                        .buttonStyle(CardTapButtonStyle(cornerRadius: ArotiRadius.md))
                                         .disabled(!hasInsight)
                                         
                                         // Affirmation card
                                         Button(action: {
                                             if hasInsight {
+                                                HapticFeedback.impactOccurred(.light)
                                                 showAffirmationSheet = true
                                             }
                                         }) {
@@ -218,9 +242,9 @@ struct HomeView: View {
                                                             )
                                                     )
                                             }
-                                            .frame(width: geometry.size.width * 0.78)
+                                            .frame(width: geometry.size.width * 0.82)
                                         }
-                                        .buttonStyle(PlainButtonStyle())
+                                        .buttonStyle(CardTapButtonStyle(cornerRadius: ArotiRadius.md))
                                         .disabled(!hasInsight)
                                     }
                                     .padding(.horizontal, DesignSpacing.sm)

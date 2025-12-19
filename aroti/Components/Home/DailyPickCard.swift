@@ -13,16 +13,19 @@ struct DailyPickCard<Badge: View>: View {
     let subtitle: String
     let badge: Badge
     let isLocked: Bool
+    let showsChevron: Bool
     
     init(
         title: String,
         subtitle: String,
         isLocked: Bool = false,
+        showsChevron: Bool = true,
         @ViewBuilder badge: () -> Badge
     ) {
         self.title = title
         self.subtitle = subtitle
         self.isLocked = isLocked
+        self.showsChevron = showsChevron
         self.badge = badge()
     }
     
@@ -44,7 +47,7 @@ struct DailyPickCard<Badge: View>: View {
                 
                 Spacer()
                 
-                // Title and Description
+                // Title, Description, and subtle affordance
                 VStack(alignment: .leading, spacing: 8) {
                     Text(title)
                         .font(DesignTypography.headlineFont(weight: .medium))
@@ -56,6 +59,15 @@ struct DailyPickCard<Badge: View>: View {
                         .foregroundColor(DesignColors.mutedForeground)
                         .lineLimit(2)
                         .padding(.top, 4)
+                    
+                    if showsChevron {
+                        HStack {
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundColor(DesignColors.mutedForeground.opacity(0.5))
+                        }
+                    }
                 }
             }
             .frame(height: 200, alignment: .topLeading)

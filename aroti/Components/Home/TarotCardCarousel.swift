@@ -74,9 +74,9 @@ struct TarotCardCarousel: View {
     @State private var flipLiftScale: CGFloat = 1.0
     @State private var flipLiftOffset: CGFloat = 0
     
-    // Card dimensions (large, matching original design)
-    private let cardWidth: CGFloat = 320
-    private let cardHeight: CGFloat = 480
+    // Card dimensions (slightly larger, keeping 2:3 aspect ratio)
+    private let cardWidth: CGFloat = 340
+    private let cardHeight: CGFloat = 510
     private let cardSpacing: CGFloat = 20
     
     // Animation thresholds

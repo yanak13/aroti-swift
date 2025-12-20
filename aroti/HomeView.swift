@@ -27,6 +27,17 @@ struct HomeView: View {
     @State private var showReflectionSheet: Bool = false
     @State private var reflectionText: String = ""
     
+    // Animation states
+    @State private var tarotSectionVisible: Bool = false
+    @State private var dailyPicksSectionVisible: Bool = false
+    @State private var reflectionSectionVisible: Bool = false
+    @State private var teaseLineVisible: Bool = false
+    @State private var isCTAPressed: Bool = false
+    @State private var carouselShakeOffset: CGFloat = 0
+    @State private var breathingGlowOpacity: Double = 0.3
+    
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    
     private let stateManager = DailyStateManager.shared
     private let contentService = DailyContentService.shared
     
@@ -44,21 +55,23 @@ struct HomeView: View {
                         VStack(spacing: 20) {
                             // Tarot Card Carousel Section
                             VStack(alignment: .leading, spacing: 8) {
-                                // Section Header - horizontal layout
-                                HStack(alignment: .center) {
+                                // Section Header with tease line
+                                VStack(alignment: .leading, spacing: 4) {
                                     Text("Today's Tarot")
                                         .font(DesignTypography.headlineFont(weight: .semibold))
                                         .foregroundColor(DesignColors.foreground)
                                     
-                                    Spacer()
-                                    
-                                    Text("Swipe to choose")
-                                        .font(DesignTypography.caption1Font())
-                                        .foregroundColor(DesignColors.mutedForeground)
+                                    // Tease line
+                                    Text("A message is waiting for you.")
+                                        .font(DesignTypography.footnoteFont())
+                                        .foregroundColor(DesignColors.mutedForeground.opacity(0.8))
+                                        .opacity(teaseLineVisible ? 1 : 0)
                                 }
                                 .padding(.horizontal, DesignSpacing.sm)
+                                .opacity(tarotSectionVisible ? 1 : 0)
+                                .offset(y: reduceMotion ? 0 : (tarotSectionVisible ? 0 : 8))
                                 
-                                // 3D Carousel
+                                // 3D Carousel with shake support
                                 TarotCardCarousel(
                                     items: carouselItems,
                                     selectedIndex: $selectedCardIndex,
@@ -81,35 +94,80 @@ struct HomeView: View {
                                     canRevealCenterCard: !hasRevealedToday,
                                     revealedCardIDs: hasRevealedToday && revealedCard != nil ? [revealedCard!.id] : []
                                 )
+                                .offset(x: carouselShakeOffset)
+                                .opacity(tarotSectionVisible ? 1 : 0)
+                                .offset(y: reduceMotion ? 0 : (tarotSectionVisible ? 0 : 8))
+                                
+                                // Subtle interaction hint - moved below carousel, before CTA
+                                Text("Swipe to choose")
+                                    .font(DesignTypography.caption1Font())
+                                    .foregroundColor(DesignColors.mutedForeground.opacity(0.6))
+                                    .frame(maxWidth: .infinity)
+                                    .multilineTextAlignment(.center)
+                                    .padding(.top, -24)
+                                    .padding(.bottom, 4)
+                                    .opacity(tarotSectionVisible ? 1 : 0)
+                                    .offset(y: reduceMotion ? 0 : (tarotSectionVisible ? 0 : 8))
                                 
                                 // CTA for tarot (state-based) + divider separating from Daily Picks
                                 VStack(spacing: 0) {
-                                    ArotiButton(
-                                        kind: .secondary,
-                                        title: hasRevealedToday ? "View full insight" : "Reveal your card",
-                                        action: {
-                                            if hasRevealedToday {
-                                                // Already revealed – reopen insight
-                                                HapticFeedback.impactOccurred(.light)
+                                    Button(action: {
+                                        HapticFeedback.impactOccurred(.light)
+                                        
+                                        if hasRevealedToday {
+                                            // Already revealed – reopen insight
+                                            showTarotSheet = true
+                                        } else {
+                                            // Check if card is ready
+                                            guard selectedCardIndex < carouselItems.count else {
+                                                // Trigger gentle shake animation
+                                                withAnimation(.easeInOut(duration: 0.1).repeatCount(3, autoreverses: true)) {
+                                                    carouselShakeOffset = -4
+                                                }
+                                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                                    withAnimation(.easeOut(duration: 0.1)) {
+                                                        carouselShakeOffset = 0
+                                                    }
+                                                }
+                                                return
+                                            }
+                                            
+                                            let item = carouselItems[selectedCardIndex]
+                                            
+                                            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                                stateManager.markCardFlipped()
+                                                revealedCard = item
+                                                hasRevealedToday = true
+                                            }
+                                            
+                                            HapticFeedback.impactOccurred(.medium)
+                                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                                                 showTarotSheet = true
-                                            } else {
-                                                // Not revealed yet – reveal selected card and open insight
-                                                guard selectedCardIndex < carouselItems.count else { return }
-                                                let item = carouselItems[selectedCardIndex]
-                                                
-                                                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                                                    stateManager.markCardFlipped()
-                                                    revealedCard = item
-                                                    hasRevealedToday = true
-                                                }
-                                                
-                                                HapticFeedback.impactOccurred(.medium)
-                                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                                    showTarotSheet = true
-                                                }
                                             }
                                         }
-                                    )
+                                    }) {
+                                        Text(hasRevealedToday ? "Reveal today's insight" : (selectedCardIndex < carouselItems.count ? "Reveal your card" : "Choose a card to reveal"))
+                                            .font(DesignTypography.subheadFont(weight: .medium))
+                                            .foregroundColor(DesignColors.accent)
+                                            .frame(maxWidth: .infinity)
+                                            .frame(height: 48)
+                                            .background(
+                                                RoundedRectangle(cornerRadius: ArotiRadius.md)
+                                                    .fill(Color.clear)
+                                                    .overlay(
+                                                        RoundedRectangle(cornerRadius: ArotiRadius.md)
+                                                            .stroke(DesignColors.accent.opacity(0.3), lineWidth: 1)
+                                                    )
+                                            )
+                                            .scaleEffect(isCTAPressed ? 0.98 : 1.0)
+                                            .opacity(isCTAPressed ? 0.95 : 1.0)
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
+                                    .onLongPressGesture(minimumDuration: 0, maximumDistance: .infinity, pressing: { pressing in
+                                        withAnimation(.easeOut(duration: 0.15)) {
+                                            isCTAPressed = pressing
+                                        }
+                                    }, perform: {})
                                     .padding(.bottom, 20)
                                     
                                     // Subtle hairline divider under CTA
@@ -136,6 +194,8 @@ struct HomeView: View {
                                         .foregroundColor(DesignColors.mutedForeground)
                                 }
                                 .padding(.horizontal, DesignSpacing.sm)
+                                .opacity(dailyPicksSectionVisible ? 1 : 0)
+                                .offset(y: reduceMotion ? 0 : (dailyPicksSectionVisible ? 0 : 8))
                                 
                                 // Horizontal carousel
                                 ScrollView(.horizontal, showsIndicators: false) {
@@ -250,6 +310,8 @@ struct HomeView: View {
                                     .padding(.horizontal, DesignSpacing.sm)
                                 }
                             }
+                            .opacity(dailyPicksSectionVisible ? 1 : 0)
+                            .offset(y: reduceMotion ? 0 : (dailyPicksSectionVisible ? 0 : 8))
                             
                             // Hairline divider above Reflection (guidance → introspection)
                             Rectangle()
@@ -289,6 +351,8 @@ struct HomeView: View {
                                 .padding(.horizontal, DesignSpacing.sm)
                             }
                             .buttonStyle(PlainButtonStyle())
+                            .opacity(reflectionSectionVisible ? 1 : 0)
+                            .offset(y: reduceMotion ? 0 : (reflectionSectionVisible ? 0 : 8))
                         }
                         .padding(.bottom, 100) // Padding to prevent content from going behind nav bar
                     }
@@ -357,6 +421,20 @@ struct HomeView: View {
                 .navigationBarHidden(true)
                 .onAppear {
                     loadData()
+                    
+                    // Trigger section appear animations with staggered delays
+                    withAnimation(.easeOut(duration: 0.5)) {
+                        tarotSectionVisible = true
+                    }
+                    withAnimation(.easeOut(duration: 0.5).delay(0.1)) {
+                        teaseLineVisible = true
+                    }
+                    withAnimation(.easeOut(duration: 0.5).delay(0.2)) {
+                        dailyPicksSectionVisible = true
+                    }
+                    withAnimation(.easeOut(duration: 0.5).delay(0.3)) {
+                        reflectionSectionVisible = true
+                    }
                 }
                 .sheet(isPresented: $showTarotSheet) {
                     if let item = revealedCard,

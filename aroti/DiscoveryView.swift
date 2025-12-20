@@ -137,132 +137,69 @@ struct DiscoveryView: View {
 // MARK: - Premium Forecasts Section
 struct PremiumForecastsSection: View {
     @State private var showPaywall = false
-    @State private var dailyInsight: DailyInsight?
     @State private var userData: UserData = UserData.default
-    @State private var showNumerologySheet = false
     
     private let userSubscription = UserSubscriptionService.shared
-    private let contentService = DailyContentService.shared
     private let stateManager = DailyStateManager.shared
     
     private var isPremium: Bool {
         userSubscription.isPremium
     }
     
-    private var forecasts: [ForecastItem] {
-        var items = [
-            ForecastItem(
-                id: "horoscope",
-                title: "Horoscope Forecast",
-                timeframe: "This month",
-                description: "Discover what the stars reveal about your path forward.",
-                forecastType: .horoscope
-            ),
-            ForecastItem(
-                id: "tarot",
-                title: "Tarot Forecast",
-                timeframe: "This month",
-                description: "Insights and guidance from the cards for the month ahead.",
-                forecastType: .tarot
-            )
-        ]
-        
-        // Add Numerology if we have daily insight
-        if let insight = dailyInsight {
-            items.append(
-                ForecastItem(
-                    id: "numerology",
-                    title: "Numerology",
-                    timeframe: "Today",
-                    description: insight.numerology.preview,
-                    forecastType: .numerology
-                )
-            )
-        }
-        
-        return items
+    private var currentMonthName: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMMM"
+        return formatter.string(from: Date())
     }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Premium Forecasts")
+                    Text("Your Premium Forecast")
                         .font(DesignTypography.title3Font(weight: .medium))
                         .foregroundColor(DesignColors.foreground)
-                    Text("Personalized insights for the month ahead")
-                        .font(DesignTypography.footnoteFont())
-                        .foregroundColor(DesignColors.mutedForeground)
                 }
                 
                 Spacer()
             }
             
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: DiscoveryLayout.interCardSpacing) {
-                    ForEach(forecasts) { forecast in
-                        Group {
-                            if forecast.forecastType == .numerology {
-                                // Numerology always shows sheet, not navigation
-                                Button(action: {
-                                    showNumerologySheet = true
-                                }) {
-                                    PremiumForecastCard(forecast: forecast, isPremium: isPremium, numerologyNumber: dailyInsight?.numerology.number)
-                                }
-                            } else if isPremium {
-                                NavigationLink(destination: forecastDestination(for: forecast)) {
-                                    PremiumForecastCard(forecast: forecast, isPremium: isPremium, numerologyNumber: nil)
-                                }
-                            } else {
-                                Button(action: {
-                                    showPaywall = true
-                                }) {
-                                    PremiumForecastCard(forecast: forecast, isPremium: isPremium, numerologyNumber: nil)
-                                }
-                            }
-                        }
-                        .buttonStyle(PlainButtonStyle())
+            // Single hero card with breathing space
+            VStack(spacing: 0) {
+                if isPremium {
+                    NavigationLink(destination: HoroscopeForecastPage()) {
+                        PremiumForecastHeroCard(
+                            isPremium: isPremium,
+                            monthName: currentMonthName
+                        )
                     }
+                    .buttonStyle(PlainButtonStyle())
+                } else {
+                    Button(action: {
+                        showPaywall = true
+                    }) {
+                        PremiumForecastHeroCard(
+                            isPremium: isPremium,
+                            monthName: currentMonthName
+                        )
+                    }
+                    .buttonStyle(PlainButtonStyle())
                 }
-                .padding(.horizontal, DiscoveryLayout.horizontalPadding)
             }
-            .padding(.horizontal, -DiscoveryLayout.horizontalPadding)
+            .padding(.top, 8)
+            .padding(.bottom, 8) // Additional breathing space
         }
         .sheet(isPresented: $showPaywall) {
             PremiumPaywallSheet(context: "forecast")
         }
-        .sheet(isPresented: $showNumerologySheet) {
-            if let insight = dailyInsight {
-                HomeNumerologyDetailSheet(numerology: insight.numerology)
-                    .presentationDetents([.large])
-                    .presentationDragIndicator(.visible)
-            }
-        }
         .onAppear {
-            loadDailyInsight()
+            loadUserData()
         }
     }
     
-    private func loadDailyInsight() {
+    private func loadUserData() {
         if let loadedUserData = stateManager.loadUserData() {
             userData = loadedUserData
-        }
-        dailyInsight = contentService.generateDailyInsight(userData: userData)
-    }
-    
-    @ViewBuilder
-    private func forecastDestination(for forecast: ForecastItem) -> some View {
-        switch forecast.forecastType {
-        case .horoscope:
-            HoroscopeForecastPage()
-        case .tarot:
-            TarotForecastPage()
-        case .numerology:
-            // Return empty view - navigation handled by sheet
-            EmptyView()
-        case .personalAI:
-            // Placeholder for future forecast types
-            HoroscopeForecastPage()
         }
     }
 }
@@ -282,6 +219,155 @@ struct ForecastItem: Identifiable {
     let forecastType: ForecastType
 }
 
+// MARK: - Premium Forecast Hero Card
+struct PremiumForecastHeroCard: View {
+    let isPremium: Bool
+    let monthName: String
+    @State private var pulseScale: CGFloat = 1.0
+    @State private var hasAnimated = false
+    
+    var body: some View {
+        ZStack {
+            // Card background with softer glow
+            RoundedRectangle(cornerRadius: ArotiRadius.md)
+                .fill(Color(red: 23/255, green: 20/255, blue: 31/255, opacity: 0.75))
+                .overlay(
+                    // Inner gradient/vignette
+                    RoundedRectangle(cornerRadius: ArotiRadius.md)
+                        .fill(
+                            RadialGradient(
+                                colors: [
+                                    Color.clear,
+                                    Color.black.opacity(0.15)
+                                ],
+                                center: .center,
+                                startRadius: 50,
+                                endRadius: 200
+                            )
+                        )
+                )
+                .overlay(
+                    // Liquid glass highlight at top
+                    VStack {
+                        Rectangle()
+                            .fill(
+                                LinearGradient(
+                                    colors: [Color.clear, Color.white.opacity(0.12), Color.clear],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            .frame(height: 1)
+                            .opacity(0.8)
+                        Spacer()
+                    }
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: ArotiRadius.md)
+                        .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                )
+                .shadow(color: Color.black.opacity(0.3), radius: 12, x: 0, y: 4) // Softer glow
+            
+            // Content
+            VStack(alignment: .leading, spacing: 16) {
+                // Title and Timeframe
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Monthly Astrology Forecast")
+                        .font(DesignTypography.headlineFont(weight: .medium))
+                        .foregroundColor(DesignColors.foreground)
+                    
+                    Text("\(monthName) Forecast")
+                        .font(DesignTypography.footnoteFont())
+                        .foregroundColor(DesignColors.mutedForeground)
+                }
+                
+                Spacer()
+                
+                // Subtitle with lock icon (if free)
+                HStack(alignment: .top, spacing: 8) {
+                    if !isPremium {
+                        Image(systemName: "lock.fill")
+                            .font(.system(size: 14))
+                            .foregroundColor(DesignColors.mutedForeground.opacity(0.6))
+                            .padding(.top, 2)
+                    }
+                    
+                    Text(subtitleText)
+                        .font(.system(size: 14))
+                        .foregroundColor(DesignColors.mutedForeground)
+                        .lineSpacing(4)
+                }
+                
+                // CTA Button (visual only - parent handles tap)
+                Group {
+                    if isPremium {
+                        HStack {
+                            Spacer()
+                            Text("View your forecast")
+                                .font(DesignTypography.subheadFont())
+                                .foregroundColor(DesignColors.foreground)
+                            Spacer()
+                        }
+                        .frame(height: 48)
+                        .background(
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(Color.white.opacity(0.05))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 10)
+                                        .stroke(DesignColors.glassBorder, lineWidth: 1)
+                                )
+                        )
+                    } else {
+                        HStack {
+                            Spacer()
+                            Text("Unlock Premium Forecast")
+                                .font(DesignTypography.subheadFont(weight: .medium))
+                                .foregroundColor(.white)
+                            Spacer()
+                        }
+                        .frame(height: 48)
+                        .background(
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(DesignColors.accent)
+                                .shadow(color: DesignColors.accent.opacity(0.35), radius: 10, x: 0, y: 6)
+                        )
+                        .scaleEffect(pulseScale)
+                    }
+                }
+            }
+            .padding(20)
+            .frame(maxWidth: .infinity, alignment: .topLeading)
+            .frame(height: 290)
+        }
+        .onAppear {
+            if !isPremium && !hasAnimated {
+                animatePulse()
+                hasAnimated = true
+            }
+        }
+    }
+    
+    private var subtitleText: String {
+        if isPremium {
+            return "Created specifically for you, based on your chart"
+        } else {
+            return "Deep, personalized insights for the month ahead\nAvailable with Premium"
+        }
+    }
+    
+    private func animatePulse() {
+        withAnimation(.easeInOut(duration: 0.3)) {
+            pulseScale = 1.05
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            withAnimation(.easeInOut(duration: 0.3)) {
+                pulseScale = 1.0
+            }
+        }
+    }
+}
+
+// Legacy card component (kept for backward compatibility if needed elsewhere)
 struct PremiumForecastCard: View {
     let forecast: ForecastItem
     let isPremium: Bool

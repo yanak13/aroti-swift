@@ -9,7 +9,7 @@ import SwiftUI
 
 enum DiscoveryLayout {
     static let horizontalPadding: CGFloat = DesignSpacing.sm
-    static let tarotWidth: CGFloat = TarotSpreadCardLayout.width
+    static let tarotWidth: CGFloat = TarotSpreadCardLayout.defaultWidth
     static let interCardSpacing: CGFloat = 16
     static let wideCardWidth: CGFloat = 320 // legacy card width (less than two tarot cards)
 }
@@ -164,7 +164,7 @@ struct PremiumForecastsSection: View {
                 Spacer()
             }
             
-            // Single hero card with breathing space
+            // Single hero card with breathing space - full width like detail page
             VStack(spacing: 0) {
                 if isPremium {
                     NavigationLink(destination: HoroscopeForecastPage()) {
@@ -227,117 +227,62 @@ struct PremiumForecastHeroCard: View {
     @State private var hasAnimated = false
     
     var body: some View {
-        ZStack {
-            // Card background with softer glow
-            RoundedRectangle(cornerRadius: ArotiRadius.md)
-                .fill(Color(red: 23/255, green: 20/255, blue: 31/255, opacity: 0.75))
-                .overlay(
-                    // Inner gradient/vignette
-                    RoundedRectangle(cornerRadius: ArotiRadius.md)
-                        .fill(
-                            RadialGradient(
-                                colors: [
-                                    Color.clear,
-                                    Color.black.opacity(0.15)
-                                ],
-                                center: .center,
-                                startRadius: 50,
-                                endRadius: 200
-                            )
-                        )
-                )
-                .overlay(
-                    // Liquid glass highlight at top
-                    VStack {
-                        Rectangle()
-                            .fill(
-                                LinearGradient(
-                                    colors: [Color.clear, Color.white.opacity(0.12), Color.clear],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
-                            )
-                            .frame(height: 1)
-                            .opacity(0.8)
-                        Spacer()
-                    }
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: ArotiRadius.md)
-                        .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                )
-                .shadow(color: Color.black.opacity(0.3), radius: 12, x: 0, y: 4) // Softer glow
-            
-            // Content
-            VStack(alignment: .leading, spacing: 16) {
-                // Title and Timeframe
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Monthly Astrology Forecast")
-                        .font(DesignTypography.headlineFont(weight: .medium))
-                        .foregroundColor(DesignColors.foreground)
-                    
+        BaseCard {
+            VStack(alignment: .leading, spacing: 12) {
+                // Month label chip (top right) - matching detail page exactly
+                HStack {
+                    Spacer()
                     Text("\(monthName) Forecast")
-                        .font(DesignTypography.footnoteFont())
+                        .font(DesignTypography.footnoteFont(weight: .medium))
                         .foregroundColor(DesignColors.mutedForeground)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(
+                            Capsule()
+                                .fill(Color.white.opacity(0.05))
+                                .overlay(
+                                    Capsule()
+                                        .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                                )
+                        )
                 }
                 
                 Spacer()
                 
-                // Subtitle with lock icon (if free)
-                HStack(alignment: .top, spacing: 8) {
-                    if !isPremium {
-                        Image(systemName: "lock.fill")
-                            .font(.system(size: 14))
-                            .foregroundColor(DesignColors.mutedForeground.opacity(0.6))
-                            .padding(.top, 2)
-                    }
+                // Title and Description - matching detail page layout exactly
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Monthly Horoscope Forecast")
+                        .font(DesignTypography.headlineFont(weight: .medium))
+                        .foregroundColor(DesignColors.foreground)
+                        .lineLimit(2)
                     
-                    Text(subtitleText)
+                    // For premium users, show exact same text as detail page
+                    // For free users, show value proposition text
+                    Text(descriptionText)
                         .font(.system(size: 14))
                         .foregroundColor(DesignColors.mutedForeground)
+                        .lineLimit(3)
                         .lineSpacing(4)
+                        .padding(.top, 4)
                 }
                 
-                // CTA Button (visual only - parent handles tap)
-                Group {
-                    if isPremium {
-                        HStack {
-                            Spacer()
-                            Text("View your forecast")
-                                .font(DesignTypography.subheadFont())
-                                .foregroundColor(DesignColors.foreground)
-                            Spacer()
-                        }
-                        .frame(height: 48)
-                        .background(
-                            RoundedRectangle(cornerRadius: 10)
-                                .fill(Color.white.opacity(0.05))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 10)
-                                        .stroke(DesignColors.glassBorder, lineWidth: 1)
-                                )
-                        )
-                    } else {
-                        HStack {
-                            Spacer()
-                            Text("Unlock Premium Forecast")
-                                .font(DesignTypography.subheadFont(weight: .medium))
-                                .foregroundColor(.white)
-                            Spacer()
-                        }
-                        .frame(height: 48)
-                        .background(
-                            RoundedRectangle(cornerRadius: 10)
-                                .fill(DesignColors.accent)
-                                .shadow(color: DesignColors.accent.opacity(0.35), radius: 10, x: 0, y: 6)
-                        )
-                        .scaleEffect(pulseScale)
+                // CTA at bottom
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(ctaText)
+                        .font(DesignTypography.subheadFont(weight: .medium))
+                        .foregroundColor(isPremium ? DesignColors.foreground : DesignColors.accent)
+                        .scaleEffect(!isPremium ? pulseScale : 1.0)
+                    
+                    if !isPremium {
+                        Text("Deep monthly insight created just for you")
+                            .font(DesignTypography.caption1Font())
+                            .foregroundColor(DesignColors.mutedForeground)
                     }
                 }
+                .padding(.top, 8)
             }
-            .padding(20)
             .frame(maxWidth: .infinity, alignment: .topLeading)
-            .frame(height: 290)
+            .frame(height: 200)
         }
         .onAppear {
             if !isPremium && !hasAnimated {
@@ -347,11 +292,19 @@ struct PremiumForecastHeroCard: View {
         }
     }
     
-    private var subtitleText: String {
+    private var descriptionText: String {
         if isPremium {
-            return "Created specifically for you, based on your chart"
+            return "Your personalized horoscope forecast for \(monthName) will appear here."
         } else {
-            return "Deep, personalized insights for the month ahead\nAvailable with Premium"
+            return "Deep, personalized insights for the month ahead."
+        }
+    }
+    
+    private var ctaText: String {
+        if isPremium {
+            return "Read your forecast"
+        } else {
+            return "Unlock Premium Forecast"
         }
     }
     
@@ -461,9 +414,42 @@ struct TarotReadingsSection: View {
     }
     
     let spreads = [
-        SpreadItem(id: "quick-draw", title: "Quick Draw", cardCount: 1, isPremium: false),
-        SpreadItem(id: "three-card", title: "Three Card Spread", cardCount: 3, isPremium: false),
-        SpreadItem(id: "celtic-cross", title: "Celtic Cross", cardCount: 10, isPremium: true)
+        SpreadItem(
+            id: "quick-draw",
+            title: "Quick Draw",
+            cardCount: 1,
+            isPremium: false,
+            microDescriptor: "A single message for right now",
+            time: "1 min",
+            depth: "Quick",
+            isForYou: true,
+            ctaText: "Draw cards →",
+            isFirstCard: true
+        ),
+        SpreadItem(
+            id: "three-card",
+            title: "Three Card Spread",
+            cardCount: 3,
+            isPremium: false,
+            microDescriptor: "Understand your past, present, and future",
+            time: "3-5 min",
+            depth: "Reflective",
+            isForYou: false,
+            ctaText: "Begin reading →",
+            isFirstCard: false
+        ),
+        SpreadItem(
+            id: "celtic-cross",
+            title: "Celtic Cross",
+            cardCount: 10,
+            isPremium: true,
+            microDescriptor: "A comprehensive view of your path",
+            time: "10-15 min",
+            depth: "Deep",
+            isForYou: false,
+            ctaText: "Reveal insight →",
+            isFirstCard: false
+        )
     ]
     
     var body: some View {
@@ -492,8 +478,12 @@ struct TarotReadingsSection: View {
                 }
             }
             
+            // Fixed card dimensions for horizontal scrolling (allows 3+ cards visible)
+            let cardWidth: CGFloat = 280
+            let cardHeight: CGFloat = cardWidth * 1.5 // 2:3 aspect ratio
+            
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: DiscoveryLayout.interCardSpacing) {
+                LazyHStack(spacing: DiscoveryLayout.interCardSpacing) {
                     ForEach(spreads) { spread in
                         Group {
                             if spread.isPremium && !isPremium {
@@ -503,24 +493,42 @@ struct TarotReadingsSection: View {
                                     TarotSpreadCard(
                                         name: spread.title,
                                         cardCount: spread.cardCount,
+                                        width: cardWidth,
+                                        height: cardHeight,
+                                        microDescriptor: spread.microDescriptor,
+                                        time: spread.time,
+                                        depth: spread.depth,
+                                        isForYou: spread.isForYou,
+                                        ctaText: spread.ctaText,
+                                        isFirstCard: spread.isFirstCard,
                                         action: nil
                                     )
                                 }
+                                .buttonStyle(PlainButtonStyle())
                             } else {
                                 NavigationLink(destination: TarotSpreadDetailPage(spreadId: spread.id)) {
                                     TarotSpreadCard(
                                         name: spread.title,
                                         cardCount: spread.cardCount,
+                                        width: cardWidth,
+                                        height: cardHeight,
+                                        microDescriptor: spread.microDescriptor,
+                                        time: spread.time,
+                                        depth: spread.depth,
+                                        isForYou: spread.isForYou,
+                                        ctaText: spread.ctaText,
+                                        isFirstCard: spread.isFirstCard,
                                         action: nil
                                     )
                                 }
+                                .buttonStyle(PlainButtonStyle())
                             }
                         }
-                        .buttonStyle(PlainButtonStyle())
-                        .contentShape(Rectangle())
+                        .frame(width: cardWidth, height: cardHeight)
                     }
                 }
                 .padding(.horizontal, DiscoveryLayout.horizontalPadding)
+                .padding(.vertical, 4)
             }
             .padding(.horizontal, -DiscoveryLayout.horizontalPadding)
         }
@@ -535,6 +543,12 @@ struct SpreadItem: Identifiable {
     let title: String
     let cardCount: Int
     let isPremium: Bool
+    let microDescriptor: String
+    let time: String
+    let depth: String
+    let isForYou: Bool
+    let ctaText: String
+    let isFirstCard: Bool
 }
 
 // MARK: - Learning by Categories Section
@@ -584,10 +598,10 @@ struct CategoryGridSection: View {
     let selectedCategory: String?
     
     let categoryItems = [
-        CategoryGridItem(id: "1", title: "Three Card Spread", subtitle: "Past, present, future insights", category: "Tarot"),
-        CategoryGridItem(id: "2", title: "Birth Chart", subtitle: "Discover your cosmic blueprint", category: "Astrology"),
-        CategoryGridItem(id: "3", title: "Life Path Number", subtitle: "Calculate your numerology", category: "Numerology"),
-        CategoryGridItem(id: "4", title: "Relationship Compatibility", subtitle: "Explore connections and dynamics", category: "Compatibility")
+        CategoryGridItem(id: "1", title: "Three Card Spread", subtitle: "Past, present, future insights", category: "Tarot", benefit: "Beginner friendly"),
+        CategoryGridItem(id: "2", title: "Birth Chart", subtitle: "Discover your cosmic blueprint", category: "Astrology", benefit: "Self-discovery"),
+        CategoryGridItem(id: "3", title: "Life Path Number", subtitle: "Calculate your numerology", category: "Numerology", benefit: "Self-discovery"),
+        CategoryGridItem(id: "4", title: "Relationship Compatibility", subtitle: "Explore connections and dynamics", category: "Compatibility", benefit: "Relationships")
     ]
     
     var body: some View {
@@ -626,6 +640,7 @@ struct CategoryGridItem: Identifiable {
     let title: String
     let subtitle: String
     let category: String
+    let benefit: String
 }
 
 struct CategoryGridCard: View {
@@ -633,21 +648,13 @@ struct CategoryGridCard: View {
     
     var body: some View {
         BaseCard {
-            VStack(alignment: .leading, spacing: 12) {
-                // Category Tag
-                Text(item.category)
-                    .font(DesignTypography.footnoteFont(weight: .medium))
-                    .foregroundColor(DesignColors.mutedForeground)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(
-                        Capsule()
-                            .fill(Color.white.opacity(0.05))
-                            .overlay(
-                                Capsule()
-                                    .stroke(Color.white.opacity(0.1), lineWidth: 1)
-                            )
-                    )
+            VStack(alignment: .leading, spacing: 0) {
+                // Benefit chip in top-left (one chip only)
+                HStack(spacing: 6) {
+                    CardChip(text: item.benefit, type: .base)
+                    Spacer()
+                }
+                .padding(.bottom, 10) // 8-12px spacing between chips row and title
                 
                 Spacer()
                 
@@ -670,18 +677,12 @@ struct CategoryGridCard: View {
 
 // MARK: - Daily Rituals Section
 struct DailyRitualsSection: View {
-    @State private var dailyInsight: DailyInsight?
-    @State private var userData: UserData = UserData.default
-    
-    private let contentService = DailyContentService.shared
-    private let stateManager = DailyStateManager.shared
-    
     let practices = [
-        PracticeItem(id: "1", title: "Morning Intention", duration: "5 min"),
-        PracticeItem(id: "2", title: "Evening Reflection", duration: "8 min"),
-        PracticeItem(id: "3", title: "Breath Reset", duration: "3 min"),
-        PracticeItem(id: "4", title: "Gratitude Prompt", duration: "2 min"),
-        PracticeItem(id: "5", title: "Grounding Practice", duration: "7 min")
+        PracticeItem(id: "1", title: "Morning Intention", duration: "5 min", category: "Focus", helperText: "Set the tone for your day", isForYou: true),
+        PracticeItem(id: "2", title: "Evening Reflection", duration: "8 min", category: "Reflection", helperText: "Process your day with intention", isForYou: false),
+        PracticeItem(id: "3", title: "Breath Reset", duration: "3 min", category: "Calm", helperText: "Return to center quickly", isForYou: false),
+        PracticeItem(id: "4", title: "Gratitude Prompt", duration: "2 min", category: "Gratitude", helperText: "Cultivate appreciation", isForYou: false),
+        PracticeItem(id: "5", title: "Grounding Practice", duration: "7 min", category: "Grounding", helperText: "Connect with the present moment", isForYou: false)
     ]
     
     var body: some View {
@@ -712,51 +713,7 @@ struct DailyRitualsSection: View {
             
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: DiscoveryLayout.interCardSpacing) {
-                    // Today's Ritual - first item
-                    if let insight = dailyInsight {
-                        NavigationLink(destination: RitualDetailPage(ritual: insight.ritual)) {
-                            BaseCard {
-                                VStack(alignment: .leading, spacing: 12) {
-                                    // Top row: Chips in top right
-                                    HStack {
-                                        Spacer()
-                                        
-                                        HStack(spacing: 8) {
-                                            CategoryChip(label: insight.ritual.duration, isActive: true, action: {})
-                                            CategoryChip(label: insight.ritual.type, isActive: true, action: {})
-                                        }
-                                    }
-                                    
-                                    Spacer()
-                                    
-                                    // Title, Description, and CTA
-                                    VStack(alignment: .leading, spacing: 8) {
-                                        Text("Today's Ritual")
-                                            .font(DesignTypography.headlineFont(weight: .medium))
-                                            .foregroundColor(DesignColors.foreground)
-                                            .lineLimit(2)
-                                        
-                                        Text(insight.ritual.description)
-                                            .font(.system(size: 14))
-                                            .foregroundColor(DesignColors.mutedForeground)
-                                            .lineLimit(2)
-                                            .padding(.top, 4)
-                                        
-                                        ArotiButton(
-                                            kind: .custom(.accentCard(height: 48)),
-                                            title: "Begin Practice",
-                                            action: {}
-                                        )
-                                        .padding(.top, 8)
-                                    }
-                                }
-                                .frame(width: DiscoveryLayout.wideCardWidth, height: 200, alignment: .topLeading)
-                            }
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                    }
-                    
-                    // Existing practices
+                    // Practices
                     ForEach(practices) { practice in
                         NavigationLink(destination: PracticeDetailPage(practiceId: practice.id)) {
                             DiscoveryPracticeCard(practice: practice)
@@ -768,16 +725,6 @@ struct DailyRitualsSection: View {
             }
             .padding(.horizontal, -DiscoveryLayout.horizontalPadding)
         }
-        .onAppear {
-            loadDailyInsight()
-        }
-    }
-    
-    private func loadDailyInsight() {
-        if let loadedUserData = stateManager.loadUserData() {
-            userData = loadedUserData
-        }
-        dailyInsight = contentService.generateDailyInsight(userData: userData)
     }
 }
 
@@ -785,6 +732,9 @@ struct PracticeItem: Identifiable {
     let id: String
     let title: String
     let duration: String
+    let category: String
+    let helperText: String
+    let isForYou: Bool
 }
 
 struct DiscoveryPracticeCard: View {
@@ -792,32 +742,38 @@ struct DiscoveryPracticeCard: View {
     
     var body: some View {
         BaseCard {
-            VStack(alignment: .leading, spacing: 12) {
-                // Tag
-                Text("Practice")
-                    .font(DesignTypography.footnoteFont(weight: .medium))
-                    .foregroundColor(DesignColors.mutedForeground)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(
-                        Capsule()
-                            .fill(Color.white.opacity(0.05))
-                            .overlay(
-                                Capsule()
-                                    .stroke(Color.white.opacity(0.1), lineWidth: 1)
-                            )
-                    )
+            VStack(alignment: .leading, spacing: 0) {
+                // Chips in top-left (max 3, single row) - 8-12px spacing to title
+                HStack(spacing: 6) {
+                    // Duration chip (time)
+                    CardChip(text: practice.duration, type: .base)
+                    
+                    // Category chip (benefit)
+                    CardChip(text: practice.category, type: .base)
+                    
+                    // "For you" chip (personalization) - only when applicable
+                    if practice.isForYou {
+                        CardChip(text: "For you", type: .forYou)
+                    }
+                    
+                    Spacer()
+                }
+                .padding(.bottom, 10) // 8-12px spacing between chips row and title
                 
                 Spacer()
                 
-                VStack(alignment: .leading, spacing: 8) {
+                // Title and helper text
+                VStack(alignment: .leading, spacing: 4) {
                     Text(practice.title)
                         .font(DesignTypography.headlineFont(weight: .medium))
                         .foregroundColor(DesignColors.foreground)
+                        .lineLimit(2)
                     
-                    Text(practice.duration)
-                        .font(.system(size: 15))
+                    // Helper text below title
+                    Text(practice.helperText)
+                        .font(DesignTypography.caption1Font())
                         .foregroundColor(DesignColors.mutedForeground)
+                        .lineLimit(2)
                 }
             }
             .frame(width: DiscoveryLayout.wideCardWidth, height: 200, alignment: .topLeading)
@@ -843,6 +799,11 @@ struct CoursesSection: View {
                     Text("Mini courses to deepen your practice")
                         .font(DesignTypography.footnoteFont())
                         .foregroundColor(DesignColors.mutedForeground)
+                    // Subtle line above courses
+                    Text("For those ready to go deeper")
+                        .font(DesignTypography.caption1Font())
+                        .foregroundColor(DesignColors.mutedForeground)
+                        .padding(.top, 2)
                 }
                 
                 Spacer()

@@ -663,7 +663,7 @@ struct ReadingCardSlot: View {
                                     .foregroundColor(DesignColors.accent)
                             }
                         }
-                        .frame(width: TarotSpreadCardLayout.width, height: TarotSpreadCardLayout.height * 0.7)
+                        .frame(width: TarotSpreadCardLayout.defaultWidth, height: TarotSpreadCardLayout.defaultHeight * 0.7)
                         .aspectRatio(3/5, contentMode: .fit)
                         
                         // Card Name
@@ -693,7 +693,7 @@ struct ReadingCardSlot: View {
                 } else {
                     // Card Back
                     TarotCardBack()
-                        .frame(width: TarotSpreadCardLayout.width, height: TarotSpreadCardLayout.height * 0.7)
+                        .frame(width: TarotSpreadCardLayout.defaultWidth, height: TarotSpreadCardLayout.defaultHeight * 0.7)
                         .aspectRatio(3/5, contentMode: .fit)
                 }
             }

@@ -45,7 +45,7 @@ struct CanvasTarotCard: View {
                 } else {
                     // Card Back
                     TarotCardBack()
-                        .frame(width: TarotSpreadCardLayout.width, height: TarotSpreadCardLayout.height)
+                        .frame(width: TarotSpreadCardLayout.defaultWidth, height: TarotSpreadCardLayout.defaultHeight)
                 }
                 
                 // Position label overlay (shown when zoomed in)
@@ -72,7 +72,7 @@ struct CanvasTarotCard: View {
                     .padding(8)
                 }
             }
-            .frame(width: TarotSpreadCardLayout.width, height: TarotSpreadCardLayout.height)
+            .frame(width: TarotSpreadCardLayout.defaultWidth, height: TarotSpreadCardLayout.defaultHeight)
             .rotationEffect(position.rotation)
             .scaleEffect(isPressed ? 0.95 : 1.0)
             .shadow(color: Color.black.opacity(0.3), radius: 8, x: 0, y: 4)
@@ -135,7 +135,7 @@ struct CanvasTarotCard: View {
                     .foregroundColor(DesignColors.accent)
             }
         }
-        .frame(width: TarotSpreadCardLayout.width, height: TarotSpreadCardLayout.height)
+        .frame(width: TarotSpreadCardLayout.defaultWidth, height: TarotSpreadCardLayout.defaultHeight)
     }
 }
 

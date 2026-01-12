@@ -369,6 +369,21 @@ struct ProfileView: View {
         }
     }
     
+    // MARK: - Profile Accessibility Label
+    
+    private var profileAccessibilityLabel: String {
+        var label = "Profile. \(userName). "
+        if let astrology = identityProfile?.astrology {
+            label += "\(astrology.sunSign) Sun, \(astrology.moonSign) Moon, \(astrology.risingSign) Rising. "
+        }
+        if let userData = DailyStateManager.shared.loadUserData(),
+           let birthLocation = userData.birthLocation,
+           !birthLocation.isEmpty {
+            label += "Born in \(birthLocation)."
+        }
+        return label
+    }
+    
     // MARK: - Account Tool Navigation Handler
     
     private func handleAccountToolTap(path: String) {
@@ -411,22 +426,64 @@ struct ProfileView: View {
                             
                             // User Info - Premium Typography Hierarchy
                             VStack(alignment: .leading, spacing: 5) {
-                                // Name (Primary) - Increased size by +1 step
+                                // Line 1 (Primary): User name - Highest emphasis
                                 Text(userName)
                                     .font(DesignTypography.title2Font(weight: .semibold))
                                     .foregroundColor(DesignColors.foreground)
                                     .lineLimit(1)
                                 
-                                // Subtitle (Secondary - Required Copy) - Constrained to 2 lines
-                                Text("Your chart reveals how you connect, grow, and transform")
-                                    .font(DesignTypography.subheadFont())
-                                    .foregroundColor(DesignColors.mutedForeground)
-                                    .lineLimit(2)
-                                    .fixedSize(horizontal: false, vertical: true)
+                                // Line 2 (Secondary): Big Three - Medium emphasis with premium icons
+                                if let astrology = identityProfile?.astrology {
+                                    HStack(alignment: .center, spacing: 8) {
+                                        // Sun
+                                        HStack(spacing: 4) {
+                                            Image(systemName: "sun.max.fill")
+                                                .font(.system(size: 14, weight: .medium))
+                                                .foregroundColor(DesignColors.accent)
+                                            Text(astrology.sunSign)
+                                                .font(DesignTypography.subheadFont())
+                                                .foregroundColor(DesignColors.mutedForeground)
+                                        }
+                                        
+                                        // Divider
+                                        Text("·")
+                                            .font(DesignTypography.subheadFont())
+                                            .foregroundColor(DesignColors.mutedForeground.opacity(0.3))
+                                        
+                                        // Moon
+                                        HStack(spacing: 4) {
+                                            Image(systemName: "moon.fill")
+                                                .font(.system(size: 14, weight: .medium))
+                                                .foregroundColor(DesignColors.accent)
+                                            Text(astrology.moonSign)
+                                                .font(DesignTypography.subheadFont())
+                                                .foregroundColor(DesignColors.mutedForeground)
+                                        }
+                                        
+                                        // Divider
+                                        Text("·")
+                                            .font(DesignTypography.subheadFont())
+                                            .foregroundColor(DesignColors.mutedForeground.opacity(0.3))
+                                        
+                                        // Rising
+                                        HStack(spacing: 4) {
+                                            Image(systemName: "sparkles")
+                                                .font(.system(size: 14, weight: .medium))
+                                                .foregroundColor(DesignColors.accent)
+                                            Text(astrology.risingSign)
+                                                .font(DesignTypography.subheadFont())
+                                                .foregroundColor(DesignColors.mutedForeground)
+                                        }
+                                    }
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.85)
+                                }
                                 
-                                // Location (Tertiary - Only if exists)
-                                if !userLocation.isEmpty {
-                                    Text("Based in \(userLocation)")
+                                // Line 3 (Tertiary): Birthplace - Lowest emphasis (lower opacity, non-bold)
+                                if let userData = DailyStateManager.shared.loadUserData(),
+                                   let birthLocation = userData.birthLocation,
+                                   !birthLocation.isEmpty {
+                                    Text("Born in \(birthLocation)")
                                         .font(DesignTypography.footnoteFont())
                                         .foregroundColor(DesignColors.mutedForeground.opacity(0.65))
                                         .lineLimit(1)
@@ -434,7 +491,7 @@ struct ProfileView: View {
                             }
                             .padding(.top, 2)
                             
-                            Spacer()
+                            Spacer(minLength: 0)
                             
                             // Spacer for edit button area
                             Color.clear
@@ -458,7 +515,7 @@ struct ProfileView: View {
                     .padding(.top, 16)
                 }
                 .accessibilityElement(children: .combine)
-                .accessibilityLabel("Profile. \(userName). Your chart reveals how you connect, grow, and transform. \(userLocation.isEmpty ? "" : "Based in \(userLocation).")")
+                .accessibilityLabel(profileAccessibilityLabel)
                 .padding(.bottom, 16)
                 
                 // Category Tabs - Integrated with header (horizontally scrollable)
@@ -1409,6 +1466,38 @@ struct ProfileView: View {
             )
             
             VStack(spacing: 12) {
+                // Monthly Horoscope Forecast (moved from Discovery)
+                NavigationLink(destination: HoroscopeForecastPage()) {
+                    HStack(alignment: .center, spacing: 12) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Monthly Horoscope Forecast")
+                                .font(DesignTypography.bodyFont(weight: .medium))
+                                .foregroundColor(DesignColors.foreground)
+                            
+                            Text("Your personalized horoscope forecast for the month")
+                                .font(DesignTypography.footnoteFont())
+                                .foregroundColor(DesignColors.mutedForeground)
+                        }
+                        
+                        Spacer()
+                        
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 16))
+                            .foregroundColor(DesignColors.mutedForeground)
+                    }
+                    .padding(12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.white.opacity(0.02))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(Color.white.opacity(0.05), lineWidth: 1)
+                            )
+                    )
+                }
+                .buttonStyle(PlainButtonStyle())
+                
+                // PDF Reports
                 ForEach(ProfileData.reports) { report in
                     Button(action: {
                         selectedReport = report

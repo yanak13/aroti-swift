@@ -29,6 +29,10 @@ enum ContentType: String, Codable {
     case quiz
     case numerologyLayer
     case theme
+    case premiumForecast
+    case learningLesson
+    case dailyRitual
+    case course
 }
 
 struct AccessRule: Codable {

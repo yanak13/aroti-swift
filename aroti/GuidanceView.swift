@@ -63,26 +63,32 @@ struct GuidanceView: View {
     var body: some View {
         NavigationStack {
             GeometryReader { geometry in
+                let safeAreaTop = geometry.safeAreaInsets.top
+                
                 ZStack(alignment: .bottom) {
                     CelestialBackground()
+                        .ignoresSafeArea()
                     
-                    VStack(spacing: 0) {
-                        headerView
-                        
-                        Divider()
-                            .overlay(Color.white.opacity(0.08))
-                        
+                    ZStack(alignment: .top) {
                         contentView
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .padding(.top, 32) // Header content height
+                            .padding(.bottom, 60) // Space for bottom nav
                         
+                        headerView(safeAreaTop: safeAreaTop)
+                    }
+                    
+                    // Bottom Navigation Bar
+                    VStack {
+                        Spacer()
                         BottomNavigationBar(selectedTab: $selectedTab) { tab in
                             selectedTab = tab
                         }
                     }
+                    .ignoresSafeArea(edges: .bottom)
                 }
-                .ignoresSafeArea(edges: .bottom)
+                .navigationBarHidden(true)
             }
-            .navigationBarHidden(true)
         }
         .onAppear {
             ensureWelcomeMessage()
@@ -140,99 +146,90 @@ struct GuidanceView: View {
 
 // MARK: - Rendering
 private extension GuidanceView {
-    var headerView: some View {
+    @ViewBuilder
+    func headerView(safeAreaTop: CGFloat) -> some View {
         switch currentScreen {
         case .chat:
-            return AnyView(
-                BaseHeader(
-                    title: "Guidance",
-                    subtitle: computeSubtitle(),
-                    leftAction: nil,
-                    rightView: AnyView(
-                        HStack(spacing: 8) {
-                            // Points Chip - dynamic width based on content
-                            NavigationLink(destination: JourneyPage()) {
-                                HStack(spacing: 4) {
-                                    Image(systemName: "star.fill")
-                                        .font(.system(size: 12))
-                                    Text("\(userPoints.formatted())")
-                                        .font(DesignTypography.caption1Font(weight: .semibold))
-                                }
-                                .foregroundColor(DesignColors.accent)
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 8)
-                                .frame(height: 36)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(Color.white.opacity(0.06))
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 12)
-                                                .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                                        )
-                                )
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                            
-                            // Notification Bell - matching points style
-                            Button(action: {
-                                // Handle notification tap
-                            }) {
-                                Image(systemName: "bell")
-                                    .font(.system(size: 16))
-                                    .foregroundColor(DesignColors.accent)
-                                    .frame(width: 36, height: 36)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .fill(Color.white.opacity(0.06))
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 12)
-                                                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                                            )
-                                    )
-                            }
-                        }
-                    ),
-                    alignment: .leading,
-                    horizontalPadding: GuidanceLayout.horizontalPadding
-                )
-            )
-        case .overview:
-            return AnyView(
-                BaseHeader(
-                    title: "Guidance",
-                    subtitle: "Personal AI guidance tailored to your journey",
-                    leftAction: .init(
-                        icon: Image(systemName: "chevron.left"),
-                        label: "Back to chat",
-                        action: { currentScreen = .chat }
-                    ),
-                    rightView: AnyView(
-                        NavigationLink(destination: JourneyPage()) {
+            StickyHeaderBar(
+                title: "Guidance",
+                subtitle: computeSubtitle(),
+                safeAreaTop: safeAreaTop
+            ) {
+                HStack(spacing: 8) {
+                    // Points Chip - dynamic width based on content
+                    NavigationLink(destination: JourneyPage()) {
+                        HStack(spacing: 4) {
                             Image(systemName: "star.fill")
-                                .font(.system(size: 18))
-                                .foregroundColor(DesignColors.accent)
-                                .frame(width: 44, height: 44)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(DesignColors.accent.opacity(0.15))
-                                )
+                                .font(.system(size: 12))
+                            Text("\(userPoints.formatted())")
+                                .font(DesignTypography.caption1Font(weight: .semibold))
                         }
-                        .buttonStyle(PlainButtonStyle())
-                    ),
-                    alignment: .leading
+                        .foregroundColor(DesignColors.accent)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 8)
+                        .frame(height: 36)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.white.opacity(0.06))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                                )
+                        )
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    
+                    // Notification Bell - matching points style
+                    Button(action: {
+                        // Handle notification tap
+                    }) {
+                        Image(systemName: "bell")
+                            .font(.system(size: 16))
+                            .foregroundColor(DesignColors.accent)
+                            .frame(width: 36, height: 36)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color.white.opacity(0.06))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                                    )
+                            )
+                    }
+                }
+            }
+        case .overview:
+            StickyHeaderBar(
+                title: "Guidance",
+                subtitle: "Personal AI guidance tailored to your journey",
+                safeAreaTop: safeAreaTop,
+                leftAction: .init(
+                    iconName: "chevron.left",
+                    accessibilityLabel: "Back to chat",
+                    action: { currentScreen = .chat }
                 )
-            )
+            ) {
+                NavigationLink(destination: JourneyPage()) {
+                    Image(systemName: "star.fill")
+                        .font(.system(size: 18))
+                        .foregroundColor(DesignColors.accent)
+                        .frame(width: 44, height: 44)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(DesignColors.accent.opacity(0.15))
+                        )
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
         case .points:
-            return AnyView(
-                BaseHeader(
-                    title: "Your Balance",
-                    subtitle: "Track and earn points",
-                    leftAction: .init(
-                        icon: Image(systemName: "chevron.left"),
-                        label: "Back",
-                        action: { currentScreen = .chat }
-                    ),
-                    alignment: .leading
+            StickyHeaderBar(
+                title: "Your Balance",
+                subtitle: "Track and earn points",
+                safeAreaTop: safeAreaTop,
+                leftAction: .init(
+                    iconName: "chevron.left",
+                    accessibilityLabel: "Back",
+                    action: { currentScreen = .chat }
                 )
             )
         }
@@ -455,7 +452,7 @@ private struct GuidanceChatScreen: View {
                             .id("bottom-spacer")
                     }
                     .padding(.horizontal, GuidanceLayout.horizontalPadding)
-                    .padding(.top, DesignSpacing.md)
+                    .padding(.top, DesignSpacing.lg + 8)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .scrollDismissesKeyboard(.interactively)
@@ -504,7 +501,7 @@ private struct GuidanceChatScreen: View {
                     endPoint: .top
                 )
             )
-            .padding(.bottom, keyboardHeight)
+            .padding(.bottom, keyboardHeight + 60) // 60px for bottom nav bar
         }
         .ignoresSafeArea(.keyboard, edges: .bottom)
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { notification in

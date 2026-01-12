@@ -230,36 +230,35 @@ struct TarotSpreadCard: View {
                 
                 Spacer()
                 
-                // Title and micro-descriptor
-                VStack(alignment: .leading, spacing: 4) {
+                // Title, micro-descriptor, and CTA - aligned consistently
+                VStack(alignment: .leading, spacing: 6) {
+                    // Title
                     Text(name)
                         .font(ArotiTextStyle.headline.weight(.medium))
                         .foregroundColor(ArotiColor.textPrimary)
                         .lineLimit(2)
                     
+                    // Micro-descriptor (subtitle)
                     if let microDescriptor = microDescriptor {
                         Text(microDescriptor)
                             .font(ArotiTextStyle.caption1)
                             .foregroundColor(ArotiColor.textSecondary)
                             .lineLimit(2)
+                            .padding(.top, 2)
                     }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 12)
-                .padding(.bottom, 8)
-                
-                // Micro CTA in bottom-right
-                if let ctaText = ctaText {
-                    HStack {
-                        Spacer()
+                    
+                    // Micro CTA - aligned with title and subtitle
+                    if let ctaText = ctaText {
                         Text(ctaText)
                             .font(ArotiTextStyle.caption1.weight(.medium))
                             .foregroundColor(ArotiColor.textSecondary.opacity(0.9))
                             .opacity(ctaOpacity)
+                            .padding(.top, 4)
                     }
-                    .padding(.horizontal, 12)
-                    .padding(.bottom, 12)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 12)
+                .padding(.bottom, 12)
             }
             .frame(width: cardWidth, height: cardHeight)
             

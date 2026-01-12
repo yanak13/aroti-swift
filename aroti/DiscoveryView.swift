@@ -35,23 +35,28 @@ struct DiscoveryView: View {
                     
                     ZStack(alignment: .top) {
                         ScrollView {
-                            VStack(spacing: 24) {
+                            VStack(spacing: 0) {
                                 // 1. Premium Forecasts Section
                                 PremiumForecastsSection()
+                                    .padding(.bottom, 20) // Increased title spacing between sections
                                 
                                 // 2. Tarot Readings Section
                                 TarotReadingsSection()
+                                    .padding(.bottom, 20) // Increased title spacing between sections
                                 
                                 // 3. Daily Rituals Section
                                 DailyRitualsSection()
+                                    .padding(.bottom, 20) // Increased title spacing between sections
                                 
                                 // 4. Learning by Categories
                                 LearningByCategoriesSection(
                                     selectedCategory: $selectedCategory
                                 )
+                                    .padding(.bottom, 20) // Increased title spacing between sections
                                 
                                 // 5. Category Grid
                                 CategoryGridSection(selectedCategory: selectedCategory)
+                                    .padding(.bottom, 20) // Increased title spacing between sections
                                 
                                 // 6. Courses Section
                                 CoursesSection()
@@ -146,14 +151,8 @@ struct PremiumForecastsSection: View {
         userSubscription.isPremium
     }
     
-    private var currentMonthName: String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMMM"
-        return formatter.string(from: Date())
-    }
-    
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 16) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Your Premium Forecast")
@@ -164,33 +163,10 @@ struct PremiumForecastsSection: View {
                 Spacer()
             }
             
-            // Single hero card with breathing space - full width like detail page
-            VStack(spacing: 0) {
-                if isPremium {
-                    NavigationLink(destination: HoroscopeForecastPage()) {
-                        PremiumForecastHeroCard(
-                            isPremium: isPremium,
-                            monthName: currentMonthName
-                        )
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                } else {
-                    Button(action: {
-                        showPaywall = true
-                    }) {
-                        PremiumForecastHeroCard(
-                            isPremium: isPremium,
-                            monthName: currentMonthName
-                        )
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                }
-            }
-            .padding(.top, 8)
-            .padding(.bottom, 8) // Additional breathing space
-        }
-        .sheet(isPresented: $showPaywall) {
-            PremiumPaywallSheet(context: "forecast")
+            // Core Guidance carousel - increased vertical spacing and elevated
+            CoreGuidanceCarousel()
+                .padding(.top, 12) // Increased vertical spacing
+                .padding(.bottom, 12)
         }
         .onAppear {
             loadUserData()
@@ -703,10 +679,10 @@ struct DailyRitualsSection: View {
                     HStack(spacing: 4) {
                         Text("View All")
                             .font(DesignTypography.subheadFont())
-                            .foregroundColor(DesignColors.accent)
+                            .foregroundColor(DesignColors.mutedForeground.opacity(0.8)) // Lower contrast
                         Image(systemName: "chevron.right")
                             .font(.system(size: 12))
-                            .foregroundColor(DesignColors.accent)
+                            .foregroundColor(DesignColors.mutedForeground.opacity(0.8)) // Lower contrast
                     }
                 }
             }
@@ -762,22 +738,23 @@ struct DiscoveryPracticeCard: View {
                 
                 Spacer()
                 
-                // Title and helper text
+                // Title and helper text - lower contrast, supportive tone
                 VStack(alignment: .leading, spacing: 4) {
                     Text(practice.title)
                         .font(DesignTypography.headlineFont(weight: .medium))
-                        .foregroundColor(DesignColors.foreground)
+                        .foregroundColor(DesignColors.foreground.opacity(0.95)) // Slightly lower contrast
                         .lineLimit(2)
                     
-                    // Helper text below title
+                    // Helper text below title - supportive, not promotional
                     Text(practice.helperText)
                         .font(DesignTypography.caption1Font())
-                        .foregroundColor(DesignColors.mutedForeground)
+                        .foregroundColor(DesignColors.mutedForeground.opacity(0.9)) // Lower contrast
                         .lineLimit(2)
                 }
             }
             .frame(width: DiscoveryLayout.wideCardWidth, height: 200, alignment: .topLeading)
         }
+        .shadow(color: Color.black.opacity(0.15), radius: 6, x: 0, y: 2) // Softer shadow for lower contrast
     }
 }
 

@@ -17,12 +17,8 @@ struct TarotRitualZone: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            // Title and helper microcopy
+            // Helper microcopy
             VStack(alignment: .leading, spacing: 4) {
-                Text("Today's Tarot")
-                    .font(DesignTypography.headlineFont(weight: .semibold))
-                    .foregroundColor(DesignColors.foreground)
-                
                 Text(helperText)
                     .font(DesignTypography.footnoteFont())
                     .foregroundColor(DesignColors.mutedForeground)

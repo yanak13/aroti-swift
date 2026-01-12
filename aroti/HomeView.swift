@@ -54,23 +54,7 @@ struct HomeView: View {
                     ScrollView {
                         VStack(spacing: 20) {
                             // Tarot Card Carousel Section
-                            VStack(alignment: .leading, spacing: 8) {
-                                // Section Header with tease line
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text("Today's Tarot")
-                                        .font(DesignTypography.headlineFont(weight: .semibold))
-                                        .foregroundColor(DesignColors.foreground)
-                                    
-                                    // Tease line
-                                    Text("A message is waiting for you.")
-                                        .font(DesignTypography.footnoteFont())
-                                        .foregroundColor(DesignColors.mutedForeground.opacity(0.8))
-                                        .opacity(teaseLineVisible ? 1 : 0)
-                                }
-                                .padding(.horizontal, DesignSpacing.sm)
-                                .opacity(tarotSectionVisible ? 1 : 0)
-                                .offset(y: reduceMotion ? 0 : (tarotSectionVisible ? 0 : 8))
-                                
+                            VStack(alignment: .leading, spacing: 8) {                                
                                 // 3D Carousel with shake support
                                 TarotCardCarousel(
                                     items: carouselItems,

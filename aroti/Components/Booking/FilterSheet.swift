@@ -39,6 +39,7 @@ struct FilterSheet: View {
         if filters.priceMax != nil && filters.priceMax != priceMaxDefault { count += 1 }
         if filters.rating != nil { count += 1 }
         if filters.yearsOfExperience != nil { count += 1 }
+        if filters.category != nil && filters.category != "All" { count += 1 }
         count += filters.languages.count
         return count
     }
@@ -73,13 +74,43 @@ struct FilterSheet: View {
             
             ScrollView {
                 VStack(alignment: .leading, spacing: 32) {
+                        // Category Section
+                        VStack(alignment: .leading, spacing: 16) {
+                            Text("Category")
+                                .font(DesignTypography.headlineFont(weight: .semibold))
+                                .foregroundColor(DesignColors.foreground)
+                            
+                            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
+                                FilterChip(
+                                    label: "All",
+                                    isSelected: localFilters.category == nil || localFilters.category == "All",
+                                    action: {
+                                        localFilters.category = localFilters.category == "All" ? nil : "All"
+                                    }
+                                )
+                                
+                                ForEach(["Astrology", "Therapy", "Numerology", "Reiki", "Coaching"], id: \.self) { category in
+                                    FilterChip(
+                                        label: category,
+                                        isSelected: localFilters.category == category,
+                                        action: {
+                                            localFilters.category = localFilters.category == category ? nil : category
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                        
                         // Availability Section
                         VStack(alignment: .leading, spacing: 16) {
                             Text("Availability")
                                 .font(DesignTypography.headlineFont(weight: .semibold))
                                 .foregroundColor(DesignColors.foreground)
                             
-                            HStack(spacing: 8) {
+                            LazyVGrid(columns: [
+                                GridItem(.flexible(), spacing: 8),
+                                GridItem(.flexible(), spacing: 8)
+                            ], spacing: 8) {
                                 FilterChip(
                                     label: "Available today",
                                     isSelected: localFilters.availability == "today",
@@ -159,7 +190,10 @@ struct FilterSheet: View {
                                 .font(DesignTypography.headlineFont(weight: .semibold))
                                 .foregroundColor(DesignColors.foreground)
                             
-                            HStack(spacing: 8) {
+                            LazyVGrid(columns: [
+                                GridItem(.flexible(), spacing: 8),
+                                GridItem(.flexible(), spacing: 8)
+                            ], spacing: 8) {
                                 FilterChip(
                                     label: "4.0+",
                                     isSelected: localFilters.rating == "4.0",
@@ -184,7 +218,10 @@ struct FilterSheet: View {
                                 .font(DesignTypography.headlineFont(weight: .semibold))
                                 .foregroundColor(DesignColors.foreground)
                             
-                            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
+                            LazyVGrid(columns: [
+                                GridItem(.flexible(), spacing: 8),
+                                GridItem(.flexible(), spacing: 8)
+                            ], spacing: 8) {
                                 ForEach(["1", "3", "5", "10", "15"], id: \.self) { years in
                                     FilterChip(
                                         label: "\(years)+ years",
@@ -203,24 +240,24 @@ struct FilterSheet: View {
                                 .font(DesignTypography.headlineFont(weight: .semibold))
                                 .foregroundColor(DesignColors.foreground)
                             
-                            ScrollView(.vertical, showsIndicators: false) {
-                                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
-                                    ForEach(availableLanguages, id: \.self) { language in
-                                        FilterChip(
-                                            label: language,
-                                            isSelected: localFilters.languages.contains(language),
-                                            action: {
-                                                if localFilters.languages.contains(language) {
-                                                    localFilters.languages.removeAll { $0 == language }
-                                                } else {
-                                                    localFilters.languages.append(language)
-                                                }
+                            LazyVGrid(columns: [
+                                GridItem(.flexible(), spacing: 8),
+                                GridItem(.flexible(), spacing: 8)
+                            ], spacing: 8) {
+                                ForEach(availableLanguages, id: \.self) { language in
+                                    FilterChip(
+                                        label: language,
+                                        isSelected: localFilters.languages.contains(language),
+                                        action: {
+                                            if localFilters.languages.contains(language) {
+                                                localFilters.languages.removeAll { $0 == language }
+                                            } else {
+                                                localFilters.languages.append(language)
                                             }
-                                        )
-                                    }
+                                        }
+                                    )
                                 }
                             }
-                            .frame(maxHeight: 140)
                         }
                     }
                     .padding(.horizontal, 24)
@@ -232,6 +269,8 @@ struct FilterSheet: View {
                     HStack(spacing: 12) {
                         Button(action: {
                             localFilters = FilterState()
+                            localFilters.priceMin = priceMinDefault
+                            localFilters.priceMax = priceMaxDefault
                             priceRange = Double(priceMinDefault)...Double(priceMaxDefault)
                         }) {
                             Text("Clear")
@@ -291,17 +330,22 @@ struct FilterChip: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 8) {
-                if isSelected {
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 16))
-                        .foregroundColor(DesignColors.accent)
-                }
                 Text(label)
                     .font(DesignTypography.footnoteFont(weight: .medium))
                     .foregroundColor(isSelected ? DesignColors.accent : DesignColors.mutedForeground)
+                    .lineLimit(1)
+                
+                Spacer()
+                
+                if isSelected {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(DesignColors.accent)
+                }
             }
+            .frame(maxWidth: .infinity)
             .padding(.horizontal, 16)
-            .padding(.vertical, 10)
+            .padding(.vertical, 12)
             .background(
                 Capsule()
                     .fill(isSelected ? DesignColors.accent.opacity(0.2) : DesignColors.glassPrimary)

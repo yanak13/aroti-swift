@@ -82,6 +82,7 @@ class DailyContentService {
     
     func generateTarotCard(dayOfYear: Int, userData: UserData) -> TarotCard {
         let index = (dayOfYear + (userData.name.hashValue % 100)) % tarotCards.count
+        if index > tarotCards.count - 1 { return tarotCards[0] }
         return tarotCards[index]
     }
     

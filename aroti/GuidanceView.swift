@@ -501,7 +501,7 @@ private struct GuidanceChatScreen: View {
                     endPoint: .top
                 )
             )
-            .padding(.bottom, keyboardHeight + 60) // 60px for bottom nav bar
+            .padding(.bottom, keyboardHeight > 0 ? keyboardHeight : 10) // 60px for bottom nav when keyboard hidden
         }
         .ignoresSafeArea(.keyboard, edges: .bottom)
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { notification in

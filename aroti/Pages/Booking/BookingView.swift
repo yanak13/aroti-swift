@@ -9,7 +9,6 @@ import SwiftUI
 
 struct BookingView: View {
     @Binding var selectedTab: TabItem
-    @State private var activeCategory: String = "All"
     @State private var searchQuery: String = ""
     @State private var showFilters: Bool = false
     @State private var showSavedOnly: Bool = false
@@ -18,23 +17,23 @@ struct BookingView: View {
     @State private var sortOption: SortOption? = nil
     @State private var filters: FilterState = FilterState()
     
-    private let categories = ["All", "Astrology", "Therapy", "Numerology", "Reiki", "Coaching"]
-    
     private var filteredSpecialists: [Specialist] {
         var result = BookingDataService.shared.specialists
         
         // Category filter
-        if activeCategory != "All" {
+        if let category = filters.category, category != "All" {
             result = result.filter { specialist in
-                specialist.categories.contains { $0.lowercased().contains(activeCategory.lowercased()) }
+                specialist.categories.contains { $0.lowercased().contains(category.lowercased()) }
             }
         }
         
-        // Search filter
+        // Search filter (fuzzy search by name)
         if !searchQuery.isEmpty {
+            let query = searchQuery.lowercased()
             result = result.filter { specialist in
-                specialist.name.lowercased().contains(searchQuery.lowercased()) ||
-                specialist.specialty.lowercased().contains(searchQuery.lowercased())
+                specialist.name.lowercased().contains(query) ||
+                specialist.specialty.lowercased().contains(query) ||
+                specialist.categories.contains { $0.lowercased().contains(query) }
             }
         }
         
@@ -113,6 +112,7 @@ struct BookingView: View {
         if filters.priceMax != nil && filters.priceMax != 80 { count += 1 }
         if filters.rating != nil { count += 1 }
         if filters.yearsOfExperience != nil { count += 1 }
+        if filters.category != nil && filters.category != "All" { count += 1 }
         count += filters.languages.count
         return count
     }
@@ -133,25 +133,61 @@ struct BookingView: View {
                     ZStack(alignment: .top) {
                         ScrollView {
                             VStack(spacing: 24) {
-                                
-                                
-                                // Category Filters
-                                ScrollView(.horizontal, showsIndicators: false) {
-                                    HStack(spacing: 8) {
-                                        ForEach(categories, id: \.self) { category in
-                                            CategoryChip(
-                                                label: category,
-                                                isActive: activeCategory == category,
-                                                action: {
-                                                    activeCategory = category
-                                                }
-                                            )
+                                // Upcoming Sessions Section - moved to top
+                                if !upcomingSessions.isEmpty {
+                                    VStack(alignment: .leading, spacing: 16) {
+                                        BaseSectionHeader(
+                                            title: "Upcoming Sessions",
+                                            subtitle: "Your scheduled appointments"
+                                        )
+                                        
+                                        ForEach(upcomingSessions) { session in
+                                            UpcomingSessionCard(session: session) {
+                                                navigationPath.append(BookingDestination.sessionDetail(session.id))
+                                            }
                                         }
                                     }
-                                    .padding(.horizontal, DesignSpacing.sm)
                                 }
-                                .padding(.vertical, DesignSpacing.sm)
-                                .padding(.horizontal, -DesignSpacing.sm)
+                                
+                                // Hero Text
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("Let's book your session today")
+                                        .font(DesignTypography.title2Font(weight: .semibold))
+                                        .foregroundColor(DesignColors.foreground)
+                                }
+                                .padding(.horizontal, DesignSpacing.sm)
+                                
+                                // Search Bar
+                                HStack(spacing: 12) {
+                                    HStack(spacing: 12) {
+                                        Image(systemName: "magnifyingglass")
+                                            .font(.system(size: 16))
+                                            .foregroundColor(DesignColors.mutedForeground)
+                                        
+                                        TextField("Search by name or specialty...", text: $searchQuery)
+                                            .font(DesignTypography.bodyFont())
+                                            .foregroundColor(DesignColors.foreground)
+                                        
+                                        if !searchQuery.isEmpty {
+                                            Button(action: { searchQuery = "" }) {
+                                                Image(systemName: "xmark.circle.fill")
+                                                    .font(.system(size: 16))
+                                                    .foregroundColor(DesignColors.mutedForeground)
+                                            }
+                                        }
+                                    }
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 12)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: DesignRadius.secondary)
+                                            .fill(DesignColors.glassPrimary)
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: DesignRadius.secondary)
+                                                    .stroke(DesignColors.glassBorder, lineWidth: 1)
+                                            )
+                                    )
+                                }
+                                .padding(.horizontal, DesignSpacing.sm)
                                 
                                 // Sort + Filter + Saved Bar
                                 HStack(spacing: 12) {
@@ -213,22 +249,6 @@ struct BookingView: View {
                                     }
                                 }
                                 .padding(.horizontal, DesignSpacing.sm)
-                                
-                                // Upcoming Sessions Section
-                                if !upcomingSessions.isEmpty {
-                                    VStack(alignment: .leading, spacing: 16) {
-                                        BaseSectionHeader(
-                                            title: "Upcoming Sessions",
-                                            subtitle: "Your scheduled appointments"
-                                        )
-                                        
-                                        ForEach(upcomingSessions) { session in
-                                            UpcomingSessionCard(session: session) {
-                                                navigationPath.append(BookingDestination.sessionDetail(session.id))
-                                            }
-                                        }
-                                    }
-                                }
                                 
                                 // Recommended Section
                                 if !filteredSpecialists.isEmpty {

@@ -57,6 +57,7 @@ struct FilterState {
     var rating: String?
     var languages: [String] = []
     var yearsOfExperience: String?
+    var category: String?
 }
 
 // Navigation destination enum for NavigationStack

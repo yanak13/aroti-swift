@@ -153,16 +153,6 @@ struct PremiumForecastsSection: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Your Premium Forecast")
-                        .font(DesignTypography.title3Font(weight: .medium))
-                        .foregroundColor(DesignColors.foreground)
-                }
-                
-                Spacer()
-            }
-            
             // Core Guidance carousel - increased vertical spacing and elevated
             CoreGuidanceCarousel()
                 .padding(.top, 12) // Increased vertical spacing

@@ -9,6 +9,7 @@ import SwiftUI
 
 struct BookingView: View {
     @Binding var selectedTab: TabItem
+    @StateObject private var controller = BookingController()
     @State private var searchQuery: String = ""
     @State private var showFilters: Bool = false
     @State private var selectedSpecialist: Specialist?
@@ -19,7 +20,7 @@ struct BookingView: View {
     @State private var showUpcomingOnly: Bool = false
     
     private var filteredSpecialists: [Specialist] {
-        var result = BookingDataService.shared.specialists
+        var result = controller.specialists
         
         // Category filter
         if let category = filters.category, category != "All" {
@@ -120,7 +121,7 @@ struct BookingView: View {
     }
     
     private var upcomingSessions: [Session] {
-        BookingDataService.shared.getUpcomingSessions()
+        controller.getUpcomingSessions()
     }
     
     var body: some View {
@@ -244,8 +245,36 @@ struct BookingView: View {
                                     .frame(maxWidth: .infinity)
                                 }
                                 
+                                // Loading state
+                                if controller.loadingState.isLoading && controller.specialists.isEmpty {
+                                    VStack(spacing: 16) {
+                                        LoadingIndicatorWithText(text: "Loading specialists...")
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 64)
+                                }
+                                // Error state
+                                else if let error = controller.error {
+                                    VStack(spacing: 16) {
+                                        Text("Error loading specialists")
+                                            .font(DesignTypography.bodyFont())
+                                            .foregroundColor(DesignColors.mutedForeground)
+                                        Text(error.userFriendlyMessage)
+                                            .font(DesignTypography.caption1Font())
+                                            .foregroundColor(DesignColors.mutedForeground)
+                                            .multilineTextAlignment(.center)
+                                        
+                                        Button("Retry") {
+                                            Task {
+                                                await controller.fetchSpecialists(forceRefresh: true)
+                                            }
+                                        }
+                                        .padding(.top, 8)
+                                    }
+                                    .padding(.vertical, 32)
+                                }
                                 // Content based on filter state
-                                if showUpcomingOnly {
+                                else if showUpcomingOnly {
                                     // Upcoming Sessions Only
                                     if !upcomingSessions.isEmpty {
                                         VStack(alignment: .leading, spacing: 16) {
@@ -380,11 +409,24 @@ struct BookingView: View {
                 FilterSheet(
                     isPresented: $showFilters,
                     filters: $filters,
-                    specialists: BookingDataService.shared.specialists
+                    specialists: controller.specialists
                 )
                 .presentationDetents([.large])
                 .presentationDragIndicator(.visible)
             }
+            .task {
+                // Fetch data on appear
+                if controller.specialists.isEmpty {
+                    await controller.fetchSpecialists()
+                }
+                if controller.sessions.isEmpty {
+                    await controller.fetchSessions()
+                }
+            }
+            .loadingOverlay(isLoading: Binding(
+                get: { controller.loadingState.isLoading && !controller.specialists.isEmpty },
+                set: { _ in }
+            ), message: "Loading...")
         }
     }
 }

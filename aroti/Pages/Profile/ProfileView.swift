@@ -10,10 +10,15 @@ import UIKit
 
 struct ProfileView: View {
     @Binding var selectedTab: TabItem
+    @StateObject private var controller = ProfileController()
     
-    // Profile data
-    @State private var userName: String = "Alexandra Moon"
-    @State private var userLocation: String = "San Francisco, CA"
+    // Profile data - use controller if available, fallback to defaults
+    private var userName: String {
+        controller.profile?.name ?? "Alexandra Moon"
+    }
+    private var userLocation: String {
+        controller.profile?.birthLocation ?? "San Francisco, CA"
+    }
     @State private var profileAvatar: String = "specialist-1" // Image name
     @State private var userPoints: Int = 0
     
@@ -231,6 +236,12 @@ struct ProfileView: View {
                     NumerologyDetailSheet(blueprint: blueprint.numerology)
                 } else {
                     NumerologyDetailSheet()
+                }
+            }
+            .task {
+                // Fetch profile data on appear
+                if controller.profile == nil {
+                    await controller.fetchProfile()
                 }
             }
             .onAppear {

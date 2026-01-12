@@ -10,6 +10,7 @@ import UIKit
 
 struct BookingHistoryView: View {
     @Binding var selectedTab: TabItem
+    @StateObject private var controller = BookingController()
     @State private var activeTab: HistoryTab = .upcoming
     @State private var showRatingModal = false
     @State private var ratingSessionId: String? = nil
@@ -17,11 +18,11 @@ struct BookingHistoryView: View {
     @State private var navigationPath = NavigationPath()
     
     private var upcomingSessions: [Session] {
-        BookingDataService.shared.mockSessions.filter { $0.status == "upcoming" }
+        controller.getUpcomingSessions()
     }
     
     private var pastSessions: [Session] {
-        BookingDataService.shared.mockSessions.filter { $0.status == "completed" }
+        controller.getPastSessions()
     }
     
     var body: some View {
@@ -266,7 +267,7 @@ struct BookingHistoryView: View {
                             kind: .custom(.glassCardButton()),
                             title: "View Profile",
                             action: {
-                                if let specialist = BookingDataService.shared.getSpecialist(by: session.specialistId) {
+                                if let specialist = controller.specialists.first(where: { $0.id == session.specialistId }) {
                                     navigationPath.append(BookingDestination.specialist(specialist))
                                 }
                             }
@@ -293,7 +294,7 @@ struct BookingHistoryView: View {
                             kind: .custom(.glassCardButton()),
                             title: "Rebook",
                             action: {
-                                if let specialist = BookingDataService.shared.getSpecialist(by: session.specialistId) {
+                                if let specialist = controller.specialists.first(where: { $0.id == session.specialistId }) {
                                     navigationPath.append(BookingDestination.schedule(specialist))
                                 }
                             }
@@ -338,6 +339,15 @@ struct BookingHistoryView: View {
         
         formatter.dateFormat = "MMM d"
         return formatter.string(from: date)
+    }
+    .task {
+        // Fetch data on appear
+        if controller.sessions.isEmpty {
+            await controller.fetchSessions()
+        }
+        if controller.specialists.isEmpty {
+            await controller.fetchSpecialists()
+        }
     }
 }
 

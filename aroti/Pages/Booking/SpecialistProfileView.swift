@@ -10,10 +10,14 @@ import SwiftUI
 struct SpecialistProfileView: View {
     let specialist: Specialist
     @Environment(\.dismiss) private var dismiss
+    @StateObject private var controller = BookingController()
     @State private var isFavorite: Bool = false
     @State private var showReviews: Bool = false
-    @State private var reviews: [Review] = []
     @State private var navigationPath = NavigationPath()
+    
+    private var reviews: [Review] {
+        controller.getReviews(for: specialist.id)
+    }
     
     var body: some View {
         NavigationStack(path: $navigationPath) {
@@ -335,8 +339,11 @@ struct SpecialistProfileView: View {
                     EmptyView()
                 }
             }
-            .onAppear {
-                reviews = BookingDataService.shared.getReviews(for: specialist.id)
+            .task {
+                if controller.specialists.isEmpty {
+                    await controller.fetchSpecialists()
+                }
+                await controller.fetchReviews(for: specialist.id)
             }
             .sheet(isPresented: $showReviews) {
                 ReviewsSheet(specialist: specialist, reviews: reviews)
@@ -350,9 +357,9 @@ struct SpecialistProfileView: View {
     }
     
     private var relatedSpecialists: [Specialist] {
-        BookingDataService.shared.specialists
+        Array(controller.specialists
             .filter { $0.id != specialist.id }
-            .prefix(3)
+            .prefix(3))
             .map { $0 }
     }
 }

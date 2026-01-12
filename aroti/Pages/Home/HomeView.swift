@@ -9,9 +9,16 @@ import SwiftUI
 
 struct HomeView: View {
     @Binding var selectedTab: TabItem
-    @State private var userData: UserData = UserData.default
-    @State private var dailyInsight: DailyInsight?
+    @StateObject private var controller = HomeController()
     @State private var userPoints: Int = 0
+    
+    private var userData: UserData {
+        controller.userData
+    }
+    
+    private var dailyInsight: DailyInsight? {
+        controller.dailyInsight
+    }
     
     // Tarot Carousel state
     @State private var selectedCardIndex: Int = 2
@@ -393,6 +400,15 @@ struct HomeView: View {
                 .ignoresSafeArea(edges: .bottom)
                 }
                 .navigationBarHidden(true)
+                .task {
+                    // Fetch data on appear
+                    if controller.dailyInsight == nil {
+                        await controller.fetchDailyInsights()
+                    }
+                    if controller.userData.name == UserData.default.name {
+                        await controller.fetchUserData()
+                    }
+                }
                 .onAppear {
                     loadData()
                     

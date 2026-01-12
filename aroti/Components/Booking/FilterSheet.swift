@@ -40,6 +40,7 @@ struct FilterSheet: View {
         if filters.rating != nil { count += 1 }
         if filters.yearsOfExperience != nil { count += 1 }
         if filters.category != nil && filters.category != "All" { count += 1 }
+        if filters.savedSpecialists { count += 1 }
         count += filters.languages.count
         return count
     }
@@ -259,6 +260,21 @@ struct FilterSheet: View {
                                 }
                             }
                         }
+                        
+                        // Saved Specialists Section
+                        VStack(alignment: .leading, spacing: 16) {
+                            Text("Saved Specialists")
+                                .font(DesignTypography.headlineFont(weight: .semibold))
+                                .foregroundColor(DesignColors.foreground)
+                            
+                            FilterChip(
+                                label: "Show saved specialists only",
+                                isSelected: localFilters.savedSpecialists,
+                                action: {
+                                    localFilters.savedSpecialists.toggle()
+                                }
+                            )
+                        }
                     }
                     .padding(.horizontal, 24)
                     .padding(.vertical, 24)
@@ -271,6 +287,7 @@ struct FilterSheet: View {
                             localFilters = FilterState()
                             localFilters.priceMin = priceMinDefault
                             localFilters.priceMax = priceMaxDefault
+                            localFilters.savedSpecialists = false
                             priceRange = Double(priceMinDefault)...Double(priceMaxDefault)
                         }) {
                             Text("Clear")

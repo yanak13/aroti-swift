@@ -26,7 +26,7 @@ struct BaseSectionHeader: View {
         HStack(alignment: .firstTextBaseline) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
-                    .font(DesignTypography.title3Font())
+                    .font(DesignTypography.headlineFont())
                     .foregroundColor(DesignColors.foreground)
                 
                 Text(subtitle)

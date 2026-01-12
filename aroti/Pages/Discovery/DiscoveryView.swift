@@ -18,6 +18,7 @@ struct DiscoveryView: View {
     @Binding var selectedTab: TabItem
     @State private var selectedCategory: String? = nil
     @State private var points: Int = 120
+    @State private var scrollOffset: CGFloat = 0
     
     private func updatePoints() {
         let balance = PointsService.shared.getBalance()
@@ -36,6 +37,16 @@ struct DiscoveryView: View {
                     ZStack(alignment: .top) {
                         ScrollView {
                             VStack(spacing: 0) {
+                                // Scroll offset tracker
+                                GeometryReader { scrollGeometry in
+                                    Color.clear
+                                        .preference(
+                                            key: ScrollOffsetPreferenceKey.self,
+                                            value: scrollGeometry.frame(in: .named("scroll")).minY
+                                        )
+                                }
+                                .frame(height: 0)
+                                
                                 // 1. Premium Forecasts Section
                                 PremiumForecastsSection()
                                     .padding(.bottom, 20) // Increased title spacing between sections
@@ -68,55 +79,35 @@ struct DiscoveryView: View {
                             Spacer()
                                 .frame(height: 60)
                         }
-                        .padding(.top, 32) // Just header content height, safe area already handled
+                        .coordinateSpace(name: "scroll")
+                        .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
+                            scrollOffset = max(0, -value)
+                        }
+                        .padding(.top, StickyHeaderBar.contentHeight())
                         .padding(.bottom, 60) // Space for bottom nav
                         
                         StickyHeaderBar(
                             title: "Discovery",
                             subtitle: "Explore tarot, practices, and more",
-                            safeAreaTop: safeAreaTop
+                            scrollOffset: $scrollOffset
                         ) {
                             HStack(spacing: 8) {
-                                // Points Chip - dynamic width based on content
+                                // Points Chip - premium styling
                                 NavigationLink(destination: JourneyPage()) {
-                                    HStack(spacing: 4) {
-                                        Image(systemName: "star.fill")
-                                            .font(.system(size: 12))
-                                        Text("\(points.formatted())")
-                                            .font(DesignTypography.caption1Font(weight: .semibold))
-                                    }
-                                    .foregroundColor(DesignColors.accent)
-                                    .padding(.horizontal, 10)
-                                    .padding(.vertical, 8)
-                                    .frame(height: 36)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .fill(Color.white.opacity(0.06))
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 12)
-                                                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                                            )
+                                    HeaderBadge(
+                                        iconName: "star.fill",
+                                        text: points.formatted()
                                     )
                                 }
                                 .buttonStyle(PlainButtonStyle())
                                 
-                                // Notification Bell - matching points style
-                                Button(action: {
-                                    // Handle notification tap
-                                }) {
-                                    Image(systemName: "bell")
-                                        .font(.system(size: 16))
-                                        .foregroundColor(DesignColors.accent)
-                                        .frame(width: 36, height: 36)
-                                        .background(
-                                            RoundedRectangle(cornerRadius: 12)
-                                                .fill(Color.white.opacity(0.06))
-                                                .overlay(
-                                                    RoundedRectangle(cornerRadius: 12)
-                                                        .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                                                )
-                                        )
-                                }
+                                // Notification Bell - premium styling
+                                HeaderBadge(
+                                    iconName: "bell",
+                                    action: {
+                                        // Handle notification tap
+                                    }
+                                )
                             }
                         }
                     }
@@ -423,7 +414,7 @@ struct TarotReadingsSection: View {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Tarot Readings")
-                        .font(DesignTypography.title3Font(weight: .medium))
+                        .font(DesignTypography.headlineFont(weight: .medium))
                         .foregroundColor(DesignColors.foreground)
                     Text("Explore different reading layouts")
                         .font(DesignTypography.footnoteFont())
@@ -528,7 +519,7 @@ struct LearningByCategoriesSection: View {
         VStack(alignment: .leading, spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Learning by Categories")
-                    .font(DesignTypography.title2Font(weight: .medium))
+                    .font(DesignTypography.headlineFont(weight: .medium))
                     .foregroundColor(DesignColors.foreground)
                 Text("Explore your interests")
                     .font(DesignTypography.footnoteFont())
@@ -656,7 +647,7 @@ struct DailyRitualsSection: View {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Daily Rituals")
-                        .font(DesignTypography.title3Font(weight: .medium))
+                        .font(DesignTypography.headlineFont(weight: .medium))
                         .foregroundColor(DesignColors.foreground)
                     Text("Morning routines & evening rituals")
                         .font(DesignTypography.footnoteFont())
@@ -761,7 +752,7 @@ struct CoursesSection: View {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Courses")
-                        .font(DesignTypography.title3Font(weight: .medium))
+                        .font(DesignTypography.headlineFont(weight: .medium))
                         .foregroundColor(DesignColors.foreground)
                     Text("Mini courses to deepen your practice")
                         .font(DesignTypography.footnoteFont())

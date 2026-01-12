@@ -59,6 +59,7 @@ struct GuidanceView: View {
     @State private var currentChatId: UUID = UUID()
     @State private var showToast = false
     @State private var toastMessage = ""
+    @State private var scrollOffset: CGFloat = 0
     
     var body: some View {
         NavigationStack {
@@ -153,56 +154,32 @@ private extension GuidanceView {
             StickyHeaderBar(
                 title: "Guidance",
                 subtitle: computeSubtitle(),
-                safeAreaTop: safeAreaTop
+                scrollOffset: $scrollOffset
             ) {
                 HStack(spacing: 8) {
-                    // Points Chip - dynamic width based on content
+                    // Points Chip - premium styling
                     NavigationLink(destination: JourneyPage()) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "star.fill")
-                                .font(.system(size: 12))
-                            Text("\(userPoints.formatted())")
-                                .font(DesignTypography.caption1Font(weight: .semibold))
-                        }
-                        .foregroundColor(DesignColors.accent)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 8)
-                        .frame(height: 36)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.white.opacity(0.06))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                                )
+                        HeaderBadge(
+                            iconName: "star.fill",
+                            text: userPoints.formatted()
                         )
                     }
                     .buttonStyle(PlainButtonStyle())
                     
-                    // Notification Bell - matching points style
-                    Button(action: {
-                        // Handle notification tap
-                    }) {
-                        Image(systemName: "bell")
-                            .font(.system(size: 16))
-                            .foregroundColor(DesignColors.accent)
-                            .frame(width: 36, height: 36)
-                            .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color.white.opacity(0.06))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                                    )
-                            )
-                    }
+                    // Notification Bell - premium styling
+                    HeaderBadge(
+                        iconName: "bell",
+                        action: {
+                            // Handle notification tap
+                        }
+                    )
                 }
             }
         case .overview:
             StickyHeaderBar(
                 title: "Guidance",
                 subtitle: "Personal AI guidance tailored to your journey",
-                safeAreaTop: safeAreaTop,
+                scrollOffset: $scrollOffset,
                 leftAction: .init(
                     iconName: "chevron.left",
                     accessibilityLabel: "Back to chat",
@@ -210,14 +187,10 @@ private extension GuidanceView {
                 )
             ) {
                 NavigationLink(destination: JourneyPage()) {
-                    Image(systemName: "star.fill")
-                        .font(.system(size: 18))
-                        .foregroundColor(DesignColors.accent)
-                        .frame(width: 44, height: 44)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(DesignColors.accent.opacity(0.15))
-                        )
+                    HeaderBadge(
+                        iconName: "star.fill",
+                        text: userPoints.formatted()
+                    )
                 }
                 .buttonStyle(PlainButtonStyle())
             }
@@ -225,7 +198,7 @@ private extension GuidanceView {
             StickyHeaderBar(
                 title: "Your Balance",
                 subtitle: "Track and earn points",
-                safeAreaTop: safeAreaTop,
+                scrollOffset: $scrollOffset,
                 leftAction: .init(
                     iconName: "chevron.left",
                     accessibilityLabel: "Back",
@@ -243,6 +216,7 @@ private extension GuidanceView {
                 messages: messages,
                 inputText: $inputText,
                 isTyping: isTyping,
+                scrollOffset: $scrollOffset,
                 onSend: sendMessage,
                 onSuggestionTap: { inputText = $0 },
                 onShowDisclaimer: { showDisclaimer = true },
@@ -256,6 +230,7 @@ private extension GuidanceView {
         case .overview:
             GuidanceOverviewScreen(
                 userPoints: userPoints,
+                scrollOffset: $scrollOffset,
                 onStartChat: {
                     startNewChat()
                     currentScreen = .chat
@@ -263,7 +238,7 @@ private extension GuidanceView {
                 onViewPoints: { currentScreen = .points }
             )
         case .points:
-            GuidancePointsScreen(userPoints: userPoints)
+            GuidancePointsScreen(userPoints: userPoints, scrollOffset: $scrollOffset)
         }
     }
 }
@@ -416,6 +391,7 @@ private struct GuidanceChatScreen: View {
     let messages: [GuidanceMessage]
     @Binding var inputText: String
     let isTyping: Bool
+    @Binding var scrollOffset: CGFloat
     let onSend: () -> Void
     let onSuggestionTap: (String) -> Void
     let onShowDisclaimer: () -> Void
@@ -430,6 +406,15 @@ private struct GuidanceChatScreen: View {
             ScrollViewReader { proxy in
                 ScrollView {
                     VStack(spacing: 16) {
+                        // Scroll offset tracker
+                        GeometryReader { scrollGeometry in
+                            Color.clear
+                                .preference(
+                                    key: ScrollOffsetPreferenceKey.self,
+                                    value: scrollGeometry.frame(in: .named("scroll")).minY
+                                )
+                        }
+                        .frame(height: 0)
                         ForEach(Array(messages.enumerated()), id: \.element.id) { index, message in
                             GuidanceBubble(
                                 message: message,
@@ -454,6 +439,10 @@ private struct GuidanceChatScreen: View {
                     .padding(.horizontal, GuidanceLayout.horizontalPadding)
                     .padding(.top, DesignSpacing.lg + 8)
                     .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .coordinateSpace(name: "scroll")
+                .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
+                    scrollOffset = max(0, -value)
                 }
                 .scrollDismissesKeyboard(.interactively)
                 .onChange(of: messages.count) { oldCount, newCount in
@@ -579,10 +568,10 @@ private struct GuidanceBubble: View {
             .padding(16)
             .background {
                 if message.role == .assistant {
-                    RoundedRectangle(cornerRadius: 26, style: .continuous)
+                    RoundedRectangle(cornerRadius: ArotiRadius.md, style: .continuous)
                         .fill(Color(red: 23/255, green: 20/255, blue: 31/255, opacity: 0.94))
                 } else {
-                    RoundedRectangle(cornerRadius: 26, style: .continuous)
+                    RoundedRectangle(cornerRadius: ArotiRadius.md, style: .continuous)
                         .fill(
                             LinearGradient(
                                 colors: [DesignColors.primary, DesignColors.secondary],
@@ -593,7 +582,7 @@ private struct GuidanceBubble: View {
                 }
             }
             .overlay(
-                RoundedRectangle(cornerRadius: 26)
+                RoundedRectangle(cornerRadius: ArotiRadius.md)
                     .stroke(message.role == .assistant ? Color.white.opacity(0.12) : Color.clear, lineWidth: 1)
             )
             .shadow(color: Color.black.opacity(0.25), radius: 6, x: 0, y: 2)
@@ -789,15 +778,26 @@ private struct GuidanceInputBar: View {
 // MARK: - Overview
 private struct GuidanceOverviewScreen: View {
     let userPoints: Int
+    @Binding var scrollOffset: CGFloat
     let onStartChat: () -> Void
     let onViewPoints: () -> Void
     
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 24) {
+                // Scroll offset tracker
+                GeometryReader { scrollGeometry in
+                    Color.clear
+                        .preference(
+                            key: ScrollOffsetPreferenceKey.self,
+                            value: scrollGeometry.frame(in: .named("scroll")).minY
+                        )
+                }
+                .frame(height: 0)
+                
                 VStack(spacing: 12) {
                     Text("Start Your Journey")
-                        .font(DesignTypography.title2Font(weight: .bold))
+                        .font(DesignTypography.headlineFont(weight: .bold))
                         .foregroundColor(DesignColors.foreground)
                     Text("Connect with Aroti for personalized guidance. Get cosmic insights and support whenever you need it.")
                         .font(DesignTypography.bodyFont())
@@ -862,11 +862,18 @@ private struct GuidanceOverviewScreen: View {
             .padding(.horizontal, DesignSpacing.md)
             .padding(.bottom, 140)
         }
+        .coordinateSpace(name: "scroll")
+        .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
+            scrollOffset = max(0, -value)
+        }
     }
 }
 
 // MARK: - Points
 private struct GuidancePointsScreen: View {
+    let userPoints: Int
+    @Binding var scrollOffset: CGFloat
+    
     struct EarnOption: Identifiable {
         let id = UUID()
         let icon: String
@@ -874,8 +881,6 @@ private struct GuidancePointsScreen: View {
         let points: String
         let description: String
     }
-    
-    let userPoints: Int
     
     private let options: [EarnOption] = [
         EarnOption(icon: "play.rectangle.fill", title: "Watch short lessons", points: "+10 pts", description: "Complete 5-minute mindful videos"),
@@ -886,6 +891,16 @@ private struct GuidancePointsScreen: View {
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 24) {
+                // Scroll offset tracker
+                GeometryReader { scrollGeometry in
+                    Color.clear
+                        .preference(
+                            key: ScrollOffsetPreferenceKey.self,
+                            value: scrollGeometry.frame(in: .named("scroll")).minY
+                        )
+                }
+                .frame(height: 0)
+                
                 BaseCard {
                     VStack(spacing: 16) {
                         Circle()
@@ -955,6 +970,10 @@ private struct GuidancePointsScreen: View {
             .padding(.horizontal, DesignSpacing.md)
             .padding(.bottom, 140)
         }
+        .coordinateSpace(name: "scroll")
+        .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
+            scrollOffset = max(0, -value)
+        }
     }
 }
 
@@ -1020,4 +1039,3 @@ private struct DisclaimerSheet: View {
 #Preview {
     GuidanceView(selectedTab: .constant(.guidance))
 }
-

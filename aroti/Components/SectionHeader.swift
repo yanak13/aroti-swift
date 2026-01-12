@@ -22,7 +22,7 @@ struct SectionHeader: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(title)
-                .font(DesignTypography.title2Font(weight: .medium))
+                .font(DesignTypography.headlineFont(weight: .medium))
                 .foregroundColor(DesignColors.foreground)
             
             if let description = description {

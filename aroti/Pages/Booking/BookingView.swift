@@ -11,11 +11,12 @@ struct BookingView: View {
     @Binding var selectedTab: TabItem
     @State private var searchQuery: String = ""
     @State private var showFilters: Bool = false
-    @State private var showSavedOnly: Bool = false
     @State private var selectedSpecialist: Specialist?
     @State private var navigationPath = NavigationPath()
     @State private var sortOption: SortOption? = nil
     @State private var filters: FilterState = FilterState()
+    @State private var scrollOffset: CGFloat = 0
+    @State private var showUpcomingOnly: Bool = false
     
     private var filteredSpecialists: [Specialist] {
         var result = BookingDataService.shared.specialists
@@ -38,7 +39,7 @@ struct BookingView: View {
         }
         
         // Saved filter
-        if showSavedOnly {
+        if filters.savedSpecialists {
             // TODO: Implement favorites integration
             // For now, we'll skip this filter
         }
@@ -113,6 +114,7 @@ struct BookingView: View {
         if filters.rating != nil { count += 1 }
         if filters.yearsOfExperience != nil { count += 1 }
         if filters.category != nil && filters.category != "All" { count += 1 }
+        if filters.savedSpecialists { count += 1 }
         count += filters.languages.count
         return count
     }
@@ -124,75 +126,62 @@ struct BookingView: View {
     var body: some View {
         NavigationStack(path: $navigationPath) {
             GeometryReader { geometry in
-                let safeAreaTop = geometry.safeAreaInsets.top
-                
                 ZStack(alignment: .bottom) {
                     CelestialBackground()
                         .ignoresSafeArea()
                     
                     ZStack(alignment: .top) {
+                        StickyHeaderBar(
+                            title: "Find Your Specialist",
+                            subtitle: "Personal guidance starts with the right connection",
+                            scrollOffset: $scrollOffset
+                        )
                         ScrollView {
                             VStack(spacing: 24) {
-                                // Upcoming Sessions Section - moved to top
-                                if !upcomingSessions.isEmpty {
-                                    VStack(alignment: .leading, spacing: 16) {
-                                        BaseSectionHeader(
-                                            title: "Upcoming Sessions",
-                                            subtitle: "Your scheduled appointments"
+                                // Scroll offset tracker
+                                GeometryReader { scrollGeometry in
+                                    Color.clear
+                                        .preference(
+                                            key: ScrollOffsetPreferenceKey.self,
+                                            value: scrollGeometry.frame(in: .named("scroll")).minY
                                         )
-                                        
-                                        ForEach(upcomingSessions) { session in
-                                            UpcomingSessionCard(session: session) {
-                                                navigationPath.append(BookingDestination.sessionDetail(session.id))
-                                            }
-                                        }
-                                    }
                                 }
-                                
-                                // Hero Text
-                                VStack(alignment: .leading, spacing: 8) {
-                                    Text("Let's book your session today")
-                                        .font(DesignTypography.title2Font(weight: .semibold))
-                                        .foregroundColor(DesignColors.foreground)
-                                }
-                                .padding(.horizontal, DesignSpacing.sm)
+                                .frame(height: 0)
                                 
                                 // Search Bar
                                 HStack(spacing: 12) {
-                                    HStack(spacing: 12) {
-                                        Image(systemName: "magnifyingglass")
-                                            .font(.system(size: 16))
-                                            .foregroundColor(DesignColors.mutedForeground)
-                                        
-                                        TextField("Search by name or specialty...", text: $searchQuery)
-                                            .font(DesignTypography.bodyFont())
-                                            .foregroundColor(DesignColors.foreground)
-                                        
-                                        if !searchQuery.isEmpty {
-                                            Button(action: { searchQuery = "" }) {
-                                                Image(systemName: "xmark.circle.fill")
-                                                    .font(.system(size: 16))
-                                                    .foregroundColor(DesignColors.mutedForeground)
-                                            }
+                                    Image(systemName: "magnifyingglass")
+                                        .font(.system(size: 16))
+                                        .foregroundColor(DesignColors.mutedForeground)
+                                    
+                                    TextField("Search by name or specialty...", text: $searchQuery)
+                                        .font(DesignTypography.bodyFont())
+                                        .foregroundColor(DesignColors.foreground)
+                                    
+                                    if !searchQuery.isEmpty {
+                                        Button(action: { searchQuery = "" }) {
+                                            Image(systemName: "xmark.circle.fill")
+                                                .font(.system(size: 16))
+                                                .foregroundColor(DesignColors.mutedForeground)
                                         }
                                     }
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 12)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: DesignRadius.secondary)
-                                            .fill(DesignColors.glassPrimary)
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: DesignRadius.secondary)
-                                                    .stroke(DesignColors.glassBorder, lineWidth: 1)
-                                            )
-                                    )
                                 }
-                                .padding(.horizontal, DesignSpacing.sm)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 12)
+                                .background(
+                                    RoundedRectangle(cornerRadius: DesignRadius.secondary)
+                                        .fill(DesignColors.glassPrimary)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: DesignRadius.secondary)
+                                                .stroke(DesignColors.glassBorder, lineWidth: 1)
+                                        )
+                                )
                                 
-                                // Sort + Filter + Saved Bar
+                                // Sort + Filter + Upcoming Bar
                                 HStack(spacing: 12) {
                                     // Sort Dropdown
                                     SortDropdown(selectedOption: $sortOption)
+                                        .frame(maxWidth: .infinity)
                                     
                                     // Filter Button
                                     Button(action: { showFilters = true }) {
@@ -217,6 +206,7 @@ struct BookingView: View {
                                         .foregroundColor(DesignColors.mutedForeground)
                                         .padding(.horizontal, 16)
                                         .padding(.vertical, 10)
+                                        .frame(maxWidth: .infinity)
                                         .background(
                                             RoundedRectangle(cornerRadius: DesignRadius.secondary)
                                                 .fill(DesignColors.glassPrimary)
@@ -226,32 +216,60 @@ struct BookingView: View {
                                                 )
                                         )
                                     }
+                                    .frame(maxWidth: .infinity)
                                     
-                                    // Saved Filter
-                                    Button(action: { showSavedOnly.toggle() }) {
+                                    // Upcoming Filter
+                                    Button(action: {
+                                        showUpcomingOnly.toggle()
+                                    }) {
                                         HStack(spacing: 8) {
-                                            Image(systemName: showSavedOnly ? "bookmark.fill" : "bookmark")
+                                            Image(systemName: showUpcomingOnly ? "calendar.fill" : "calendar")
                                                 .font(.system(size: 16))
-                                            Text("Saved")
+                                            Text("Upcoming")
                                                 .font(DesignTypography.footnoteFont(weight: .medium))
                                         }
-                                        .foregroundColor(showSavedOnly ? DesignColors.accent : DesignColors.mutedForeground)
+                                        .foregroundColor(showUpcomingOnly ? DesignColors.accent : DesignColors.mutedForeground)
                                         .padding(.horizontal, 16)
                                         .padding(.vertical, 10)
+                                        .frame(maxWidth: .infinity)
                                         .background(
                                             RoundedRectangle(cornerRadius: DesignRadius.secondary)
-                                                .fill(showSavedOnly ? DesignColors.accent.opacity(0.2) : DesignColors.glassPrimary)
+                                                .fill(showUpcomingOnly ? DesignColors.accent.opacity(0.2) : DesignColors.glassPrimary)
                                                 .overlay(
                                                     RoundedRectangle(cornerRadius: DesignRadius.secondary)
-                                                        .stroke(showSavedOnly ? DesignColors.accent.opacity(0.5) : DesignColors.glassBorder, lineWidth: 1)
+                                                        .stroke(showUpcomingOnly ? DesignColors.accent.opacity(0.5) : DesignColors.glassBorder, lineWidth: 1)
                                                 )
                                         )
                                     }
+                                    .frame(maxWidth: .infinity)
                                 }
-                                .padding(.horizontal, DesignSpacing.sm)
                                 
-                                // Recommended Section
-                                if !filteredSpecialists.isEmpty {
+                                // Content based on filter state
+                                if showUpcomingOnly {
+                                    // Upcoming Sessions Only
+                                    if !upcomingSessions.isEmpty {
+                                        VStack(alignment: .leading, spacing: 16) {
+                                            BaseSectionHeader(
+                                                title: "Upcoming Sessions",
+                                                subtitle: "Your scheduled appointments"
+                                            )
+                                            
+                                            ForEach(upcomingSessions) { session in
+                                                UpcomingSessionCard(session: session) {
+                                                    navigationPath.append(BookingDestination.sessionDetail(session.id))
+                                                }
+                                            }
+                                        }
+                                    } else {
+                                        VStack(spacing: 16) {
+                                            Text("No upcoming sessions")
+                                                .font(DesignTypography.bodyFont())
+                                                .foregroundColor(DesignColors.mutedForeground)
+                                                .padding(.vertical, 32)
+                                        }
+                                    }
+                                } else if !filteredSpecialists.isEmpty {
+                                    // Recommended Section
                                     let recommended = Array(filteredSpecialists.prefix(2))
                                     let recommendedIds = Set(recommended.map { $0.id })
                                     let allSpecialists = filteredSpecialists.filter { !recommendedIds.contains($0.id) }
@@ -319,16 +337,16 @@ struct BookingView: View {
                                     }
                                 }
                             }
-                            .padding(.horizontal, DesignSpacing.sm)
+                            .padding(.horizontal, DiscoveryLayout.horizontalPadding)
                         }
-                        .padding(.top, StickyHeaderBar.totalHeight(for: safeAreaTop))
+                        .coordinateSpace(name: "scroll")
+                        .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
+                            scrollOffset = max(0, -value)
+                        }
+                        .padding(.top, StickyHeaderBar.contentHeight() + 32)
                         .padding(.bottom, 60) // Space for bottom nav
                         
-                    StickyHeaderBar(
-                        title: "Find Your Specialist",
-                        subtitle: "Personal guidance starts with the right connection",
-                        safeAreaTop: safeAreaTop
-                    )
+                    
                     }
                     
                     // Bottom Navigation Bar - fixed at bottom

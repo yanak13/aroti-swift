@@ -39,7 +39,7 @@ struct SpecialistCard: View {
                         // Name + Favorite
                         HStack {
                             Text(specialist.name)
-                                .font(DesignTypography.title3Font())
+                                .font(DesignTypography.headlineFont())
                                 .foregroundColor(DesignColors.foreground)
                             
                             Spacer()

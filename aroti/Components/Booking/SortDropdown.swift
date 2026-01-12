@@ -55,6 +55,7 @@ struct SortDropdown: View {
                     .font(.system(size: 16))
                     .foregroundColor(DesignColors.mutedForeground)
             }
+            .frame(maxWidth: .infinity)
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
             .background(

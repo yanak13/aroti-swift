@@ -35,6 +35,7 @@ struct HomeView: View {
     @State private var isCTAPressed: Bool = false
     @State private var carouselShakeOffset: CGFloat = 0
     @State private var breathingGlowOpacity: Double = 0.3
+    @State private var scrollOffset: CGFloat = 0
     
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     
@@ -53,6 +54,15 @@ struct HomeView: View {
                 ZStack(alignment: .top) {
                     ScrollView {
                         VStack(spacing: 20) {
+                            // Scroll offset tracker
+                            GeometryReader { scrollGeometry in
+                                Color.clear
+                                    .preference(
+                                        key: ScrollOffsetPreferenceKey.self,
+                                        value: scrollGeometry.frame(in: .named("scroll")).minY
+                                    )
+                            }
+                            .frame(height: 0)
                             // Tarot Card Carousel Section
                             VStack(alignment: .leading, spacing: 8) {                                
                                 // 3D Carousel with shake support
@@ -170,7 +180,7 @@ struct HomeView: View {
                                 // Section header
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text("Daily Picks")
-                                        .font(DesignTypography.title3Font(weight: .medium))
+                                        .font(DesignTypography.headlineFont(weight: .medium))
                                         .foregroundColor(DesignColors.foreground)
                                     
                                     Text("Quick guidance for today")
@@ -311,7 +321,7 @@ struct HomeView: View {
                                 VStack(alignment: .leading, spacing: 8) {
                                     // Title
                                     Text("Your Reflection")
-                                        .font(DesignTypography.title3Font(weight: .medium))
+                                        .font(DesignTypography.headlineFont(weight: .medium))
                                         .foregroundColor(DesignColors.foreground.opacity(0.9))
                                     
                                     // Subtitle - soft, emotional
@@ -340,54 +350,34 @@ struct HomeView: View {
                         }
                         .padding(.bottom, 100) // Padding to prevent content from going behind nav bar
                     }
-                    .padding(.top, 32) // Just header content height, safe area already handled
+                    .coordinateSpace(name: "scroll")
+                    .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
+                        scrollOffset = max(0, -value)
+                    }
+                    .padding(.top, StickyHeaderBar.contentHeight())
                     
                     StickyHeaderBar(
                         title: "Today's Insights",
                         subtitle: "Your daily cosmic guidance",
-                        safeAreaTop: safeAreaTop
+                        scrollOffset: $scrollOffset
                     ) {
                         HStack(spacing: 8) {
-                            // Points Chip - dynamic width based on content
+                            // Points Chip - premium styling
                             NavigationLink(destination: JourneyPage()) {
-                                HStack(spacing: 4) {
-                                    Image(systemName: "star.fill")
-                                        .font(.system(size: 12))
-                                    Text("\(userPoints.formatted())")
-                                        .font(DesignTypography.caption1Font(weight: .semibold))
-                                }
-                                .foregroundColor(DesignColors.accent)
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 8)
-                                .frame(height: 36)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(Color.white.opacity(0.06))
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 12)
-                                                .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                                        )
+                                HeaderBadge(
+                                    iconName: "star.fill",
+                                    text: userPoints.formatted()
                                 )
                             }
                             .buttonStyle(PlainButtonStyle())
                             
-                            // Notification Bell - matching points style
-                            Button(action: {
-                                // Handle notification tap
-                            }) {
-                                Image(systemName: "bell")
-                                    .font(.system(size: 16))
-                                    .foregroundColor(DesignColors.accent)
-                                    .frame(width: 36, height: 36)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .fill(Color.white.opacity(0.06))
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 12)
-                                                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                                            )
-                                    )
-                            }
+                            // Notification Bell - premium styling
+                            HeaderBadge(
+                                iconName: "bell",
+                                action: {
+                                    // Handle notification tap
+                                }
+                            )
                         }
                     }
                 }
@@ -506,8 +496,10 @@ struct HomeView: View {
         }
         
         // Minor Arcana (56 cards: 14 cards x 4 suits)
-        let suits = ["Wands", "Cups", "Swords", "Pentacles"]
-        let ranks = ["Ace", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Page", "Knight", "Queen", "King"]
+        let suits: [String] = ["Wands", "Cups", "Swords", "Pentacles"]
+        let numberRanks: [String] = ["Ace", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten"]
+        let courtRanks: [String] = ["Page", "Knight", "Queen", "King"]
+        let ranks: [String] = numberRanks + courtRanks
         
         for suit in suits {
             for rank in ranks {

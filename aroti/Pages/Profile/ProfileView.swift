@@ -65,6 +65,7 @@ struct ProfileView: View {
     @State private var showDownloadDataSheet = false
     @State private var showDeleteAccountSheet = false
     @State private var showContactSupportSheet = false
+    @State private var scrollOffset: CGFloat = 0
     
     // Premium status
     private var isPremium: Bool {
@@ -116,6 +117,16 @@ struct ProfileView: View {
                 ZStack(alignment: .top) {
                     ScrollView {
                         VStack(spacing: 0) {
+                            // Scroll offset tracker
+                            GeometryReader { scrollGeometry in
+                                Color.clear
+                                    .preference(
+                                        key: ScrollOffsetPreferenceKey.self,
+                                        value: scrollGeometry.frame(in: .named("scroll")).minY
+                                    )
+                            }
+                            .frame(height: 0)
+                            
                             // 1. Modern Profile Header (No Card Background)
                             ScrollReveal {
                                 modernProfileHeader
@@ -155,54 +166,34 @@ struct ProfileView: View {
                         .padding(.horizontal, DesignSpacing.sm)
                         .padding(.bottom, 100) // Space for bottom nav
                     }
-                    .padding(.top, 32) // Just header content height, safe area already handled
+                    .coordinateSpace(name: "scroll")
+                    .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
+                        scrollOffset = max(0, -value)
+                    }
+                    .padding(.top, StickyHeaderBar.contentHeight())
                     
                     StickyHeaderBar(
                         title: "Profile",
                         subtitle: "Your cosmic journey",
-                        safeAreaTop: safeAreaTop
+                        scrollOffset: $scrollOffset
                     ) {
                         HStack(spacing: 8) {
-                            // Points Chip - dynamic width based on content
+                            // Points Chip - premium styling
                             NavigationLink(destination: JourneyPage()) {
-                                HStack(spacing: 4) {
-                                    Image(systemName: "star.fill")
-                                        .font(.system(size: 12))
-                                    Text("\(userPoints.formatted())")
-                                        .font(DesignTypography.caption1Font(weight: .semibold))
-                                }
-                                .foregroundColor(DesignColors.accent)
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 8)
-                                .frame(height: 36)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(Color.white.opacity(0.06))
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 12)
-                                                .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                                        )
+                                HeaderBadge(
+                                    iconName: "star.fill",
+                                    text: userPoints.formatted()
                                 )
                             }
                             .buttonStyle(PlainButtonStyle())
                             
-                            // Notification Bell - matching points style
-                            Button(action: {
-                                // Handle notification tap
-                            }) {
-                                Image(systemName: "bell")
-                                    .font(.system(size: 16))
-                                    .foregroundColor(DesignColors.accent)
-                                    .frame(width: 36, height: 36)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .fill(Color.white.opacity(0.06))
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 12)
-                                                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                                            )
-                                    )
-                            }
+                            // Notification Bell - premium styling
+                            HeaderBadge(
+                                iconName: "bell",
+                                action: {
+                                    // Handle notification tap
+                                }
+                            )
                         }
                     }
                 }
@@ -428,7 +419,7 @@ struct ProfileView: View {
                             VStack(alignment: .leading, spacing: 5) {
                                 // Line 1 (Primary): User name - Highest emphasis
                                 Text(userName)
-                                    .font(DesignTypography.title2Font(weight: .semibold))
+                                    .font(DesignTypography.headlineFont(weight: .semibold))
                                     .foregroundColor(DesignColors.foreground)
                                     .lineLimit(1)
                                 
@@ -1207,7 +1198,7 @@ struct ProfileView: View {
                 // 1. Header
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Compatibility")
-                        .font(DesignTypography.title3Font())
+                        .font(DesignTypography.headlineFont())
                         .foregroundColor(DesignColors.foreground)
                     
                     Text("Explore your relationship dynamics and connection patterns.")
@@ -1682,38 +1673,113 @@ struct ProfileView: View {
                 subtitle: "Manage your preferences and privacy"
             )
             
-            VStack(spacing: 10) {
+            VStack(spacing: 12) {
                 ForEach(ProfileData.accountTools, id: \.label) { tool in
-                    BaseCard(
-                        variant: .interactive,
-                        action: {
-                            handleAccountToolTap(path: tool.path)
-                        }
-                    ) {
-                        HStack(spacing: 12) {
-                            Image(systemName: tool.iconName)
-                                .font(.system(size: 20))
-                                .foregroundColor(DesignColors.mutedForeground)
-                                .frame(width: 40, height: 40)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .fill(Color.white.opacity(0.05))
+                    Button(action: {
+                        handleAccountToolTap(path: tool.path)
+                    }) {
+                        ZStack(alignment: .topTrailing) {
+                            // Premium gradient background card
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(
+                                    LinearGradient(
+                                        colors: [
+                                            DesignColors.accent.opacity(0.08),
+                                            DesignColors.accent.opacity(0.03),
+                                            Color.clear
+                                        ],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
                                 )
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(DesignColors.accent.opacity(0.15), lineWidth: 1)
+                                )
+                                .shadow(color: DesignColors.accent.opacity(0.08), radius: 4, x: 0, y: 2)
                             
-                            Text(tool.label)
-                                .font(DesignTypography.bodyFont(weight: .medium))
-                                .foregroundColor(DesignColors.foreground)
-                            
-                            Spacer()
-                            
-                            Image(systemName: "chevron.right")
+                            // Decorative icon in top right (subtle)
+                            Image(systemName: getDecorativeIcon(for: tool.path))
                                 .font(.system(size: 16))
-                                .foregroundColor(DesignColors.mutedForeground)
+                                .foregroundColor(DesignColors.accent.opacity(0.2))
+                                .padding(.top, 14)
+                                .padding(.trailing, 14)
+                            
+                            HStack(spacing: 16) {
+                                // Enhanced icon with gradient background
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: 10)
+                                        .fill(
+                                            LinearGradient(
+                                                colors: [
+                                                    DesignColors.accent.opacity(0.2),
+                                                    DesignColors.accent.opacity(0.1)
+                                                ],
+                                                startPoint: .topLeading,
+                                                endPoint: .bottomTrailing
+                                            )
+                                        )
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 10)
+                                                .stroke(DesignColors.accent.opacity(0.3), lineWidth: 1)
+                                        )
+                                    
+                                    Image(systemName: tool.iconName)
+                                        .font(.system(size: 20, weight: .medium))
+                                        .foregroundColor(DesignColors.accent)
+                                }
+                                .frame(width: 48, height: 48)
+                                
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(tool.label)
+                                        .font(DesignTypography.bodyFont(weight: .semibold))
+                                        .foregroundColor(DesignColors.foreground)
+                                    
+                                    Text(getSubtitle(for: tool.path))
+                                        .font(DesignTypography.footnoteFont())
+                                        .foregroundColor(DesignColors.mutedForeground.opacity(0.8))
+                                }
+                                
+                                Spacer()
+                                
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundColor(DesignColors.accent.opacity(0.6))
+                            }
+                            .padding(16)
                         }
-                        .padding(12)
                     }
+                    .buttonStyle(PlainButtonStyle())
                 }
             }
+        }
+    }
+    
+    // Helper function to get decorative icon for each tool
+    private func getDecorativeIcon(for path: String) -> String {
+        switch path {
+        case "/profile/settings/wallet":
+            return "sparkles"
+        case "/profile/settings":
+            return "gearshape.2"
+        case "/profile/settings/privacy":
+            return "lock.shield"
+        default:
+            return "circle"
+        }
+    }
+    
+    // Helper function to get subtitle for each tool
+    private func getSubtitle(for path: String) -> String {
+        switch path {
+        case "/profile/settings/wallet":
+            return "Manage subscription and credits"
+        case "/profile/settings":
+            return "Notifications, language, and more"
+        case "/profile/settings/privacy":
+            return "Privacy policy and terms of use"
+        default:
+            return ""
         }
     }
 }

@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-worker
+  namespace: aroti
+  labels:
+    app: backend-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend-worker
+  template:
+    metadata:
+      labels:
+        app: backend-worker
+    spec:
+      containers:
+      - name: worker
+        image: aroti/backend-api:latest
+        imagePullPolicy: IfNotPresent
+        command:
+        - python
+        - -m
+        - app.workflows.worker
+        envFrom:
+        - configMapRef:
+            name: backend-config
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: DATABASE_URL
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"

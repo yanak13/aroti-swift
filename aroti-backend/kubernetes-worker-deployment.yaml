@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aroti-backend-worker
+  labels:
+    app: aroti-backend-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aroti-backend-worker
+  template:
+    metadata:
+      labels:
+        app: aroti-backend-worker
+    spec:
+      containers:
+      - name: worker
+        image: aroti/backend-api:latest
+        command: ["python", "-m", "app.workflows.worker"]
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: aroti-backend-secrets
+              key: database-url
+        - name: REDIS_HOST
+          value: "redis.redis.svc.cluster.local"
+        - name: REDIS_PORT
+          value: "6379"
+        - name: TEMPORAL_HOST
+          value: "temporal-frontend.temporal.svc.cluster.local"
+        - name: TEMPORAL_PORT
+          value: "7233"
+        - name: TEMPORAL_NAMESPACE
+          value: "default"
+        - name: KEYCLOAK_ISSUER_URI
+          valueFrom:
+            configMapKeyRef:
+              name: aroti-backend-config
+              key: keycloak-issuer-uri
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          exec:
+            command:
+            - python
+            - -c
+            - "import sys; sys.exit(0)"
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - python
+            - -c
+            - "import sys; sys.exit(0)"
+          initialDelaySeconds: 10
+          periodSeconds: 5

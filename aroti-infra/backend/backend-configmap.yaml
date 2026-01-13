@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+  namespace: aroti
+data:
+  REDIS_HOST: redis
+  REDIS_PORT: "6379"
+  REDIS_DB: "0"
+  KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/aroti
+  KEYCLOAK_AUDIENCE: aroti-app
+  API_PORT: "8888"
+  API_HOST: "0.0.0.0"
+  API_DEBUG: "false"
+  CORS_ORIGINS: "http://localhost:3000,com.aroti.app://"
+  TEMPORAL_HOST: temporal-frontend
+  TEMPORAL_PORT: "7233"
+  TEMPORAL_NAMESPACE: default
+  CACHE_TTL_SPECIALISTS: "1800"
+  CACHE_TTL_SPECIALIST_DETAIL: "3600"

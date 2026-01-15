@@ -333,7 +333,7 @@ class AccessControlService {
         if isPremium {
             // Premium users always earn points
             if earnedPoints {
-                PointsService.shared.earnPoints(event: "learning_lesson", points: 1)
+                _ = PointsService.shared.earnPoints(event: "learning_lesson", points: 1)
             }
             return true
         }
@@ -359,7 +359,7 @@ class AccessControlService {
             } else {
                 UserDefaults.standard.set(withPoints + 1, forKey: learningLessonsWithPointsKey)
             }
-            PointsService.shared.earnPoints(event: "learning_lesson", points: 1)
+            _ = PointsService.shared.earnPoints(event: "learning_lesson", points: 1)
             return true
         }
         

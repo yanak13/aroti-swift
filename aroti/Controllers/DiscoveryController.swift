@@ -11,21 +11,21 @@ import SwiftUI
 // Note: These models would need to be defined based on your API structure
 // For now, using placeholder types
 
-struct Article: Codable, Identifiable {
+struct DiscoveryArticle: Codable, Identifiable {
     let id: String
     let title: String
     let content: String
     let imageUrl: String?
 }
 
-struct Course: Codable, Identifiable {
+struct DiscoveryCourse: Codable, Identifiable {
     let id: String
     let title: String
     let description: String
     let imageUrl: String?
 }
 
-struct Practice: Codable, Identifiable {
+struct DiscoveryPractice: Codable, Identifiable {
     let id: String
     let title: String
     let description: String
@@ -34,9 +34,9 @@ struct Practice: Codable, Identifiable {
 
 @MainActor
 class DiscoveryController: BaseController {
-    @Published var articles: [Article] = []
-    @Published var courses: [Course] = []
-    @Published var practices: [Practice] = []
+    @Published var articles: [DiscoveryArticle] = []
+    @Published var courses: [DiscoveryCourse] = []
+    @Published var practices: [DiscoveryPractice] = []
     
     // MARK: - Articles
     
@@ -45,15 +45,15 @@ class DiscoveryController: BaseController {
             let endpoint = DiscoveryEndpoint.getArticles
             let key = cacheKey(for: endpoint)
             
-            if !forceRefresh, let cached: [Article] = getCached(key, as: [Article].self) {
+            if !forceRefresh, let cached: [DiscoveryArticle] = getCached(key, as: [DiscoveryArticle].self) {
                 articles = cached
                 loadingState = .loaded
                 return
             }
             
-            let response: [Article] = try await requestWithCache(
+            let response: [DiscoveryArticle] = try await requestWithCache(
                 endpoint,
-                responseType: [Article].self,
+                responseType: [DiscoveryArticle].self,
                 useCache: true,
                 cacheTTL: 1800 // 30 minutes
             )
@@ -64,12 +64,12 @@ class DiscoveryController: BaseController {
         }
     }
     
-    func fetchArticle(id: String) async -> Article? {
+    func fetchArticle(id: String) async -> DiscoveryArticle? {
         do {
             let endpoint = DiscoveryEndpoint.getArticle(id: id)
-            let article: Article = try await requestWithCache(
+            let article: DiscoveryArticle = try await requestWithCache(
                 endpoint,
-                responseType: Article.self,
+                responseType: DiscoveryArticle.self,
                 useCache: true,
                 cacheTTL: 3600 // 1 hour
             )
@@ -87,15 +87,15 @@ class DiscoveryController: BaseController {
             let endpoint = DiscoveryEndpoint.getCourses
             let key = cacheKey(for: endpoint)
             
-            if !forceRefresh, let cached: [Course] = getCached(key, as: [Course].self) {
+            if !forceRefresh, let cached: [DiscoveryCourse] = getCached(key, as: [DiscoveryCourse].self) {
                 courses = cached
                 loadingState = .loaded
                 return
             }
             
-            let response: [Course] = try await requestWithCache(
+            let response: [DiscoveryCourse] = try await requestWithCache(
                 endpoint,
-                responseType: [Course].self,
+                responseType: [DiscoveryCourse].self,
                 useCache: true,
                 cacheTTL: 1800 // 30 minutes
             )
@@ -106,12 +106,12 @@ class DiscoveryController: BaseController {
         }
     }
     
-    func fetchCourse(id: String) async -> Course? {
+    func fetchCourse(id: String) async -> DiscoveryCourse? {
         do {
             let endpoint = DiscoveryEndpoint.getCourse(id: id)
-            let course: Course = try await requestWithCache(
+            let course: DiscoveryCourse = try await requestWithCache(
                 endpoint,
-                responseType: Course.self,
+                responseType: DiscoveryCourse.self,
                 useCache: true,
                 cacheTTL: 3600 // 1 hour
             )
@@ -129,15 +129,15 @@ class DiscoveryController: BaseController {
             let endpoint = DiscoveryEndpoint.getPractices
             let key = cacheKey(for: endpoint)
             
-            if !forceRefresh, let cached: [Practice] = getCached(key, as: [Practice].self) {
+            if !forceRefresh, let cached: [DiscoveryPractice] = getCached(key, as: [DiscoveryPractice].self) {
                 practices = cached
                 loadingState = .loaded
                 return
             }
             
-            let response: [Practice] = try await requestWithCache(
+            let response: [DiscoveryPractice] = try await requestWithCache(
                 endpoint,
-                responseType: [Practice].self,
+                responseType: [DiscoveryPractice].self,
                 useCache: true,
                 cacheTTL: 1800 // 30 minutes
             )
@@ -148,12 +148,12 @@ class DiscoveryController: BaseController {
         }
     }
     
-    func fetchPractice(id: String) async -> Practice? {
+    func fetchPractice(id: String) async -> DiscoveryPractice? {
         do {
             let endpoint = DiscoveryEndpoint.getPractice(id: id)
-            let practice: Practice = try await requestWithCache(
+            let practice: DiscoveryPractice = try await requestWithCache(
                 endpoint,
-                responseType: Practice.self,
+                responseType: DiscoveryPractice.self,
                 useCache: true,
                 cacheTTL: 3600 // 1 hour
             )

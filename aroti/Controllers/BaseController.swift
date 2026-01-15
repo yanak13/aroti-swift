@@ -52,7 +52,7 @@ class BaseController: ObservableObject {
     
     // MARK: - Request with Cache
     
-    func requestWithCache<T: Decodable>(
+    func requestWithCache<T: Codable>(
         _ endpoint: APIEndpoint,
         responseType: T.Type,
         useCache: Bool = true,

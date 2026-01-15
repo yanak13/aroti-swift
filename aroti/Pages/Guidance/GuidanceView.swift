@@ -18,7 +18,7 @@ private enum GuidanceScreen {
     case points
 }
 
-private struct GuidanceMessage: Identifiable, Equatable {
+private struct ChatMessage: Identifiable, Equatable {
     enum Role {
         case user
         case assistant
@@ -48,7 +48,7 @@ struct GuidanceView: View {
     @State private var currentScreen: GuidanceScreen = .chat
     @State private var userPoints: Int = 1240
     
-    @State private var messages: [GuidanceMessage] = []
+    @State private var messages: [ChatMessage] = []
     @State private var inputText: String = ""
     @State private var isTyping: Bool = false
     
@@ -256,7 +256,7 @@ private extension GuidanceView {
     func ensureWelcomeMessage() {
         guard messages.isEmpty else { return }
         messages = [
-            GuidanceMessage(
+            ChatMessage(
                 role: .assistant,
                 content: ArotiGuidance.welcomeMessage,
                 timestamp: Date()
@@ -269,7 +269,7 @@ private extension GuidanceView {
         isTyping = false
         currentChatId = UUID()
         messages = [
-            GuidanceMessage(
+            ChatMessage(
                 role: .assistant,
                 content: ArotiGuidance.welcomeMessage,
                 timestamp: Date()
@@ -280,7 +280,7 @@ private extension GuidanceView {
     func startNewChatWithStarter(_ starter: String) {
         currentChatId = UUID()
         messages = [
-            GuidanceMessage(
+            ChatMessage(
                 role: .assistant,
                 content: ArotiGuidance.welcomeMessage,
                 timestamp: Date()
@@ -297,7 +297,7 @@ private extension GuidanceView {
     func startNewChatFreeTopic() {
         currentChatId = UUID()
         messages = [
-            GuidanceMessage(
+            ChatMessage(
                 role: .assistant,
                 content: ArotiGuidance.welcomeMessage,
                 timestamp: Date()
@@ -358,7 +358,7 @@ private extension GuidanceView {
     }
     
     private func actuallySendMessage(_ text: String) {
-        let userMessage = GuidanceMessage(role: .user, content: text, timestamp: Date())
+        let userMessage = ChatMessage(role: .user, content: text, timestamp: Date())
         messages.append(userMessage)
         inputText = ""
         isTyping = true
@@ -370,7 +370,7 @@ private extension GuidanceView {
         updatePointsBalance()
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            let response = GuidanceMessage(
+            let response = ChatMessage(
                 role: .assistant,
                 content: "I understand. Let's explore this further together. Can you share a little more about how this feels for you?",
                 timestamp: Date()
@@ -388,7 +388,7 @@ private extension GuidanceView {
 
 // MARK: - Chat Screen
 private struct GuidanceChatScreen: View {
-    let messages: [GuidanceMessage]
+    let messages: [ChatMessage]
     @Binding var inputText: String
     let isTyping: Bool
     @Binding var scrollOffset: CGFloat
@@ -513,7 +513,7 @@ private struct GuidanceChatScreen: View {
 
 // MARK: - Bubbles
 private struct GuidanceBubble: View {
-    let message: GuidanceMessage
+    let message: ChatMessage
     let isWelcomeMessage: Bool
     let onDisclaimer: () -> Void
     let onShowToast: (String) -> Void

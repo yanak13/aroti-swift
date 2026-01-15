@@ -2,27 +2,27 @@ name: Backend Build and Deploy
 
 on:
   push:
-    branches:
-      - main
+    branches: [main, master]
     paths:
       - 'aroti-backend/**'
   pull_request:
-    branches:
-      - main
+    branches: [main, master]
     paths:
       - 'aroti-backend/**'
 
 jobs:
   test:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./aroti-backend
     
     services:
       postgres:
         image: postgres:15
         env:
+          POSTGRES_PASSWORD: test_password
           POSTGRES_DB: aroti_test
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -45,29 +45,33 @@ jobs:
       - uses: actions/checkout@v4
       
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
       
       - name: Install dependencies
-        working-directory: ./aroti-backend
         run: |
-          python -m pip install --upgrade pip
           pip install -r requirements.txt
       
       - name: Run tests
-        working-directory: ./aroti-backend
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/aroti_test
+          DATABASE_URL: postgresql://postgres:test_password@localhost:5432/aroti_test
           REDIS_HOST: localhost
           KEYCLOAK_ISSUER_URI: http://localhost:8080/realms/aroti
+          APP_ENV: test
         run: |
-          pytest
-  
+          pytest --cov=app --cov-report=xml
+      
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./aroti-backend/coverage.xml
+          flags: backend
+
   build:
     needs: test
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
     
     steps:
       - uses: actions/checkout@v4
@@ -81,16 +85,13 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
       
-      - name: Build and push Docker image
-        working-directory: ./aroti-backend
-        run: |
-          docker build -t aroti/backend-api:latest .
-          docker push aroti/backend-api:latest
-      
-      - name: Deploy to Kubernetes
-        if: github.ref == 'refs/heads/main'
-        run: |
-          echo "Deployment to Kubernetes would happen here"
-          echo "kubectl set image deployment/aroti-backend api=aroti/backend-api:latest"
-          # kubectl set image deployment/aroti-backend api=aroti/backend-api:latest
-          # kubectl rollout status deployment/aroti-backend
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: ./aroti-backend
+          push: true
+          tags: |
+            aroti/backend-api:latest
+            aroti/backend-api:${{ github.sha }}
+          cache-from: type=registry,ref=aroti/backend-api:buildcache
+          cache-to: type=registry,ref=aroti/backend-api:buildcache,mode=max

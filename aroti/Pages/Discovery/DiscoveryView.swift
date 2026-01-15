@@ -28,7 +28,7 @@ struct DiscoveryView: View {
     var body: some View {
         NavigationStack {
             GeometryReader { geometry in
-                let safeAreaTop = geometry.safeAreaInsets.top
+                let _ = geometry.safeAreaInsets.top
                 
                 ZStack(alignment: .bottom) {
                     CelestialBackground()

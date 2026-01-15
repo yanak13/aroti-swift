@@ -2,84 +2,128 @@
 //  LoginView.swift
 //  Aroti
 //
-//  Login view with Keycloak OAuth integration
+//  Login screen with Keycloak authentication
 //
 
 import SwiftUI
 
 struct LoginView: View {
     @StateObject private var authController = AuthController.shared
-    @State private var isLoading = false
-    @State private var errorMessage: String?
+    @State private var showError = false
+    @State private var isMockModeEnabled = MockModeService.shared.isEnabled
     
     var body: some View {
-        VStack(spacing: 24) {
-            // App logo/header
+        VStack(spacing: 30) {
+            Spacer()
+            
+            // App Logo/Title
             VStack(spacing: 16) {
                 Image(systemName: "moon.stars.fill")
-                    .font(.system(size: 64))
+                    .font(.system(size: 80))
                     .foregroundColor(.purple)
                 
                 Text("Aroti")
                     .font(.largeTitle)
                     .fontWeight(.bold)
                 
-                Text("Your spiritual journey begins here")
+                Text("Your journey to inner wisdom")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             }
-            .padding(.top, 60)
             
             Spacer()
             
-            // Sign in button
+            // Login Button
             Button(action: {
                 Task {
-                    await signIn()
+                    await authController.login()
+                    if authController.error != nil {
+                        showError = true
+                    }
                 }
             }) {
                 HStack {
-                    if isLoading {
+                    if authController.isLoading {
                         ProgressView()
                             .progressViewStyle(CircularProgressViewStyle(tint: .white))
                     } else {
+                        Image(systemName: "person.circle.fill")
                         Text("Sign in with Keycloak")
-                            .fontWeight(.semibold)
                     }
                 }
                 .frame(maxWidth: .infinity)
                 .padding()
-                .background(isLoading ? Color.gray : Color.purple)
+                .background(Color.purple)
                 .foregroundColor(.white)
                 .cornerRadius(12)
             }
-            .disabled(isLoading)
-            .padding(.horizontal, 32)
+            .disabled(authController.isLoading)
+            .padding(.horizontal, 40)
             
-            // Error message
-            if let errorMessage = errorMessage {
-                Text(errorMessage)
+            // Skip Auth Button (Development/Testing)
+            Button(action: {
+                authController.skipAuth()
+            }) {
+                HStack {
+                    Image(systemName: "arrow.right.circle.fill")
+                    Text("Skip Authentication")
+                }
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(Color.gray.opacity(0.3))
+                .foregroundColor(.white)
+                .cornerRadius(12)
+            }
+            .padding(.horizontal, 40)
+            .padding(.top, 8)
+            
+            // Mock Mode Toggle (Development/Testing)
+            VStack(spacing: 8) {
+                HStack {
+                    Image(systemName: "testtube.2")
+                        .font(.system(size: 16))
+                        .foregroundColor(.white.opacity(0.8))
+                    Text("Mock Mode")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundColor(.white.opacity(0.9))
+                    Spacer()
+                    Toggle("", isOn: $isMockModeEnabled)
+                        .labelsHidden()
+                        .onChange(of: isMockModeEnabled) { _, newValue in
+                            MockModeService.shared.isEnabled = newValue
+                        }
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .background(Color.white.opacity(0.1))
+                .cornerRadius(12)
+                
+                Text("Use mock data for all features (Home, Specialists, etc.)")
+                    .font(.caption)
+                    .foregroundColor(.white.opacity(0.6))
+                    .multilineTextAlignment(.center)
+            }
+            .padding(.horizontal, 40)
+            .padding(.top, 8)
+            
+            if let error = authController.error {
+                Text(error.localizedDescription)
                     .font(.caption)
                     .foregroundColor(.red)
-                    .padding(.horizontal, 32)
+                    .padding(.horizontal, 40)
             }
             
             Spacer()
         }
-        .padding()
-    }
-    
-    private func signIn() async {
-        isLoading = true
-        errorMessage = nil
-        
-        do {
-            try await authController.signIn()
-        } catch {
-            errorMessage = error.localizedDescription
+        .alert("Authentication Error", isPresented: $showError) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(authController.error?.localizedDescription ?? "An error occurred during authentication")
         }
-        
-        isLoading = false
+        .onReceive(NotificationCenter.default.publisher(for: .mockModeChanged)) { _ in
+            isMockModeEnabled = MockModeService.shared.isEnabled
+        }
     }
 }
 

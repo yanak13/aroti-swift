@@ -11,6 +11,7 @@ struct HomeView: View {
     @Binding var selectedTab: TabItem
     @StateObject private var controller = HomeController()
     @State private var userPoints: Int = 0
+    @State private var isMockModeEnabled = MockModeService.shared.isEnabled
     
     private var userData: UserData {
         controller.userData
@@ -52,7 +53,7 @@ struct HomeView: View {
     var body: some View {
         NavigationStack {
             GeometryReader { geometry in
-                let safeAreaTop = geometry.safeAreaInsets.top
+                let _ = geometry.safeAreaInsets.top
             
             ZStack(alignment: .bottom) {
                 CelestialBackground()
@@ -70,6 +71,30 @@ struct HomeView: View {
                                     )
                             }
                             .frame(height: 0)
+                            
+                            // Mock Mode Indicator Banner
+                            if isMockModeEnabled {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "testtube.2")
+                                        .font(.system(size: 14, weight: .medium))
+                                    Text("Mock Mode Active - Showing test data")
+                                        .font(DesignTypography.caption1Font(weight: .medium))
+                                }
+                                .foregroundColor(ArotiColor.warningText)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 8)
+                                .background(
+                                    Capsule()
+                                        .fill(DesignColors.warning)
+                                        .overlay(
+                                            Capsule()
+                                                .stroke(DesignColors.warningBorder, lineWidth: 1)
+                                        )
+                                )
+                                .padding(.horizontal, DesignSpacing.sm)
+                                .padding(.top, 8)
+                            }
+                            
                             // Tarot Card Carousel Section
                             VStack(alignment: .leading, spacing: 8) {                                
                                 // 3D Carousel with shake support
@@ -426,6 +451,11 @@ struct HomeView: View {
                         reflectionSectionVisible = true
                     }
                 }
+                .onReceive(NotificationCenter.default.publisher(for: .mockModeChanged)) { _ in
+                    isMockModeEnabled = MockModeService.shared.isEnabled
+                    // Reload data when mock mode changes
+                    loadData()
+                }
                 .sheet(isPresented: $showTarotSheet) {
                     if let item = revealedCard,
                        let card = findTarotCard(for: item) {
@@ -469,9 +499,19 @@ struct HomeView: View {
     }
     
     private func loadData() {
-        // Load user data
-        if let loadedUserData = stateManager.loadUserData() {
-            userData = loadedUserData
+        // Check if mock mode is enabled
+        if MockModeService.shared.isEnabled {
+            // Use mock data
+            controller.userData = MockModeService.mockUserData
+            controller.dailyInsight = MockModeService.mockDailyInsight
+        } else {
+            // Load user data
+            if let loadedUserData = stateManager.loadUserData() {
+                controller.userData = loadedUserData
+            }
+            
+            // Generate daily insight
+            controller.dailyInsight = contentService.generateDailyInsight(userData: controller.userData)
         }
         
         // Check if we need to reset daily state
@@ -484,14 +524,11 @@ struct HomeView: View {
             hasRevealedToday = stateManager.hasFlippedCardToday()
         }
         
-        // Generate daily insight
-        dailyInsight = contentService.generateDailyInsight(userData: userData)
-        
         // Load tarot cards for carousel
         loadTarotCards()
         
         // If already revealed today, set the revealed card
-        if hasRevealedToday, let insight = dailyInsight, let todayCard = insight.tarotCard {
+        if hasRevealedToday, let insight = controller.dailyInsight, let todayCard = insight.tarotCard {
             revealedCard = carouselItems.first(where: { $0.title == todayCard.name })
         }
         

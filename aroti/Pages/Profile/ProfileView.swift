@@ -19,6 +19,8 @@ struct ProfileView: View {
     private var userLocation: String {
         controller.profile?.birthLocation ?? "San Francisco, CA"
     }
+    @State private var editingName: String = ""
+    @State private var editingLocation: String = ""
     @State private var profileAvatar: String = "specialist-1" // Image name
     @State private var userPoints: Int = 0
     
@@ -113,7 +115,7 @@ struct ProfileView: View {
     
     var body: some View {
         GeometryReader { geometry in
-            let safeAreaTop = geometry.safeAreaInsets.top
+            let _ = geometry.safeAreaInsets.top
             
             ZStack(alignment: .bottom) {
                 CelestialBackground()
@@ -215,16 +217,29 @@ struct ProfileView: View {
             .navigationBarHidden(true)
             .sheet(isPresented: $showEditProfile) {
                 EditProfileSheet(
-                    userName: $userName,
-                    userLocation: $userLocation,
+                    userName: $editingName,
+                    userLocation: $editingLocation,
                     onSave: { name, location in
-                        userName = name
-                        userLocation = location
+                        // Update profile via controller
+                        Task {
+                            do {
+                                _ = try await controller.updateProfile(name: name, location: location)
+                            } catch {
+                                // Error already handled in controller
+                            }
+                        }
                         // Clear identity profile cache and reload after birth data changes
                         IdentityProfileService.shared.clearCache()
                         loadBlueprint()
                     }
                 )
+            }
+            .onChange(of: showEditProfile) { _, isShowing in
+                if isShowing {
+                    // Initialize editing values when sheet appears
+                    editingName = userName
+                    editingLocation = userLocation
+                }
             }
             .sheet(isPresented: $showAstrologyModal) {
                 if let blueprint = userBlueprint {

@@ -74,6 +74,15 @@ struct BookingHistoryView: View {
                 }
             }
             .navigationBarHidden(true)
+            .task {
+                // Fetch data on appear
+                if controller.sessions.isEmpty {
+                    await controller.fetchSessions()
+                }
+                if controller.specialists.isEmpty {
+                    await controller.fetchSpecialists()
+                }
+            }
             .navigationDestination(for: BookingDestination.self) { destination in
                 switch destination {
                 case .specialist(let specialist):
@@ -339,15 +348,6 @@ struct BookingHistoryView: View {
         
         formatter.dateFormat = "MMM d"
         return formatter.string(from: date)
-    }
-    .task {
-        // Fetch data on appear
-        if controller.sessions.isEmpty {
-            await controller.fetchSessions()
-        }
-        if controller.specialists.isEmpty {
-            await controller.fetchSpecialists()
-        }
     }
 }
 

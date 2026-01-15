@@ -17,6 +17,13 @@ class BookingController: BaseController {
     // MARK: - Specialists
     
     func fetchSpecialists(forceRefresh: Bool = false) async {
+        // Check if mock mode is enabled
+        if MockModeService.shared.isEnabled {
+            specialists = MockModeService.mockSpecialists
+            loadingState = .loaded
+            return
+        }
+        
         do {
             let endpoint = BookingEndpoint.getSpecialists
             let key = cacheKey(for: endpoint)
@@ -43,6 +50,11 @@ class BookingController: BaseController {
     }
     
     func fetchSpecialist(id: String) async -> Specialist? {
+        // Check if mock mode is enabled
+        if MockModeService.shared.isEnabled {
+            return BookingDataService.shared.getSpecialist(by: id)
+        }
+        
         do {
             let endpoint = BookingEndpoint.getSpecialist(id: id)
             let specialist: Specialist = try await requestWithCache(
@@ -66,6 +78,13 @@ class BookingController: BaseController {
     // MARK: - Sessions
     
     func fetchSessions(forceRefresh: Bool = false) async {
+        // Check if mock mode is enabled
+        if MockModeService.shared.isEnabled {
+            sessions = MockModeService.mockSessions
+            loadingState = .loaded
+            return
+        }
+        
         do {
             let endpoint = BookingEndpoint.getSessions
             let key = cacheKey(for: endpoint)
@@ -167,6 +186,12 @@ class BookingController: BaseController {
     // MARK: - Reviews
     
     func fetchReviews(for specialistId: String, forceRefresh: Bool = false) async {
+        // Check if mock mode is enabled
+        if MockModeService.shared.isEnabled {
+            reviews[specialistId] = BookingDataService.shared.getReviews(for: specialistId)
+            return
+        }
+        
         do {
             let endpoint = BookingEndpoint.getReviews(specialistId: specialistId)
             let key = cacheKey(for: endpoint)
@@ -192,6 +217,10 @@ class BookingController: BaseController {
     }
     
     func getReviews(for specialistId: String) -> [Review] {
+        // Check if mock mode is enabled
+        if MockModeService.shared.isEnabled {
+            return BookingDataService.shared.getReviews(for: specialistId)
+        }
         return reviews[specialistId] ?? []
     }
 }

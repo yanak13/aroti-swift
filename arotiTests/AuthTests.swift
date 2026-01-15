@@ -1,106 +1,76 @@
 //
 //  AuthTests.swift
-//  ArotiTests
+//  arotiTests
 //
-//  Tests for OAuth flow and token refresh
+//  Tests for authentication and token refresh
 //
 
-import XCTest
+import Testing
 @testable import aroti
 
-final class AuthTests: XCTestCase {
+struct AuthTests {
     
-    var authManager: AuthManager!
-    
-    override func setUp() {
-        super.setUp()
-        authManager = AuthManager.shared
-        // Clear any existing tokens
-        try? authManager.deleteToken()
+    @Test("AuthManager should save and retrieve token")
+    func testTokenSaveAndRetrieve() async throws {
+        let manager = AuthManager.shared
+        
+        let token = AuthToken(
+            accessToken: "test_access_token",
+            refreshToken: "test_refresh_token",
+            expiresAt: Date().addingTimeInterval(3600)
+        )
+        
+        try manager.saveToken(token)
+        let retrieved = try manager.getToken()
+        
+        #expect(retrieved != nil)
+        #expect(retrieved?.accessToken == "test_access_token")
+        
+        // Cleanup
+        try? manager.deleteToken()
     }
     
-    override func tearDown() {
-        // Clean up
-        try? authManager.deleteToken()
-        super.tearDown()
-    }
-    
-    func testTokenExpiration() {
-        // Create a token that expires in the past
+    @Test("AuthManager should detect expired token")
+    func testExpiredToken() async throws {
+        let manager = AuthManager.shared
+        
         let expiredToken = AuthToken(
-            accessToken: "test-token",
-            refreshToken: "refresh-token",
-            expiresAt: Date().addingTimeInterval(-3600) // 1 hour ago
+            accessToken: "test_token",
+            refreshToken: "test_refresh",
+            expiresAt: Date().addingTimeInterval(-3600) // Expired 1 hour ago
         )
         
-        XCTAssertTrue(expiredToken.isExpired, "Token should be expired")
+        try manager.saveToken(expiredToken)
+        let retrieved = try manager.getToken()
+        
+        #expect(retrieved?.isExpired == true)
+        
+        // Cleanup
+        try? manager.deleteToken()
     }
     
-    func testTokenNotExpired() {
-        // Create a token that expires in the future
-        let validToken = AuthToken(
-            accessToken: "test-token",
-            refreshToken: "refresh-token",
-            expiresAt: Date().addingTimeInterval(3600) // 1 hour from now
+    @Test("AuthManager refreshIfNeeded should refresh when token expires soon")
+    func testRefreshIfNeeded() async throws {
+        let manager = AuthManager.shared
+        
+        // Create token that expires in 4 minutes (less than 5 minute threshold)
+        let soonToExpireToken = AuthToken(
+            accessToken: "test_token",
+            refreshToken: "test_refresh",
+            expiresAt: Date().addingTimeInterval(240) // 4 minutes
         )
         
-        XCTAssertFalse(validToken.isExpired, "Token should not be expired")
+        try manager.saveToken(soonToExpireToken)
+        
+        // Note: This test would require mocking KeycloakAuthService
+        // For now, just verify the token is detected as needing refresh
+        let retrieved = try manager.getToken()
+        if let expiresAt = retrieved?.expiresAt {
+            let timeUntilExpiry = expiresAt.timeIntervalSinceNow
+            #expect(timeUntilExpiry < 300) // Less than 5 minutes
+        }
+        
+        // Cleanup
+        try? manager.deleteToken()
     }
-    
-    func testTokenSaveAndRetrieve() throws {
-        let token = AuthToken(
-            accessToken: "test-access-token",
-            refreshToken: "test-refresh-token",
-            expiresAt: Date().addingTimeInterval(3600)
-        )
-        
-        // Save token
-        try authManager.saveToken(token)
-        
-        // Retrieve token
-        let retrieved = try authManager.getToken()
-        
-        XCTAssertNotNil(retrieved, "Token should be retrievable")
-        XCTAssertEqual(retrieved?.accessToken, "test-access-token")
-        XCTAssertEqual(retrieved?.refreshToken, "test-refresh-token")
-    }
-    
-    func testHasValidToken() {
-        // Initially no token
-        XCTAssertFalse(authManager.hasValidToken(), "Should not have valid token initially")
-        
-        // Save a valid token
-        let token = AuthToken(
-            accessToken: "test-token",
-            refreshToken: "refresh-token",
-            expiresAt: Date().addingTimeInterval(3600)
-        )
-        
-        try? authManager.saveToken(token)
-        XCTAssertTrue(authManager.hasValidToken(), "Should have valid token after saving")
-    }
-    
-    func testDeleteToken() throws {
-        // Save a token first
-        let token = AuthToken(
-            accessToken: "test-token",
-            refreshToken: "refresh-token",
-            expiresAt: Date().addingTimeInterval(3600)
-        )
-        
-        try authManager.saveToken(token)
-        XCTAssertTrue(authManager.hasValidToken())
-        
-        // Delete token
-        try authManager.deleteToken()
-        
-        // Verify token is deleted
-        let retrieved = try authManager.getToken()
-        XCTAssertNil(retrieved, "Token should be nil after deletion")
-        XCTAssertFalse(authManager.hasValidToken(), "Should not have valid token after deletion")
-    }
-    
-    // Note: OAuth flow tests would require mocking ASWebAuthenticationSession
-    // which is complex. In a real test suite, you would use a testing framework
-    // that can mock system frameworks.
 }

@@ -118,8 +118,7 @@ class AuthManager {
         }
         return token.accessToken
     }
-}
-
+    
     // MARK: - Token Refresh
     
     func refreshToken() async throws -> AuthToken {
@@ -146,7 +145,7 @@ class AuthManager {
         if let expiresAt = token.expiresAt {
             let timeUntilExpiry = expiresAt.timeIntervalSinceNow
             if timeUntilExpiry < 300 { // 5 minutes
-                try await refreshToken()
+                _ = try await refreshToken()
             }
         }
     }

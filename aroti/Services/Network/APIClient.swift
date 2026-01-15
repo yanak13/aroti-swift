@@ -17,12 +17,10 @@ class APIClient {
     
     init(
         baseURL: String = APIConfiguration.baseURL,
-        timeout: TimeInterval = APIConfiguration.defaultTimeout,
-        session: URLSession = URLSession.shared
+        timeout: TimeInterval = APIConfiguration.defaultTimeout
     ) {
         self.baseURL = baseURL
         self.timeout = timeout
-        self.session = session
         
         // Configure session
         let configuration = URLSessionConfiguration.default
@@ -105,7 +103,7 @@ class APIClient {
         } catch APIError.unauthorized {
             // Token might be expired, try refreshing
             do {
-                try await AuthManager.shared.refreshToken()
+                _ = try await AuthManager.shared.refreshToken()
                 // Retry original request with new token
                 return try await request(endpoint, responseType: responseType)
             } catch {

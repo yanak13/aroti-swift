@@ -17,6 +17,13 @@ class HomeController: BaseController {
     // MARK: - Daily Insights
     
     func fetchDailyInsights(forceRefresh: Bool = false) async {
+        // Check if mock mode is enabled
+        if MockModeService.shared.isEnabled {
+            dailyInsight = MockModeService.mockDailyInsight
+            loadingState = .loaded
+            return
+        }
+        
         do {
             let endpoint = HomeEndpoint.getDailyInsights
             let key = cacheKey(for: endpoint)
@@ -49,6 +56,13 @@ class HomeController: BaseController {
     // MARK: - User Data
     
     func fetchUserData(forceRefresh: Bool = false) async {
+        // Check if mock mode is enabled
+        if MockModeService.shared.isEnabled {
+            userData = MockModeService.mockUserData
+            loadingState = .loaded
+            return
+        }
+        
         do {
             let endpoint = HomeEndpoint.getUserData
             let key = cacheKey(for: endpoint)

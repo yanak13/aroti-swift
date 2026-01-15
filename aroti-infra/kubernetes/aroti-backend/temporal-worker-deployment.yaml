@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aroti-temporal-worker
+  namespace: aroti
+  labels:
+    app: aroti-temporal-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aroti-temporal-worker
+  template:
+    metadata:
+      labels:
+        app: aroti-temporal-worker
+    spec:
+      containers:
+        - name: worker
+          image: aroti/backend-api:latest
+          command: ["python", "-m", "app.workflows.worker"]
+          envFrom:
+            - configMapRef:
+                name: aroti-backend-config
+            - secretRef:
+                name: aroti-backend-secrets
+          resources:
+            limits:
+              cpu: 500m
+              memory: 512Mi
+            requests:
+              cpu: 200m
+              memory: 256Mi
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - "ps aux | grep '[p]ython.*worker' || exit 1"
+            initialDelaySeconds: 60
+            periodSeconds: 30

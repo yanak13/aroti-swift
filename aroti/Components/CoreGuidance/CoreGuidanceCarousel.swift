@@ -63,9 +63,9 @@ struct CoreGuidanceCarousel: View {
         .onAppear {
             loadCards()
         }
-        .onChange(of: showDetailSheet) { isPresented in
+        .onChange(of: showDetailSheet) { oldValue, newValue in
             // Refresh when sheet is dismissed to update "New" chip
-            if !isPresented {
+            if !newValue {
                 loadCards()
             }
         }

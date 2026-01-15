@@ -1,0 +1,47 @@
+# Aroti Swift Project Rules
+
+## Project Scope
+**CRITICAL: All work MUST be performed within the `~/aroti-swift/` directory and its subdirectories ONLY.**
+
+## Directory Structure
+The project consists of:
+- `aroti/` - iOS Swift application
+- `aroti-backend/` - FastAPI Python backend
+- `aroti-infra/` - Kubernetes infrastructure and deployment configs
+- `.github/` - GitHub Actions workflows
+- `aroti.xcodeproj/` - Xcode project files
+- `arotiTests/` - iOS unit tests
+- `arotiUITests/` - iOS UI tests
+
+## Rules
+
+1. **Never create files or directories outside `~/aroti-swift/`**
+   - Do NOT create files in `~/` (except `~/aroti-swift/`), or any parent directory
+   - All new files must be created within the project root or its subdirectories
+
+2. **Path Validation**
+   - Always use paths starting with `~/aroti-swift/` or relative paths from the project root
+   - When using relative paths, ensure they resolve within the project root
+   - Verify paths before creating, reading, or modifying files
+
+3. **Backend Work**
+   - All backend code goes in `aroti-backend/`
+   - All infrastructure configs go in `aroti-infra/`
+   - Never create `aroti-backend` or `aroti-infra` outside the project root
+
+4. **GitHub Workflows**
+   - All workflows must be in `.github/workflows/` within the project root
+   - Never create workflows in `~/.github/` or other locations
+
+5. **When in Doubt**
+   - If a path doesn't start with `~/aroti-swift/` or is relative to the project root, it's wrong
+   - Always verify the target directory is within the project before proceeding
+   - Ask for clarification if the intended location is unclear
+
+## Project Context
+This is a complete iOS application project with:
+- SwiftUI frontend (iOS app)
+- FastAPI backend (Python)
+- Kubernetes infrastructure
+- CI/CD pipelines
+- All components must remain within the single project directory structure

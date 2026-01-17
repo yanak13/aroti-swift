@@ -19,10 +19,15 @@ struct DiscoveryView: View {
     @State private var selectedCategory: String? = nil
     @State private var points: Int = 120
     @State private var scrollOffset: CGFloat = 0
+    @State private var hasUnreadNotifications: Bool = false
     
     private func updatePoints() {
         let balance = PointsService.shared.getBalance()
         points = balance.totalPoints
+    }
+    
+    private func updateNotificationState() {
+        hasUnreadNotifications = NotificationService.shared.hasUnread()
     }
     
     var body: some View {
@@ -102,12 +107,13 @@ struct DiscoveryView: View {
                                 .buttonStyle(PlainButtonStyle())
                                 
                                 // Notification Bell - premium styling
-                                HeaderBadge(
-                                    iconName: "bell",
-                                    action: {
-                                        // Handle notification tap
-                                    }
-                                )
+                                NavigationLink(destination: NotificationsPage()) {
+                                    HeaderBadge(
+                                        iconName: "bell",
+                                        showUnreadDot: hasUnreadNotifications
+                                    )
+                                }
+                                .buttonStyle(PlainButtonStyle())
                             }
                         }
                     }
@@ -126,6 +132,10 @@ struct DiscoveryView: View {
         }
         .onAppear {
             updatePoints()
+            updateNotificationState()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NotificationService.notificationsUpdated)) { _ in
+            updateNotificationState()
         }
     }
 }

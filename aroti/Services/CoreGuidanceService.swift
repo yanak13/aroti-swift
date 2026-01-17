@@ -31,6 +31,11 @@ class CoreGuidanceService {
         return state.cards.first { $0.type == type }
     }
     
+    /// Get a specific card by ID
+    func getCard(id: String) -> CoreGuidanceCard? {
+        return state.cards.first { $0.id == id }
+    }
+    
     /// Check if a card has new content (hasn't been opened since last update)
     func hasNewContent(cardId: String) -> Bool {
         guard let card = state.cards.first(where: { $0.id == cardId }) else {

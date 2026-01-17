@@ -60,6 +60,7 @@ struct GuidanceView: View {
     @State private var showToast = false
     @State private var toastMessage = ""
     @State private var scrollOffset: CGFloat = 0
+    @State private var hasUnreadNotifications: Bool = false
     
     var body: some View {
         NavigationStack {
@@ -94,6 +95,7 @@ struct GuidanceView: View {
         .onAppear {
             ensureWelcomeMessage()
             updatePointsBalance()
+            updateNotificationState()
             
             // Testing helpers - refill free messages and add points
             #if DEBUG
@@ -101,6 +103,9 @@ struct GuidanceView: View {
             PointsService.shared.addPointsForTesting(1000)
             updatePointsBalance()
             #endif
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NotificationService.notificationsUpdated)) { _ in
+            updateNotificationState()
         }
         .sheet(isPresented: $showPointsSpendModal) {
             let balance = PointsService.shared.getBalance()
@@ -167,12 +172,13 @@ private extension GuidanceView {
                     .buttonStyle(PlainButtonStyle())
                     
                     // Notification Bell - premium styling
-                    HeaderBadge(
-                        iconName: "bell",
-                        action: {
-                            // Handle notification tap
-                        }
-                    )
+                    NavigationLink(destination: NotificationsPage()) {
+                        HeaderBadge(
+                            iconName: "bell",
+                            showUnreadDot: hasUnreadNotifications
+                        )
+                    }
+                    .buttonStyle(PlainButtonStyle())
                 }
             }
         case .overview:
@@ -383,6 +389,10 @@ private extension GuidanceView {
     private func updatePointsBalance() {
         let balance = PointsService.shared.getBalance()
         userPoints = balance.totalPoints
+    }
+    
+    private func updateNotificationState() {
+        hasUnreadNotifications = NotificationService.shared.hasUnread()
     }
 }
 

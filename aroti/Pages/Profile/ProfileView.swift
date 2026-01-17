@@ -73,6 +73,7 @@ struct ProfileView: View {
     @State private var showDeleteAccountSheet = false
     @State private var showContactSupportSheet = false
     @State private var scrollOffset: CGFloat = 0
+    @State private var hasUnreadNotifications: Bool = false
     
     // Premium status
     private var isPremium: Bool {
@@ -111,6 +112,10 @@ struct ProfileView: View {
     private func updatePoints() {
         let balance = PointsService.shared.getBalance()
         userPoints = balance.totalPoints
+    }
+    
+    private func updateNotificationState() {
+        hasUnreadNotifications = NotificationService.shared.hasUnread()
     }
     
     var body: some View {
@@ -195,12 +200,13 @@ struct ProfileView: View {
                             .buttonStyle(PlainButtonStyle())
                             
                             // Notification Bell - premium styling
-                            HeaderBadge(
-                                iconName: "bell",
-                                action: {
-                                    // Handle notification tap
-                                }
-                            )
+                            NavigationLink(destination: NotificationsPage()) {
+                                HeaderBadge(
+                                    iconName: "bell",
+                                    showUnreadDot: hasUnreadNotifications
+                                )
+                            }
+                            .buttonStyle(PlainButtonStyle())
                         }
                     }
                 }
@@ -262,6 +268,10 @@ struct ProfileView: View {
             .onAppear {
                 loadBlueprint()
                 updatePoints()
+                updateNotificationState()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: NotificationService.notificationsUpdated)) { _ in
+                updateNotificationState()
             }
             .sheet(isPresented: $showPaywall) {
                 if let context = paywallContext {

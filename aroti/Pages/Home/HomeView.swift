@@ -44,6 +44,7 @@ struct HomeView: View {
     @State private var carouselShakeOffset: CGFloat = 0
     @State private var breathingGlowOpacity: Double = 0.3
     @State private var scrollOffset: CGFloat = 0
+    @State private var hasUnreadNotifications: Bool = false
     
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     
@@ -404,12 +405,13 @@ struct HomeView: View {
                             .buttonStyle(PlainButtonStyle())
                             
                             // Notification Bell - premium styling
-                            HeaderBadge(
-                                iconName: "bell",
-                                action: {
-                                    // Handle notification tap
-                                }
-                            )
+                            NavigationLink(destination: NotificationsPage()) {
+                                HeaderBadge(
+                                    iconName: "bell",
+                                    showUnreadDot: hasUnreadNotifications
+                                )
+                            }
+                            .buttonStyle(PlainButtonStyle())
                         }
                     }
                 }
@@ -456,6 +458,9 @@ struct HomeView: View {
                     // Reload data when mock mode changes
                     loadData()
                 }
+                .onReceive(NotificationCenter.default.publisher(for: NotificationService.notificationsUpdated)) { _ in
+                    updateNotificationState()
+                }
                 .sheet(isPresented: $showTarotSheet) {
                     if let item = revealedCard,
                        let card = findTarotCard(for: item) {
@@ -498,7 +503,13 @@ struct HomeView: View {
         }
     }
     
+    private func updateNotificationState() {
+        hasUnreadNotifications = NotificationService.shared.hasUnread()
+    }
+    
     private func loadData() {
+        updateNotificationState()
+        
         // Check if mock mode is enabled
         if MockModeService.shared.isEnabled {
             // Use mock data

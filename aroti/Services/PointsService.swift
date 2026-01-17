@@ -107,6 +107,19 @@ class PointsService {
         }
     }
     
+    /// Set both balance and lifetime points for testing (useful for level testing)
+    func setBalanceAndLifetimeForTesting(balance: Int, lifetime: Int) {
+        UserDefaults.standard.set(balance, forKey: balanceKey)
+        UserDefaults.standard.set(lifetime, forKey: lifetimeKey)
+    }
+    
+    /// Reset to Level 5 for development testing
+    func resetToLevel5ForTesting() {
+        // Level 5 starts at 3,750, set to 5,000 for mid-level progress
+        UserDefaults.standard.set(5000, forKey: balanceKey)
+        UserDefaults.standard.set(5000, forKey: lifetimeKey)
+    }
+    
     private func loadTransactions() -> [PointsTransaction] {
         guard let data = UserDefaults.standard.data(forKey: transactionsKey),
               let transactions = try? JSONDecoder().decode([PointsTransaction].self, from: data) else {

@@ -19,13 +19,16 @@ class JourneyService {
     // MARK: - Level System
     
     private let levelThresholds: [(points: Int, name: String, reward: String?)] = [
-        (0, "Welcome", nil),
-        (100, "Seeker", "Unlock 1 spread"),
-        (300, "Explorer", "Unlock theme"),
-        (600, "Oracle", "Unlock weekly insight"),
-        (1000, "Master", "Unlock advanced routine"),
-        (2000, "Sage", "Unlock special spread"),
-        (3000, "Enlightened", "Unlock rare theme")
+        (0, "Seeker", nil),
+        (250, "Aware", nil),
+        (750, "Aligned", nil),
+        (1750, "Intuitive", nil),
+        (3750, "Ascended", nil),
+        (7250, "Awakened", nil),
+        (13250, "Enlightened", nil),
+        (23250, "Visionary", nil),
+        (39250, "Oracle", nil),
+        (64250, "Transcendent", nil)
     ]
     
     func getLevelInfo(lifetimePoints: Int) -> LevelInfo {

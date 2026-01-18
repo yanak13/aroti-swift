@@ -34,6 +34,7 @@ struct HomeView: View {
     @State private var showAffirmationSheet: Bool = false
     @State private var showReflectionSheet: Bool = false
     @State private var reflectionText: String = ""
+    @State private var dailyReflectionPrompt: String = ""
     
     // Animation states
     @State private var tarotSectionVisible: Bool = false
@@ -233,6 +234,8 @@ struct HomeView: View {
                                         let numerologyNumber = dailyInsight?.numerology.number
                                         let numerologyPreview = dailyInsight?.numerology.preview ?? "Loading today's number..."
                                         let affirmationText = dailyInsight?.affirmation ?? "Loading today's affirmation..."
+                                        let dayOfYear = contentService.getDayOfYear()
+                                        let affirmationSubtitle = contentService.generateAffirmationSubtitle(dayOfYear: dayOfYear)
                                         
                                         // Horoscope card
                                         Button(action: {
@@ -243,7 +246,8 @@ struct HomeView: View {
                                         }) {
                                             DailyPickCard(
                                                 title: "Horoscope",
-                                                subtitle: horoscopeSubtitle
+                                                subtitle: horoscopeSubtitle,
+                                                showsChevron: false
                                             ) {
                                                 // Zodiac symbol in square with glow
                                                 Text(getZodiacSymbol(userData.sunSign))
@@ -273,7 +277,8 @@ struct HomeView: View {
                                         }) {
                                             DailyPickCard(
                                                 title: "Numerology",
-                                                subtitle: numerologyPreview
+                                                subtitle: numerologyPreview,
+                                                showsChevron: false
                                             ) {
                                                 if let number = numerologyNumber {
                                                     Text("\(number)")
@@ -314,7 +319,8 @@ struct HomeView: View {
                                         }) {
                                             DailyPickCard(
                                                 title: "Affirmation",
-                                                subtitle: affirmationText
+                                                subtitle: affirmationSubtitle,
+                                                showsChevron: false
                                             ) {
                                                 Image(systemName: "quote.bubble")
                                                     .font(.system(size: 22))
@@ -347,37 +353,56 @@ struct HomeView: View {
                                 .frame(maxWidth: .infinity)
                                 .padding(.horizontal, DesignSpacing.sm)
                             
-                            // Your Reflection section (typography only, no card)
-                            Button(action: {
-                                showReflectionSheet = true
-                            }) {
-                                VStack(alignment: .leading, spacing: 8) {
-                                    // Title
+                            // Your Reflection section (card-based, therapeutic)
+                            VStack(alignment: .leading, spacing: 12) {
+                                // Section header
+                                VStack(alignment: .leading, spacing: 4) {
                                     Text("Your Reflection")
                                         .font(DesignTypography.headlineFont(weight: .medium))
-                                        .foregroundColor(DesignColors.foreground.opacity(0.9))
+                                        .foregroundColor(DesignColors.foreground)
                                     
-                                    // Subtitle - soft, emotional
-                                    Text("One thought. One feeling. Just for you.")
+                                    Text("A quiet moment to check in with yourself")
                                         .font(DesignTypography.footnoteFont())
-                                        .foregroundColor(DesignColors.mutedForeground.opacity(0.9))
-                                    
-                                    // Text CTA row
-                                    HStack(spacing: 6) {
-                                        Text(reflectionText.isEmpty ? "Write a reflection" : "Open journal")
-                                            .font(DesignTypography.footnoteFont(weight: .medium))
-                                            .foregroundColor(DesignColors.accent.opacity(0.8))
-                                        
-                                        Image(systemName: "chevron.right")
-                                            .font(.system(size: 11, weight: .medium))
-                                            .foregroundColor(DesignColors.accent.opacity(0.6))
-                                    }
-                                    .padding(.top, 4)
+                                        .foregroundColor(DesignColors.mutedForeground)
                                 }
-                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.horizontal, DesignSpacing.sm)
+                                
+                                // Reflection card
+                                Button(action: {
+                                    HapticFeedback.impactOccurred(.light)
+                                    showReflectionSheet = true
+                                }) {
+                                    BaseCard {
+                                        VStack(alignment: .leading, spacing: 16) {
+                                            // Optional subtle icon
+                                            HStack {
+                                                Spacer()
+                                                Text("✦")
+                                                    .font(.system(size: 18))
+                                                    .foregroundColor(DesignColors.accent.opacity(0.4))
+                                            }
+                                            
+                                            Spacer()
+                                            
+                                            // Daily prompt
+                                            Text(dailyReflectionPrompt)
+                                                .font(DesignTypography.bodyFont())
+                                                .foregroundColor(DesignColors.foreground.opacity(0.95))
+                                                .lineLimit(3)
+                                                .fixedSize(horizontal: false, vertical: true)
+                                            
+                                            // Gentle CTA (no arrow)
+                                            Text("Start reflection")
+                                                .font(DesignTypography.footnoteFont(weight: .medium))
+                                                .foregroundColor(DesignColors.accent.opacity(0.7))
+                                                .padding(.top, 4)
+                                        }
+                                        .frame(height: 200, alignment: .topLeading)
+                                    }
+                                }
+                                .buttonStyle(CardTapButtonStyle(cornerRadius: ArotiRadius.md))
                                 .padding(.horizontal, DesignSpacing.sm)
                             }
-                            .buttonStyle(PlainButtonStyle())
                             .opacity(reflectionSectionVisible ? 1 : 0)
                             .offset(y: reduceMotion ? 0 : (reflectionSectionVisible ? 0 : 8))
                         }
@@ -495,7 +520,7 @@ struct HomeView: View {
                     }
                 }
                 .sheet(isPresented: $showReflectionSheet) {
-                    ReflectionSheet(reflectionText: $reflectionText)
+                    ReflectionSheet(reflectionText: $reflectionText, prompt: dailyReflectionPrompt)
                         .presentationDetents([.medium, .large])
                         .presentationDragIndicator(.visible)
                 }
@@ -542,6 +567,10 @@ struct HomeView: View {
         if hasRevealedToday, let insight = controller.dailyInsight, let todayCard = insight.tarotCard {
             revealedCard = carouselItems.first(where: { $0.title == todayCard.name })
         }
+        
+        // Load daily reflection prompt
+        let dayOfYear = contentService.getDayOfYear()
+        dailyReflectionPrompt = contentService.generateReflectionPrompt(dayOfYear: dayOfYear)
         
         updatePoints()
     }

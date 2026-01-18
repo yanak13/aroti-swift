@@ -45,6 +45,39 @@ class DailyContentService {
         Ritual(id: "3", title: "Evening Gratitude", description: "End your day with gratitude and reflection.", duration: "4 min", type: "Gratitude", intention: "This ritual helps you reflect on your day and cultivate gratitude.", steps: ["Find a comfortable seated or lying position.", "Close your eyes and take five deep breaths.", "Think of three things from today you're grateful for.", "Allow yourself to feel the warmth of gratitude in your heart.", "Set an intention for restful sleep."], affirmation: "I am grateful for all the blessings in my life.", benefits: ["Boosts mood and happiness", "Shifts perspective positively", "Reduces negative thinking", "Improves sleep quality"])
     ]
     
+    // Affirmation subtitles (stabilizing anchor, not advice)
+    private let affirmationSubtitles: [String] = [
+        "A grounding focus aligned with today",
+        "A stabilizing thought for the day",
+        "Mental support tuned to today's context",
+        "A calm anchor for today's energy",
+        "A centering focus aligned with today",
+        "Psychological support for today's patterns",
+        "A steadying thought aligned with today",
+        "Mental grounding tuned to today",
+        "A stabilizing anchor for today",
+        "A calm focus aligned with today's context"
+    ]
+    
+    // Reflection prompts database (interpretive, resonance-based)
+    private let reflectionPrompts: [String] = [
+        "How does this resonate with your day so far?",
+        "Where do you notice this most today?",
+        "What connection do you feel to today's insights?",
+        "How does this align with what you're experiencing?",
+        "What feels most present in relation to this?",
+        "Where does this show up in your day?",
+        "How does this reflect what you're noticing?",
+        "What feels aligned with this today?",
+        "How does this connect to your experience?",
+        "Where do you see this pattern today?",
+        "What feels most relevant about this?",
+        "How does this relate to your day?",
+        "What stands out in connection to this?",
+        "How does this match what you're feeling?",
+        "What feels true about this for you today?"
+    ]
+    
     // Affirmations database
     private let affirmations: [String] = [
         "I am worthy of love and abundance",
@@ -59,20 +92,20 @@ class DailyContentService {
         "I am strong, resilient, and capable of overcoming any challenge"
     ]
     
-    // Horoscope previews by sign
+    // Horoscope previews by sign (observational, not directive)
     private let horoscopePreviews: [String: [String]] = [
-        "Aries": ["Energy is high today, take bold action", "Your fiery nature is heightened, channel it wisely", "New beginnings await, trust your instincts"],
-        "Taurus": ["Ground yourself in stability today", "Your practical nature guides you forward", "Focus on building lasting foundations"],
-        "Gemini": ["Communication flows easily today", "Your curious mind is active, explore new ideas", "Social connections bring joy"],
-        "Cancer": ["Emotional depth guides your day", "Nurture yourself and those you love", "Intuition is strong, trust your feelings"],
-        "Leo": ["Your creative energy shines bright", "Express yourself authentically today", "Confidence and charisma are your strengths"],
-        "Virgo": ["Attention to detail serves you well", "Organize and refine your approach", "Practical wisdom guides your decisions"],
-        "Libra": ["Balance and harmony are your focus", "Seek beauty and connection today", "Your diplomatic nature creates peace"],
-        "Scorpio": ["Transformation and depth call to you", "Your intensity is a source of power", "Trust in your ability to regenerate"],
-        "Sagittarius": ["Adventure and expansion await", "Your optimistic spirit lifts others", "Seek knowledge and new experiences"],
-        "Capricorn": ["Discipline and ambition drive you", "Build toward long-term goals", "Your determination creates success"],
-        "Aquarius": ["Innovation and freedom inspire you", "Your unique perspective is valuable", "Connect with like-minded souls"],
-        "Pisces": ["Intuitive nature heightened today", "Spiritual practices recommended", "Your compassion touches many hearts"]
+        "Aries": ["Emotional intensity feels heightened today", "Action-oriented energy is more present", "Impulse plays a stronger role today"],
+        "Taurus": ["Stability feels more grounding today", "Practical awareness is heightened", "Sensory perception feels more active"],
+        "Gemini": ["Communication patterns become more noticeable", "Mental curiosity feels more active", "Social awareness is heightened today"],
+        "Cancer": ["Emotional sensitivity is heightened today", "Intuition plays a stronger role today", "Inner awareness feels more active"],
+        "Leo": ["Creative expression feels more natural", "Confidence surfaces more easily", "Self-expression feels more aligned"],
+        "Virgo": ["Attention to detail becomes more noticeable", "Analytical thinking feels more active", "Order brings mental clarity today"],
+        "Libra": ["Balance feels more accessible today", "Harmony plays a stronger role", "Aesthetic awareness is heightened"],
+        "Scorpio": ["Emotional depth feels more present", "Transformation feels more accessible", "Intensity surfaces more easily"],
+        "Sagittarius": ["Expansive thinking feels more active", "Optimism plays a stronger role", "Exploration feels more natural"],
+        "Capricorn": ["Structure supports clear thinking", "Discipline feels more aligned", "Long-term focus becomes more noticeable"],
+        "Aquarius": ["Innovation feels more accessible", "Unique perspective plays a stronger role", "Independence surfaces more easily"],
+        "Pisces": ["Intuition plays a stronger role today", "Emotional sensitivity is heightened", "Spiritual awareness feels more active"]
     ]
     
     func getDayOfYear() -> Int {
@@ -98,18 +131,18 @@ class DailyContentService {
         let number = baseNumber == 0 ? 9 : baseNumber
         
         let previews: [Int: String] = [
-            1: "Leadership and new beginnings",
-            2: "Cooperation and harmony",
-            3: "Creativity and expression",
-            4: "Stability and foundation",
-            5: "Freedom and adventure",
-            6: "Love and responsibility",
-            7: "Spiritual focus and introspection",
-            8: "Material success and power",
-            9: "Completion and wisdom"
+            1: "Patterns of leadership become more noticeable",
+            2: "Cooperation patterns feel more accessible",
+            3: "Creative patterns surface more easily",
+            4: "Structure supports clear thinking",
+            5: "Change patterns become more noticeable",
+            6: "Care patterns feel more aligned",
+            7: "Introspection patterns play a stronger role",
+            8: "Material patterns become more noticeable",
+            9: "Completion patterns feel more accessible"
         ]
         
-        return NumerologyInsight(number: number, preview: previews[number] ?? "Energy is shifting")
+        return NumerologyInsight(number: number, preview: previews[number] ?? "Patterns become more noticeable today")
     }
     
     func generateRitual(dayOfYear: Int) -> Ritual {
@@ -120,6 +153,16 @@ class DailyContentService {
     func generateAffirmation(dayOfYear: Int) -> String {
         let index = dayOfYear % affirmations.count
         return affirmations[index]
+    }
+    
+    func generateAffirmationSubtitle(dayOfYear: Int) -> String {
+        let index = dayOfYear % affirmationSubtitles.count
+        return affirmationSubtitles[index]
+    }
+    
+    func generateReflectionPrompt(dayOfYear: Int) -> String {
+        let index = dayOfYear % reflectionPrompts.count
+        return reflectionPrompts[index]
     }
     
     func generateDailyInsight(userData: UserData) -> DailyInsight {

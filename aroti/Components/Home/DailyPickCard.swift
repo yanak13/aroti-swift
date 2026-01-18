@@ -54,15 +54,13 @@ struct DailyPickCard<Badge: View>: View {
                         .foregroundColor(DesignColors.foreground)
                         .lineLimit(2)
                     
-                    Text(subtitle)
-                        .font(.system(size: 14))
-                        .foregroundColor(DesignColors.mutedForeground)
-                        .lineLimit(2)
-                        .padding(.top, 4)
-                    
-                    if showsChevron {
-                        HStack {
-                            Spacer()
+                    HStack(alignment: .center, spacing: 8) {
+                        Text(subtitle)
+                            .font(.system(size: 14))
+                            .foregroundColor(DesignColors.mutedForeground)
+                            .lineLimit(2)
+                        
+                        if showsChevron {
                             Image(systemName: "chevron.right")
                                 .font(.system(size: 11, weight: .medium))
                                 .foregroundColor(DesignColors.mutedForeground.opacity(0.5))

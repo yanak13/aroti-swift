@@ -12,10 +12,12 @@ struct ReflectionSheet: View {
     @Binding var reflectionText: String
     @State private var currentText: String
     @State private var isSaving: Bool = false
+    let prompt: String
     
-    init(reflectionText: Binding<String>) {
+    init(reflectionText: Binding<String>, prompt: String = "") {
         self._reflectionText = reflectionText
         self._currentText = State(initialValue: reflectionText.wrappedValue)
+        self.prompt = prompt
     }
     
     private let maxLength = 500
@@ -32,7 +34,15 @@ struct ReflectionSheet: View {
                             .font(DesignTypography.headlineFont(weight: .semibold))
                             .foregroundColor(DesignColors.accent)
                         
-                        Text("Share your thoughts and feelings about your day or energy.")
+                        // Show daily prompt if available
+                        if !prompt.isEmpty {
+                            Text(prompt)
+                                .font(DesignTypography.bodyFont())
+                                .foregroundColor(DesignColors.foreground.opacity(0.9))
+                                .padding(.vertical, 4)
+                        }
+                        
+                        Text("Take a moment to reflect and write a few words.")
                             .font(DesignTypography.footnoteFont())
                             .foregroundColor(DesignColors.mutedForeground)
                         
@@ -73,7 +83,7 @@ struct ReflectionSheet: View {
                             
                             // Placeholder
                             if currentText.isEmpty {
-                                Text("What insights did you gain today? How are you feeling? What would you like to remember about this day?")
+                                Text(!prompt.isEmpty ? "Share your thoughts..." : "What insights did you gain today? How are you feeling? What would you like to remember about this day?")
                                     .font(DesignTypography.bodyFont())
                                     .foregroundColor(ArotiColor.inputPlaceholder)
                                     .padding(20)
@@ -177,6 +187,6 @@ struct ReflectionSheet: View {
 }
 
 #Preview {
-    ReflectionSheet(reflectionText: .constant(""))
+    ReflectionSheet(reflectionText: .constant(""), prompt: "What felt most present for you today?")
 }
 

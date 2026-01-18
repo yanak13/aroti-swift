@@ -35,7 +35,8 @@ struct NotificationsPage: View {
                                 icon: Image(systemName: "chevron.left"),
                                 label: "Back",
                                 action: { dismiss() }
-                            )
+                            ),
+                            alignment: .leading
                         )
                         .padding(.top, max(0, geometry.safeAreaInsets.top - 45))
                         

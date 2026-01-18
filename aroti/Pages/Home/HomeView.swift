@@ -239,10 +239,8 @@ struct HomeView: View {
                                         
                                         // Horoscope card
                                         Button(action: {
-                                            if hasInsight {
-                                                HapticFeedback.impactOccurred(.light)
-                                                showHoroscopeSheet = true
-                                            }
+                                            HapticFeedback.impactOccurred(.light)
+                                            showHoroscopeSheet = true
                                         }) {
                                             DailyPickCard(
                                                 title: "Horoscope",
@@ -264,16 +262,15 @@ struct HomeView: View {
                                                     )
                                             }
                                             .frame(width: geometry.size.width * 0.82)
+                                            .contentShape(Rectangle())
                                         }
                                         .buttonStyle(CardTapButtonStyle(cornerRadius: ArotiRadius.md))
                                         .disabled(!hasInsight)
                                         
                                         // Numerology card
                                         Button(action: {
-                                            if hasInsight {
-                                                HapticFeedback.impactOccurred(.light)
-                                                showNumerologySheet = true
-                                            }
+                                            HapticFeedback.impactOccurred(.light)
+                                            showNumerologySheet = true
                                         }) {
                                             DailyPickCard(
                                                 title: "Numerology",
@@ -306,16 +303,15 @@ struct HomeView: View {
                                                 }
                                             }
                                             .frame(width: geometry.size.width * 0.82)
+                                            .contentShape(Rectangle())
                                         }
                                         .buttonStyle(CardTapButtonStyle(cornerRadius: ArotiRadius.md))
                                         .disabled(!hasInsight)
                                         
                                         // Affirmation card
                                         Button(action: {
-                                            if hasInsight {
-                                                HapticFeedback.impactOccurred(.light)
-                                                showAffirmationSheet = true
-                                            }
+                                            HapticFeedback.impactOccurred(.light)
+                                            showAffirmationSheet = true
                                         }) {
                                             DailyPickCard(
                                                 title: "Affirmation",
@@ -336,6 +332,7 @@ struct HomeView: View {
                                                     )
                                             }
                                             .frame(width: geometry.size.width * 0.82)
+                                            .contentShape(Rectangle())
                                         }
                                         .buttonStyle(CardTapButtonStyle(cornerRadius: ArotiRadius.md))
                                         .disabled(!hasInsight)
@@ -514,7 +511,9 @@ struct HomeView: View {
                 }
                 .sheet(isPresented: $showAffirmationSheet) {
                     if let insight = dailyInsight {
-                        AffirmationDetailSheet(affirmation: insight.affirmation)
+                        let dayOfYear = contentService.getDayOfYear()
+                        let affirmationSubtitle = contentService.generateAffirmationSubtitle(dayOfYear: dayOfYear)
+                        AffirmationDetailSheet(affirmation: insight.affirmation, affirmationSubtitle: affirmationSubtitle)
                             .presentationDetents([.medium, .large])
                             .presentationDragIndicator(.visible)
                     }

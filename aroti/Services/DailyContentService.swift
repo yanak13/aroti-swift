@@ -165,6 +165,83 @@ class DailyContentService {
         return reflectionPrompts[index]
     }
     
+    // MARK: - Interpretation Generators
+    
+    func generateHoroscopeInterpretation(sign: String, dayOfYear: Int) -> String {
+        // Planetary rulers for each sign
+        let planetaryInfluences: [String: (planet: String, themes: String)] = [
+            "Aries": ("Mars", "action-oriented energy and assertiveness"),
+            "Taurus": ("Venus", "values, stability, and sensory awareness"),
+            "Gemini": ("Mercury", "communication patterns and mental curiosity"),
+            "Cancer": ("Moon", "emotional sensitivity and intuitive awareness"),
+            "Leo": ("Sun", "creative expression and confidence"),
+            "Virgo": ("Mercury", "analytical thinking and attention to detail"),
+            "Libra": ("Venus", "harmony, balance, and aesthetic awareness"),
+            "Scorpio": ("Pluto", "emotional depth and transformation"),
+            "Sagittarius": ("Jupiter", "expansive thinking and exploration"),
+            "Capricorn": ("Saturn", "structure, discipline, and long-term focus"),
+            "Aquarius": ("Uranus", "innovation and unique perspective"),
+            "Pisces": ("Neptune", "intuitive signals and spiritual awareness")
+        ]
+        
+        let influence = planetaryInfluences[sign] ?? ("Moon", "emotional awareness")
+        let variations = [
+            "With your \(sign) sign influenced by \(influence.planet)-related themes today, \(influence.themes) tend to come into clearer focus. In astrological frameworks, this influence is associated with greater sensitivity to inner signals, making intuitive impressions easier to notice as the day unfolds.",
+            "Today's astrological patterns align with your \(sign) nature, where \(influence.themes) play a stronger role. The \(influence.planet) influence suggests that these tendencies become more noticeable, offering a clearer lens through which to observe your daily experiences.",
+            "Your \(sign) profile resonates with today's \(influence.planet)-related energies, where \(influence.themes) surface more easily. This alignment tends to heighten awareness of these patterns, making them more accessible throughout the day."
+        ]
+        
+        let index = (dayOfYear + sign.hashValue) % variations.count
+        return variations[index]
+    }
+    
+    func generateNumerologyInterpretation(number: Int, dayOfYear: Int) -> String {
+        let patternDescriptions: [Int: String] = [
+            1: "leadership patterns and independent thinking",
+            2: "cooperation patterns and harmonious connections",
+            3: "creative patterns and expressive communication",
+            4: "structural patterns and practical foundations",
+            5: "change patterns and adaptive thinking",
+            6: "care patterns and nurturing connections",
+            7: "introspection patterns and analytical depth",
+            8: "material patterns and achievement focus",
+            9: "completion patterns and wisdom integration"
+        ]
+        
+        let pattern = patternDescriptions[number] ?? "numerological patterns"
+        let variations = [
+            "Today's date calculation aligns with number \(number), where \(pattern) become more noticeable. In numerological frameworks, this number reflects cognitive and structural tendencies that tend to surface more clearly, offering insight into how mental patterns organize throughout the day.",
+            "The number \(number) pattern emerges from today's date, suggesting that \(pattern) play a stronger role. This numerological influence tends to highlight how these cognitive patterns organize thinking and decision-making processes.",
+            "Number \(number) patterns align with today's calculation, where \(pattern) feel more accessible. This influence tends to make these structural tendencies more noticeable, providing a lens through which to observe mental organization."
+        ]
+        
+        let index = (dayOfYear + number) % variations.count
+        return variations[index]
+    }
+    
+    func generateAffirmationInterpretation(dayOfYear: Int) -> String {
+        let variations = [
+            "Today's affirmation aligns with patterns that support psychological grounding and mental stability. This statement serves as a stabilizing anchor, tuned to the day's contextual energies, offering a calm focus that helps maintain emotional balance throughout daily experiences.",
+            "The affirmation selected for today reflects themes that support inner stability and mental clarity. Positioned as a psychological anchor rather than directive advice, it provides a steadying thought aligned with today's energetic patterns, helping to maintain a sense of centered awareness.",
+            "This affirmation resonates with today's calculated profile, offering mental support tuned to the day's context. As a grounding focus, it serves as a calm anchor that helps stabilize emotional patterns and maintain psychological balance throughout daily activities."
+        ]
+        
+        let index = dayOfYear % variations.count
+        return variations[index]
+    }
+    
+    func generateTarotInterpretation(card: TarotCard, dayOfYear: Int) -> String {
+        let cardThemes = card.keywords.joined(separator: ", ")
+        let variations = [
+            "Today's card, \(card.name), reflects themes of \(cardThemes) that tend to surface more noticeably. In tarot frameworks, this card represents symbolic patterns that align with daily experiences, offering a lens through which to observe how these themes manifest throughout the day.",
+            "The \(card.name) card aligns with today's draw, where \(cardThemes) become more accessible. This symbolic influence suggests that these patterns tend to emerge more clearly, providing insight into how archetypal energies organize daily experiences.",
+            "Drawn for today, \(card.name) reflects \(cardThemes) that play a stronger role. This card's symbolic framework tends to highlight how these themes surface in daily patterns, offering a reflective lens through which to observe their manifestation."
+        ]
+        
+        let index = (dayOfYear + card.id.hashValue) % variations.count
+        return variations[index]
+    }
+    
     func generateDailyInsight(userData: UserData) -> DailyInsight {
         let dayOfYear = getDayOfYear()
         let tarotCard = generateTarotCard(dayOfYear: dayOfYear, userData: userData)

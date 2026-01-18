@@ -2,7 +2,7 @@
 //  TarotDetailSheet.swift
 //  Aroti
 //
-//  Tarot card explanation sheet
+//  Tarot card detail sheet - share-ready card format
 //
 
 import SwiftUI
@@ -11,121 +11,70 @@ struct TarotDetailSheet: View {
     @Environment(\.dismiss) var dismiss
     let card: TarotCard
     
+    private let contentService = DailyContentService.shared
+    
+    private var insightSentence: String {
+        // Derive observational insight sentence from card keywords
+        let primaryKeyword = card.keywords.first ?? "insight"
+        let variations: [String] = [
+            "\(primaryKeyword.capitalized) patterns become more noticeable today",
+            "\(primaryKeyword.capitalized) themes play a stronger role today",
+            "\(primaryKeyword.capitalized) feels more accessible today"
+        ]
+        let dayOfYear = contentService.getDayOfYear()
+        let index = (dayOfYear + card.id.hashValue) % variations.count
+        return variations[index]
+    }
+    
+    private var interpretation: String {
+        let dayOfYear = contentService.getDayOfYear()
+        return contentService.generateTarotInterpretation(card: card, dayOfYear: dayOfYear)
+    }
+    
     var body: some View {
         NavigationStack {
             ZStack {
                 CelestialBackground()
                 
                 ScrollView {
-                    VStack(spacing: 24) {
-                        // Header with tarot card preview and metadata
-                        VStack(spacing: 16) {
-                            // Card artwork
-                            ZStack {
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(
-                                        LinearGradient(
-                                            colors: [
-                                                Color(hue: 235/360, saturation: 0.30, brightness: 0.11),
-                                                Color(hue: 240/360, saturation: 0.28, brightness: 0.13)
-                                            ],
-                                            startPoint: .topLeading,
-                                            endPoint: .bottomTrailing
-                                        )
-                                    )
-                                    .frame(width: 180, height: 300)
-                                    .shadow(color: DesignColors.accent.opacity(0.35), radius: 24, x: 0, y: 18)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .stroke(DesignColors.accent.opacity(0.35), lineWidth: 1)
-                                    )
-                                
-                                if let imageName = card.imageName, !imageName.isEmpty {
-                                    Image(imageName)
-                                        .resizable()
-                                        .scaledToFill()
-                                        .frame(width: 180, height: 300)
-                                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                                } else {
-                                    VStack(spacing: 12) {
+                    VStack(spacing: 0) {
+                        // Insight Card (everything inside, no duplicate identity)
+                        InsightCard(
+                            systemIcon: AnyView(
+                                Group {
+                                    if let imageName = card.imageName, !imageName.isEmpty {
+                                        Image(imageName)
+                                            .resizable()
+                                            .scaledToFill()
+                                            .frame(width: 80, height: 120) // Increased to match larger icon containers
+                                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                                    } else {
+                                        // Fallback icon in square container matching onboarding style
                                         Image(systemName: "sparkles")
-                                            .font(.system(size: 36, weight: .semibold))
-                                            .foregroundColor(DesignColors.accent)
-                                        Text(card.name)
-                                            .font(DesignTypography.subheadFont(weight: .semibold))
-                                            .foregroundColor(DesignColors.foreground)
-                                    }
-                                    .frame(width: 160, height: 260)
-                                }
-                            }
-                            .frame(maxWidth: .infinity)
-                            
-                            Text(card.name)
-                                .font(DesignTypography.title2Font())
-                                .foregroundColor(DesignColors.foreground)
-                            
-                            // Keywords chips
-                            HStack(spacing: 8) {
-                                ForEach(card.keywords, id: \.self) { keyword in
-                                    Text(keyword)
-                                        .font(DesignTypography.caption1Font())
-                                        .foregroundColor(DesignColors.accent)
-                                        .padding(.horizontal, 12)
-                                        .padding(.vertical, 6)
-                                        .background(
-                                            Capsule()
-                                                .fill(DesignColors.accent.opacity(0.2))
-                                        )
-                                }
-                            }
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.top, 8)
-                        
-                        // Interpretation Section
-                        if let interpretation = card.interpretation {
-                            VStack(alignment: .leading, spacing: 12) {
-                                Text("Interpretation")
-                                    .font(DesignTypography.headlineFont(weight: .semibold))
-                                    .foregroundColor(DesignColors.foreground)
-                                
-                                Text(interpretation)
-                                    .font(DesignTypography.bodyFont())
-                                    .foregroundColor(DesignColors.mutedForeground)
-                                    .lineSpacing(4)
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                        
-                        // Guidance Section
-                        if let guidance = card.guidance, !guidance.isEmpty {
-                            VStack(alignment: .leading, spacing: 12) {
-                                Text("Today's Guidance")
-                                    .font(DesignTypography.headlineFont(weight: .semibold))
-                                    .foregroundColor(DesignColors.foreground)
-                                
-                                VStack(alignment: .leading, spacing: 8) {
-                                    ForEach(guidance, id: \.self) { tip in
-                                        HStack(alignment: .top, spacing: 12) {
-                                            Circle()
-                                                .fill(DesignColors.accent)
-                                                .frame(width: 6, height: 6)
-                                                .padding(.top, 6)
-                                            
-                                            Text(tip)
-                                                .font(DesignTypography.bodyFont())
-                                                .foregroundColor(DesignColors.mutedForeground)
-                                                .lineSpacing(4)
-                                        }
+                                            .font(.system(size: 40, weight: .semibold))
+                                            .foregroundColor(.white)
+                                            .frame(width: 80, height: 80)
+                                            .background(
+                                                RoundedRectangle(cornerRadius: 8)
+                                                    .fill(DesignColors.accent.opacity(0.3))
+                                                    .overlay(
+                                                        RoundedRectangle(cornerRadius: 8)
+                                                            .stroke(DesignColors.accent.opacity(0.5), lineWidth: 1)
+                                                    )
+                                            )
                                     }
                                 }
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        }
+                            ),
+                            identityChip: card.name,
+                            insightSentence: insightSentence,
+                            interpretation: interpretation,
+                            chipColor: DesignColors.accent
+                        )
+                        .padding(.horizontal, DesignSpacing.sm)
+                        .padding(.top, DesignSpacing.md)
                         
-                        // Share Button
+                        // Share Button (attached to card, not floating)
                         Button(action: {
-                            // Share functionality
                             shareTarotCard()
                         }) {
                             HStack(spacing: 8) {
@@ -142,15 +91,14 @@ struct TarotDetailSheet: View {
                                     .fill(DesignColors.accent)
                             )
                         }
-                        .padding(.top, 8)
+                        .padding(.horizontal, DesignSpacing.sm)
+                        .padding(.top, DesignSpacing.sm) // Reduced to 16px for tighter spacing
                     }
-                    .padding(DesignSpacing.sm)
-                    .padding(.bottom, 40) // Extra padding to ensure content is fully visible
+                    .padding(.bottom, 40)
                 }
             }
             .navigationTitle("Tarot Card")
             .navigationBarTitleDisplayMode(.inline)
-            // Match popup card background (liquid glass surface tone)
             .toolbarBackground(ArotiColor.surface.opacity(0.9), for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
             .toolbarColorScheme(.dark, for: .navigationBar)
@@ -166,8 +114,7 @@ struct TarotDetailSheet: View {
     }
     
     private func shareTarotCard() {
-        // Share implementation
-        let text = "\(card.name)\n\n\(card.interpretation ?? "")\n\nKeywords: \(card.keywords.joined(separator: ", "))"
+        let text = "\(card.name) - Today's Tarot Card\n\n\(insightSentence)"
         let activityVC = UIActivityViewController(activityItems: [text], applicationActivities: nil)
         
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
@@ -189,4 +136,3 @@ struct TarotDetailSheet: View {
         )
     )
 }
-

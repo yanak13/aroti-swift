@@ -2,7 +2,7 @@
 //  HoroscopeDetailSheet.swift
 //  Aroti
 //
-//  Daily Horoscope explanation sheet
+//  Daily Horoscope detail sheet - share-ready card format
 //
 
 import SwiftUI
@@ -12,38 +12,11 @@ struct HoroscopeDetailSheet: View {
     let horoscope: String
     let sign: String
     
-    // Helpers for guidance rows
-    @ViewBuilder
-    private func guidanceRow(_ title: String, detail: String) -> some View {
-        HStack(alignment: .top, spacing: 10) {
-            Circle()
-                .fill(DesignColors.accent)
-                .frame(width: 6, height: 6)
-                .padding(.top, 6)
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .font(DesignTypography.subheadFont(weight: .semibold))
-                    .foregroundColor(DesignColors.foreground)
-                Text(detail)
-                    .font(DesignTypography.bodyFont())
-                    .foregroundColor(DesignColors.mutedForeground)
-                    .lineSpacing(3)
-            }
-        }
-    }
+    private let contentService = DailyContentService.shared
     
-    @ViewBuilder
-    private func doDontRow(symbol: String, color: Color, text: String) -> some View {
-        HStack(alignment: .top, spacing: 10) {
-            Image(systemName: symbol)
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(color)
-                .padding(.top, 2)
-            Text(text)
-                .font(DesignTypography.bodyFont())
-                .foregroundColor(DesignColors.mutedForeground)
-                .lineSpacing(3)
-        }
+    private var interpretation: String {
+        let dayOfYear = contentService.getDayOfYear()
+        return contentService.generateHoroscopeInterpretation(sign: sign, dayOfYear: dayOfYear)
     }
     
     var body: some View {
@@ -52,75 +25,61 @@ struct HoroscopeDetailSheet: View {
                 CelestialBackground()
                 
                 ScrollView {
-                    VStack(spacing: 24) {
-                        // Header with zodiac symbol
-                        VStack(spacing: 16) {
-                            // Zodiac symbol icon
-                            ZStack {
-                                Circle()
-                                    .fill(getZodiacColor(sign).opacity(0.2))
-                                    .frame(width: 80, height: 80)
-                                
-                                Text(getZodiacSymbol(sign))
-                                    .font(.system(size: 40))
-                                    .foregroundColor(.white)
-                            }
-                            
-                            Text("Daily Horoscope")
-                                .font(DesignTypography.title2Font())
-                                .foregroundColor(DesignColors.foreground)
-                            
-                            // Sign chip
-                            Text(sign)
-                                .font(DesignTypography.caption1Font())
-                                .foregroundColor(getZodiacColor(sign))
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 6)
-                                .background(
-                                    Capsule()
-                                        .fill(getZodiacColor(sign).opacity(0.2))
-                                )
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.top, 8)
+                    VStack(spacing: 0) {
+                        // Insight Card (everything inside, no duplicate identity)
+                        InsightCard(
+                            systemIcon: AnyView(
+                                // Zodiac symbol in circular container matching onboarding style
+                                ZStack {
+                                    // Soft outer glow
+                                    Circle()
+                                        .fill(
+                                            RadialGradient(
+                                                colors: [
+                                                    getZodiacColor(sign).opacity(0.25),
+                                                    getZodiacColor(sign).opacity(0.12),
+                                                    Color.clear
+                                                ],
+                                                center: .center,
+                                                startRadius: 30,
+                                                endRadius: 60
+                                            )
+                                        )
+                                        .frame(width: 120, height: 120)
+                                        .blur(radius: 8)
+                                    
+                                    // Inner circle background with gradient
+                                    Circle()
+                                        .fill(
+                                            RadialGradient(
+                                                colors: [
+                                                    getZodiacColor(sign).opacity(0.3),
+                                                    getZodiacColor(sign).opacity(0.2),
+                                                    getZodiacColor(sign).opacity(0.15)
+                                                ],
+                                                center: .center,
+                                                startRadius: 20,
+                                                endRadius: 50
+                                            )
+                                        )
+                                        .frame(width: 100, height: 100)
+                                    
+                                    // Zodiac symbol - larger size
+                                    Text(getZodiacSymbol(sign))
+                                        .font(.system(size: 56, weight: .medium))
+                                        .foregroundColor(.white)
+                                }
+                                .frame(width: 100, height: 100)
+                            ),
+                            identityChip: sign,
+                            insightSentence: horoscope,
+                            interpretation: interpretation,
+                            chipColor: getZodiacColor(sign)
+                        )
+                        .padding(.horizontal, DesignSpacing.sm)
+                        .padding(.top, DesignSpacing.md)
                         
-                        // Forecast Section (concise)
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("Today's Forecast")
-                                .font(DesignTypography.headlineFont(weight: .semibold))
-                                .foregroundColor(DesignColors.foreground)
-                            
-                            Text(horoscope)
-                                .font(DesignTypography.bodyFont())
-                                .foregroundColor(DesignColors.mutedForeground)
-                                .lineSpacing(4)
-                            
-                            Text("Cosmic Interpretation")
-                                .font(DesignTypography.subheadFont(weight: .semibold))
-                                .foregroundColor(DesignColors.foreground)
-                            
-                            Text("Your intuition is heightened. Keep plans simple, check in with your mood before committing, and favor reflective, steady actions over reactive ones.")
-                                .font(DesignTypography.bodyFont())
-                                .foregroundColor(DesignColors.mutedForeground)
-                                .lineSpacing(4)
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        
-                        // Light guidance list
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("Guidance for Today")
-                                .font(DesignTypography.headlineFont(weight: .semibold))
-                                .foregroundColor(DesignColors.foreground)
-                            
-                            VStack(alignment: .leading, spacing: 10) {
-                                guidanceRow("Morning", detail: "Two minutes of grounding breath; set one clear focus.")
-                                guidanceRow("Midday", detail: "Handle one important task without multitasking.")
-                                guidanceRow("Evening", detail: "Note one feeling and one win; set a gentle intention.")
-                            }
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        
-                        // Share Button
+                        // Share Button (attached to card, not floating)
                         Button(action: {
                             shareHoroscope()
                         }) {
@@ -138,15 +97,14 @@ struct HoroscopeDetailSheet: View {
                                     .fill(DesignColors.accent)
                             )
                         }
-                        .padding(.top, 8)
+                        .padding(.horizontal, DesignSpacing.sm)
+                        .padding(.top, DesignSpacing.sm) // Reduced to 16px for tighter spacing
                     }
-                    .padding(DesignSpacing.sm)
-                    .padding(.bottom, 40) // Extra padding to ensure content is fully visible
+                    .padding(.bottom, 40)
                 }
             }
             .navigationTitle("Horoscope")
             .navigationBarTitleDisplayMode(.inline)
-            // Match popup card background (liquid glass surface tone)
             .toolbarBackground(ArotiColor.surface.opacity(0.9), for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
             .toolbarColorScheme(.dark, for: .navigationBar)
@@ -199,8 +157,7 @@ struct HoroscopeDetailSheet: View {
 
 #Preview {
     HoroscopeDetailSheet(
-        horoscope: "Your intuitive nature is heightened today, making it an excellent time for spiritual practices and trusting your inner guidance.",
+        horoscope: "Intuition plays a stronger role today",
         sign: "Pisces"
     )
 }
-

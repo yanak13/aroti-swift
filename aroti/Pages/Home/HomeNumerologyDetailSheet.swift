@@ -28,52 +28,14 @@ struct HomeNumerologyDetailSheet: View {
                         // Insight Card (everything inside, no duplicate identity)
                         InsightCard(
                             systemIcon: AnyView(
-                                // Number in circular container matching onboarding style
-                                ZStack {
-                                    // Soft outer glow
-                                    Circle()
-                                        .fill(
-                                            RadialGradient(
-                                                colors: [
-                                                    DesignColors.accent.opacity(0.25),
-                                                    DesignColors.accent.opacity(0.12),
-                                                    Color.clear
-                                                ],
-                                                center: .center,
-                                                startRadius: 30,
-                                                endRadius: 60
-                                            )
-                                        )
-                                        .frame(width: 120, height: 120)
-                                        .blur(radius: 8)
-                                    
-                                    // Inner circle background with gradient
-                                    Circle()
-                                        .fill(
-                                            RadialGradient(
-                                                colors: [
-                                                    DesignColors.accent.opacity(0.3),
-                                                    DesignColors.accent.opacity(0.2),
-                                                    DesignColors.accent.opacity(0.15)
-                                                ],
-                                                center: .center,
-                                                startRadius: 20,
-                                                endRadius: 50
-                                            )
-                                        )
-                                        .frame(width: 100, height: 100)
-                                    
-                                    // Number - larger size
-                                    Text("\(numerology.number)")
-                                        .font(.system(size: 56, weight: .bold))
-                                        .foregroundColor(.white)
-                                }
-                                .frame(width: 100, height: 100)
+                                NumerologyHeroIcon(number: numerology.number, color: ArotiColor.accent)
+                                    .frame(width: 140, height: 140)
                             ),
                             identityChip: "Number \(numerology.number)",
+                            insightTitle: "", // Remove "Today's Insight" title
                             insightSentence: numerology.preview,
                             interpretation: interpretation,
-                            chipColor: DesignColors.accent
+                            chipColor: ArotiColor.accent
                         )
                         .padding(.horizontal, DesignSpacing.sm)
                         .padding(.top, DesignSpacing.md)

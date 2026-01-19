@@ -29,52 +29,14 @@ struct HoroscopeDetailSheet: View {
                         // Insight Card (everything inside, no duplicate identity)
                         InsightCard(
                             systemIcon: AnyView(
-                                // Zodiac symbol in circular container matching onboarding style
-                                ZStack {
-                                    // Soft outer glow
-                                    Circle()
-                                        .fill(
-                                            RadialGradient(
-                                                colors: [
-                                                    getZodiacColor(sign).opacity(0.25),
-                                                    getZodiacColor(sign).opacity(0.12),
-                                                    Color.clear
-                                                ],
-                                                center: .center,
-                                                startRadius: 30,
-                                                endRadius: 60
-                                            )
-                                        )
-                                        .frame(width: 120, height: 120)
-                                        .blur(radius: 8)
-                                    
-                                    // Inner circle background with gradient
-                                    Circle()
-                                        .fill(
-                                            RadialGradient(
-                                                colors: [
-                                                    getZodiacColor(sign).opacity(0.3),
-                                                    getZodiacColor(sign).opacity(0.2),
-                                                    getZodiacColor(sign).opacity(0.15)
-                                                ],
-                                                center: .center,
-                                                startRadius: 20,
-                                                endRadius: 50
-                                            )
-                                        )
-                                        .frame(width: 100, height: 100)
-                                    
-                                    // Zodiac symbol - larger size
-                                    Text(getZodiacSymbol(sign))
-                                        .font(.system(size: 56, weight: .medium))
-                                        .foregroundColor(.white)
-                                }
-                                .frame(width: 100, height: 100)
+                                HoroscopeHeroIcon(sign: sign, color: ArotiColor.accent)
+                                    .frame(width: 140, height: 140)
                             ),
                             identityChip: sign,
+                            insightTitle: "", // Remove "Today's Insight" title
                             insightSentence: horoscope,
                             interpretation: interpretation,
-                            chipColor: getZodiacColor(sign)
+                            chipColor: ArotiColor.accent
                         )
                         .padding(.horizontal, DesignSpacing.sm)
                         .padding(.top, DesignSpacing.md)

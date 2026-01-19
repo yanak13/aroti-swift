@@ -12,6 +12,7 @@ class DailyStateManager {
     
     private let dailyStateKey = "aroti_daily_state"
     private let userDataKey = "aroti_user_data"
+    private let reflectionKey = "aroti_reflection"
     
     private init() {}
     
@@ -163,6 +164,59 @@ class DailyStateManager {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
         return formatter.string(from: date)
+    }
+    
+    // MARK: - Reflection Storage (Multiple reflections per day)
+    
+    func saveTodayReflection(_ text: String) {
+        var entries = loadTodayReflections()
+        let entry = ReflectionEntry(
+            text: text,
+            timestamp: Date(),
+            date: Date()
+        )
+        entries.append(entry)
+        
+        if let encoded = try? JSONEncoder().encode(entries) {
+            let key = "\(reflectionKey)_\(formatDate(Date()))"
+            UserDefaults.standard.set(encoded, forKey: key)
+        }
+    }
+    
+    func updateReflection(at index: Int, text: String) {
+        var entries = loadTodayReflections()
+        guard index < entries.count else { return }
+        
+        let updatedEntry = ReflectionEntry(
+            text: text,
+            timestamp: entries[index].timestamp, // Keep original timestamp
+            date: Date()
+        )
+        entries[index] = updatedEntry
+        
+        if let encoded = try? JSONEncoder().encode(entries) {
+            let key = "\(reflectionKey)_\(formatDate(Date()))"
+            UserDefaults.standard.set(encoded, forKey: key)
+        }
+    }
+    
+    func loadTodayReflections() -> [ReflectionEntry] {
+        let key = "\(reflectionKey)_\(formatDate(Date()))"
+        guard let data = UserDefaults.standard.data(forKey: key),
+              let entries = try? JSONDecoder().decode([ReflectionEntry].self, from: data) else {
+            return []
+        }
+        return entries
+    }
+    
+    func loadTodayReflection() -> ReflectionEntry? {
+        // For backward compatibility - returns the most recent reflection
+        let entries = loadTodayReflections()
+        return entries.last
+    }
+    
+    func hasReflectionToday() -> Bool {
+        return !loadTodayReflections().isEmpty
     }
 }
 

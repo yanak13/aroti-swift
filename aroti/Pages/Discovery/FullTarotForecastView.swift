@@ -10,7 +10,12 @@ import SwiftUI
 struct FullTarotForecastView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var showReflectionSheet: Bool = false
-    @State private var reflectionText: String = ""
+    
+    private let manager = DailyStateManager.shared
+    
+    private var hasReflectionToday: Bool {
+        manager.hasReflectionToday()
+    }
     
     private var currentMonthName: String {
         let formatter = DateFormatter()
@@ -62,7 +67,7 @@ struct FullTarotForecastView: View {
         .navigationBarHidden(true)
         .navigationBarBackButtonHidden(true)
         .sheet(isPresented: $showReflectionSheet) {
-            ReflectionSheet(reflectionText: $reflectionText)
+            ReflectionSheet(prompt: "")
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
         }
@@ -172,8 +177,8 @@ struct FullTarotForecastView: View {
     private var addReflectionButton: some View {
         ArotiButton(
             kind: .primary,
-            title: reflectionText.isEmpty ? "Add Reflection" : "Edit Reflection",
-            icon: Image(systemName: reflectionText.isEmpty ? "plus" : "pencil"),
+            title: hasReflectionToday ? "Edit Reflection" : "Add Reflection",
+            icon: Image(systemName: hasReflectionToday ? "pencil" : "plus"),
             action: {
                 showReflectionSheet = true
             }

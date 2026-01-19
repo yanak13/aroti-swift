@@ -15,6 +15,7 @@ struct InsightCard: View {
     let insightSentence: String
     let interpretation: String
     let chipColor: Color
+    let showIcon: Bool
     
     init(
         systemIcon: AnyView,
@@ -22,7 +23,8 @@ struct InsightCard: View {
         insightTitle: String = "Today's Insight",
         insightSentence: String,
         interpretation: String,
-        chipColor: Color = DesignColors.accent
+        chipColor: Color = DesignColors.accent,
+        showIcon: Bool = true
     ) {
         self.systemIcon = systemIcon
         self.identityChip = identityChip
@@ -30,6 +32,7 @@ struct InsightCard: View {
         self.insightSentence = insightSentence
         self.interpretation = interpretation
         self.chipColor = chipColor
+        self.showIcon = showIcon
     }
     
     var body: some View {
@@ -38,9 +41,11 @@ struct InsightCard: View {
             
             VStack(spacing: 0) {
                 // System icon (symbolic, not functional - matching onboarding circular style)
-                systemIcon
-                    .frame(height: 100) // Increased to accommodate larger circular icon containers
-                    .padding(.top, DesignSpacing.lg) // More generous top padding
+                if showIcon {
+                    systemIcon
+                        .frame(height: 180) // Increased to accommodate larger hero icon containers
+                        .padding(.top, DesignSpacing.lg) // More generous top padding
+                }
                 
                 // Identity chip (tight spacing from icon - grouped with icon)
                 Text(identityChip)
@@ -59,11 +64,13 @@ struct InsightCard: View {
                     )
                     .padding(.top, 8) // Tight spacing from icon (reduced from 12)
                 
-                // Today's Insight title (medium spacing from chip - clear separation)
-                Text(insightTitle)
-                    .font(DesignTypography.title3Font()) // Reduced from title2
-                    .foregroundColor(DesignColors.foreground)
-                    .padding(.top, 28) // Increased gap from chip (was 24)
+                // Today's Insight title (medium spacing from chip - clear separation) - only show if not empty
+                if !insightTitle.isEmpty {
+                    Text(insightTitle)
+                        .font(DesignTypography.title3Font()) // Reduced from title2
+                        .foregroundColor(DesignColors.foreground)
+                        .padding(.top, 28) // Increased gap from chip (was 24)
+                }
                 
                 // Insight sentence (visual hero - largest visual weight, breathing space)
                 Text(insightSentence)
@@ -76,15 +83,17 @@ struct InsightCard: View {
                     .padding(.top, 16) // Breathing space
                     .padding(.horizontal, DesignSpacing.sm)
                 
-                // Interpretation (fully visible, no truncation, readable)
-                Text(interpretation)
-                    .font(DesignTypography.bodyFont())
-                    .foregroundColor(DesignColors.foreground.opacity(0.7)) // Reduced opacity more
-                    .multilineTextAlignment(.center)
-                    .lineSpacing(5)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.top, 28) // Generous spacing from insight sentence
-                    .padding(.horizontal, DesignSpacing.md)
+                // Interpretation (fully visible, no truncation, readable) - only show if not empty
+                if !interpretation.isEmpty {
+                    Text(interpretation)
+                        .font(DesignTypography.bodyFont())
+                        .foregroundColor(DesignColors.foreground.opacity(0.7)) // Reduced opacity more
+                        .multilineTextAlignment(.center)
+                        .lineSpacing(5)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, 28) // Generous spacing from insight sentence
+                        .padding(.horizontal, DesignSpacing.md)
+                }
                 
                 Spacer(minLength: 0)
                 
@@ -100,40 +109,189 @@ struct InsightCard: View {
             .padding(DesignSpacing.md)
             .background(
                 ZStack {
-                    // Gentle background gradient
+                    // Base gradient - 2026 style: deeper, more organic with 4 color stops
                     RoundedRectangle(cornerRadius: ArotiRadius.lg)
                         .fill(
                             LinearGradient(
                                 colors: [
-                                    Color(red: 23/255, green: 20/255, blue: 31/255, opacity: 0.85),
-                                    Color(red: 20/255, green: 18/255, blue: 28/255, opacity: 0.85)
+                                    Color(red: 16/255, green: 14/255, blue: 24/255, opacity: 0.95),
+                                    Color(red: 20/255, green: 17/255, blue: 28/255, opacity: 0.92),
+                                    Color(red: 18/255, green: 16/255, blue: 26/255, opacity: 0.93),
+                                    Color(red: 22/255, green: 19/255, blue: 30/255, opacity: 0.90)
                                 ],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             )
                         )
                     
-                    // Liquid glass highlight at top
+                    // Secondary radial gradient layer - top-left depth
+                    RoundedRectangle(cornerRadius: ArotiRadius.lg)
+                        .fill(
+                            RadialGradient(
+                                colors: [
+                                    Color(red: 28/255, green: 24/255, blue: 38/255, opacity: 0.4),
+                                    Color(red: 25/255, green: 22/255, blue: 35/255, opacity: 0.25),
+                                    Color.clear
+                                ],
+                                center: .topLeading,
+                                startRadius: 0,
+                                endRadius: 250
+                            )
+                        )
+                    
+                    // Tertiary radial gradient layer - bottom-right depth
+                    RoundedRectangle(cornerRadius: ArotiRadius.lg)
+                        .fill(
+                            RadialGradient(
+                                colors: [
+                                    Color(red: 24/255, green: 21/255, blue: 32/255, opacity: 0.3),
+                                    Color.clear
+                                ],
+                                center: .bottomTrailing,
+                                startRadius: 0,
+                                endRadius: 200
+                            )
+                        )
+                    
+                    // Accent glow - top-right warm tone
+                    RoundedRectangle(cornerRadius: ArotiRadius.lg)
+                        .fill(
+                            RadialGradient(
+                                colors: [
+                                    ArotiColor.accent.opacity(0.12),
+                                    ArotiColor.accent.opacity(0.06),
+                                    ArotiColor.accent.opacity(0.02),
+                                    Color.clear
+                                ],
+                                center: .topTrailing,
+                                startRadius: 0,
+                                endRadius: 180
+                            )
+                        )
+                    
+                    // Accent glow - bottom-left subtle tone
+                    RoundedRectangle(cornerRadius: ArotiRadius.lg)
+                        .fill(
+                            RadialGradient(
+                                colors: [
+                                    ArotiColor.accent.opacity(0.05),
+                                    Color.clear
+                                ],
+                                center: .bottomLeading,
+                                startRadius: 0,
+                                endRadius: 120
+                            )
+                        )
+                    
+                    // Liquid glass highlight at top - enhanced with multiple layers
                     VStack {
+                        // Primary highlight
                         Rectangle()
                             .fill(
                                 LinearGradient(
-                                    colors: [Color.clear, Color.white.opacity(0.08), Color.clear],
+                                    colors: [
+                                        Color.clear,
+                                        Color.white.opacity(0.15),
+                                        Color.white.opacity(0.10),
+                                        Color.white.opacity(0.08),
+                                        Color.clear
+                                    ],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            .frame(height: 3)
+                            .opacity(0.95)
+                        
+                        // Secondary subtle highlight
+                        Rectangle()
+                            .fill(
+                                LinearGradient(
+                                    colors: [
+                                        Color.clear,
+                                        Color.white.opacity(0.06),
+                                        Color.clear
+                                    ],
                                     startPoint: .leading,
                                     endPoint: .trailing
                                 )
                             )
                             .frame(height: 1)
-                            .opacity(0.8)
+                            .opacity(0.7)
+                            .padding(.top, 2)
+                        
                         Spacer()
                     }
+                    
+                    // Texture overlay layer 1 - noise/grain effect
+                    RoundedRectangle(cornerRadius: ArotiRadius.lg)
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    Color.white.opacity(0.03),
+                                    Color.black.opacity(0.015),
+                                    Color.white.opacity(0.02),
+                                    Color.black.opacity(0.01)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .blendMode(.overlay)
+                    
+                    // Texture overlay layer 2 - additional depth
+                    RoundedRectangle(cornerRadius: ArotiRadius.lg)
+                        .fill(
+                            RadialGradient(
+                                colors: [
+                                    Color.white.opacity(0.015),
+                                    Color.clear,
+                                    Color.black.opacity(0.01)
+                                ],
+                                center: .center,
+                                startRadius: 50,
+                                endRadius: 300
+                            )
+                        )
+                        .blendMode(.softLight)
+                    
+                    // Subtle diagonal texture pattern
+                    RoundedRectangle(cornerRadius: ArotiRadius.lg)
+                        .fill(
+                            AngularGradient(
+                                colors: [
+                                    Color.clear,
+                                    Color.white.opacity(0.01),
+                                    Color.clear,
+                                    Color.black.opacity(0.005),
+                                    Color.clear
+                                ],
+                                center: .center,
+                                angle: .degrees(45)
+                            )
+                        )
+                        .blendMode(.overlay)
+                        .opacity(0.6)
                 }
                 .overlay(
+                    // Enhanced border with gradient
                     RoundedRectangle(cornerRadius: ArotiRadius.lg)
-                        .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                        .stroke(
+                            LinearGradient(
+                                colors: [
+                                    Color.white.opacity(0.15),
+                                    Color.white.opacity(0.08),
+                                    Color.white.opacity(0.12)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 1
+                        )
                 )
             )
-            .shadow(color: Color.black.opacity(0.3), radius: 12, x: 0, y: 4)
+            .shadow(color: Color.black.opacity(0.4), radius: 16, x: 0, y: 6)
+            .shadow(color: ArotiColor.accent.opacity(0.1), radius: 8, x: 0, y: 2)
         }
         .frame(minHeight: UIScreen.main.bounds.height * 0.70) // Minimum height - reduced to ensure CTA visibility
     }

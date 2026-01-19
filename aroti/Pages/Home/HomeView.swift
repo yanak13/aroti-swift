@@ -33,7 +33,6 @@ struct HomeView: View {
     @State private var showNumerologySheet: Bool = false
     @State private var showAffirmationSheet: Bool = false
     @State private var showReflectionSheet: Bool = false
-    @State private var reflectionText: String = ""
     @State private var dailyReflectionPrompt: String = ""
     
     // Animation states
@@ -233,7 +232,6 @@ struct HomeView: View {
                                         let horoscopeSubtitle = dailyInsight?.horoscope ?? "Loading today's horoscope..."
                                         let numerologyNumber = dailyInsight?.numerology.number
                                         let numerologyPreview = dailyInsight?.numerology.preview ?? "Loading today's number..."
-                                        let affirmationText = dailyInsight?.affirmation ?? "Loading today's affirmation..."
                                         let dayOfYear = contentService.getDayOfYear()
                                         let affirmationSubtitle = contentService.generateAffirmationSubtitle(dayOfYear: dayOfYear)
                                         
@@ -247,19 +245,9 @@ struct HomeView: View {
                                                 subtitle: horoscopeSubtitle,
                                                 showsChevron: false
                                             ) {
-                                                // Zodiac symbol in square with glow
-                                                Text(getZodiacSymbol(userData.sunSign))
-                                                    .font(.system(size: 32))
-                                                    .foregroundColor(.white)
-                                                    .frame(width: 48, height: 48)
-                                                    .background(
-                                                        RoundedRectangle(cornerRadius: 8)
-                                                            .fill(getZodiacColor(userData.sunSign).opacity(0.3))
-                                                            .overlay(
-                                                                RoundedRectangle(cornerRadius: 8)
-                                                                    .stroke(getZodiacColor(userData.sunSign).opacity(0.5), lineWidth: 1)
-                                                            )
-                                                    )
+                                                // Hero-style icon matching detail pages
+                                                HoroscopeHeroIcon(sign: userData.sunSign, color: ArotiColor.accent)
+                                                    .frame(width: 60, height: 60)
                                             }
                                             .frame(width: geometry.size.width * 0.82)
                                             .contentShape(Rectangle())
@@ -278,18 +266,9 @@ struct HomeView: View {
                                                 showsChevron: false
                                             ) {
                                                 if let number = numerologyNumber {
-                                                    Text("\(number)")
-                                                        .font(.system(size: 28, weight: .bold))
-                                                        .foregroundColor(.white)
-                                                        .frame(width: 48, height: 48)
-                                                        .background(
-                                                            Circle()
-                                                                .fill(DesignColors.accent.opacity(0.3))
-                                                                .overlay(
-                                                                    Circle()
-                                                                        .stroke(DesignColors.accent.opacity(0.5), lineWidth: 1)
-                                                                )
-                                                        )
+                                                    // Hero-style icon matching detail pages
+                                                    NumerologyHeroIcon(number: number, color: ArotiColor.accent)
+                                                        .frame(width: 60, height: 60)
                                                 } else {
                                                     // Placeholder badge
                                                     Text("--")
@@ -318,18 +297,9 @@ struct HomeView: View {
                                                 subtitle: affirmationSubtitle,
                                                 showsChevron: false
                                             ) {
-                                                Image(systemName: "quote.bubble")
-                                                    .font(.system(size: 22))
-                                                    .foregroundColor(.white)
-                                                    .frame(width: 44, height: 44)
-                                                    .background(
-                                                        RoundedRectangle(cornerRadius: 10)
-                                                            .fill(DesignColors.accent.opacity(0.3))
-                                                            .overlay(
-                                                                RoundedRectangle(cornerRadius: 10)
-                                                                    .stroke(DesignColors.accent.opacity(0.5), lineWidth: 1)
-                                                            )
-                                                    )
+                                                // Hero-style icon matching detail pages
+                                                AffirmationHeroIcon(color: ArotiColor.accent)
+                                                    .frame(width: 60, height: 60)
                                             }
                                             .frame(width: geometry.size.width * 0.82)
                                             .contentShape(Rectangle())
@@ -514,12 +484,12 @@ struct HomeView: View {
                         let dayOfYear = contentService.getDayOfYear()
                         let affirmationSubtitle = contentService.generateAffirmationSubtitle(dayOfYear: dayOfYear)
                         AffirmationDetailSheet(affirmation: insight.affirmation, affirmationSubtitle: affirmationSubtitle)
-                            .presentationDetents([.medium, .large])
+                            .presentationDetents([.large])
                             .presentationDragIndicator(.visible)
                     }
                 }
                 .sheet(isPresented: $showReflectionSheet) {
-                    ReflectionSheet(reflectionText: $reflectionText, prompt: dailyReflectionPrompt)
+                    ReflectionSheet(prompt: dailyReflectionPrompt)
                         .presentationDetents([.medium, .large])
                         .presentationDragIndicator(.visible)
                 }

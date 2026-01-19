@@ -38,37 +38,32 @@ struct TarotDetailSheet: View {
                 
                 ScrollView {
                     VStack(spacing: 0) {
-                        // Insight Card (everything inside, no duplicate identity)
+                        // Insight Card with tarot card image inside (before chip)
                         InsightCard(
                             systemIcon: AnyView(
+                                // Tarot card image inside the card, before the chip
                                 Group {
                                     if let imageName = card.imageName, !imageName.isEmpty {
                                         Image(imageName)
                                             .resizable()
-                                            .scaledToFill()
-                                            .frame(width: 80, height: 120) // Increased to match larger icon containers
+                                            .scaledToFit()
+                                            .frame(width: 90, height: 135) // Tarot card proportions (2:3 ratio), fits in 180 height frame
                                             .clipShape(RoundedRectangle(cornerRadius: 8))
+                                            .shadow(color: Color.black.opacity(0.3), radius: 8, x: 0, y: 4)
                                     } else {
-                                        // Fallback icon in square container matching onboarding style
+                                        // Fallback: sparkles icon if no image
                                         Image(systemName: "sparkles")
-                                            .font(.system(size: 40, weight: .semibold))
-                                            .foregroundColor(.white)
-                                            .frame(width: 80, height: 80)
-                                            .background(
-                                                RoundedRectangle(cornerRadius: 8)
-                                                    .fill(DesignColors.accent.opacity(0.3))
-                                                    .overlay(
-                                                        RoundedRectangle(cornerRadius: 8)
-                                                            .stroke(DesignColors.accent.opacity(0.5), lineWidth: 1)
-                                                    )
-                                            )
+                                            .font(.system(size: 50, weight: .semibold))
+                                            .foregroundColor(ArotiColor.accent)
+                                            .frame(width: 100, height: 100)
                                     }
                                 }
                             ),
                             identityChip: card.name,
+                            insightTitle: "", // Remove "Today's Insight" title
                             insightSentence: insightSentence,
                             interpretation: interpretation,
-                            chipColor: DesignColors.accent
+                            chipColor: ArotiColor.accent
                         )
                         .padding(.horizontal, DesignSpacing.sm)
                         .padding(.top, DesignSpacing.md)

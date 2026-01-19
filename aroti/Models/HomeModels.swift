@@ -1,6 +1,5 @@
 //
 //  HomeModels.swift
-//  Aroti
 //
 //  Data models for home page content
 //
@@ -80,3 +79,14 @@ struct DailyState: Codable {
     }
 }
 
+// Reflection entry model
+struct ReflectionEntry: Codable {
+    let text: String
+    let timestamp: Date
+    let date: Date // The date this reflection is for (may differ from timestamp if edited)
+    
+    static func today() -> ReflectionEntry? {
+        let manager = DailyStateManager.shared
+        return manager.loadTodayReflection()
+    }
+}

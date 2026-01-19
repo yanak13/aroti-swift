@@ -15,6 +15,7 @@ struct NotificationsPage: View {
     @State private var navigateToHome = false
     @State private var navigateToJourney = false
     @State private var selectedPracticeId: String?
+    @State private var selectedTab: TabItem = .home
     
     private let notificationService = NotificationService.shared
     private let coreGuidanceService = CoreGuidanceService.shared
@@ -72,7 +73,7 @@ struct NotificationsPage: View {
         }
         .sheet(isPresented: $showCoreGuidanceSheet) {
             if let card = selectedCoreGuidanceCard {
-                CoreGuidanceDetailSheet(card: card)
+                CoreGuidanceDetailSheet(card: card, selectedTab: $selectedTab)
                     .presentationDetents([.large])
                     .presentationDragIndicator(.visible)
             }

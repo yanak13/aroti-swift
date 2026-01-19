@@ -38,8 +38,22 @@ enum CoreGuidanceCardType: String, Codable, CaseIterable, Identifiable {
     }
 }
 
+// MARK: - Expanded Guidance Content
+struct ExpandedGuidanceContent: Codable, Equatable {
+    // Minimal Premium V1 Structure
+    let oneLineInsight: String // The most important line on the page (plain language, no astrology terms)
+    let insightBullets: [String] // Exactly 3 bullets: Theme, Best use, Watch for
+    let guidance: [String] // Exactly 3 items: Do, Try, Avoid
+    let reflectionQuestions: [String] // Max 3 concrete questions
+    
+    // Legacy fields (kept for backward compatibility, but not used in V1)
+    let contextSection: String? // Why this matters now (metadata only)
+    let deeperInsight: String? // Removed in V1
+    let practicalReflection: [String]? // Legacy reflection prompts
+}
+
 // MARK: - Core Guidance Card
-struct CoreGuidanceCard: Codable, Identifiable {
+struct CoreGuidanceCard: Codable, Identifiable, Equatable {
     let id: String
     let type: CoreGuidanceCardType
     let preview: String // Short preview text for card
@@ -48,6 +62,78 @@ struct CoreGuidanceCard: Codable, Identifiable {
     let bodyLines: [String]? // New: Array of 2-4 short lines for line-by-line animation
     let lastUpdated: Date
     let contentVersion: String // Used to track if content has changed
+    let contextInfo: String? // Explains why card updated (e.g., "Mercury retrograde", "New personal month")
+    let astrologicalContext: String? // Current astrological influences
+    let numerologyContext: String? // Current numerology influences
+    let expandedContent: ExpandedGuidanceContent? // Optional deeper content
+    let timeframeLabel: String? // e.g., "Daily Focus", "Monthly Focus"
+    let summarySentence: String? // TL;DR - one sentence orientation
+    
+    // Custom Codable implementation for backward compatibility
+    enum CodingKeys: String, CodingKey {
+        case id, type, preview, fullInsight, headline, bodyLines, lastUpdated, contentVersion
+        case contextInfo, astrologicalContext, numerologyContext, expandedContent
+        case timeframeLabel, summarySentence
+    }
+    
+    init(id: String, type: CoreGuidanceCardType, preview: String, fullInsight: String, headline: String?, bodyLines: [String]?, lastUpdated: Date, contentVersion: String, contextInfo: String? = nil, astrologicalContext: String? = nil, numerologyContext: String? = nil, expandedContent: ExpandedGuidanceContent? = nil, timeframeLabel: String? = nil, summarySentence: String? = nil) {
+        self.id = id
+        self.type = type
+        self.preview = preview
+        self.fullInsight = fullInsight
+        self.headline = headline
+        self.bodyLines = bodyLines
+        self.lastUpdated = lastUpdated
+        self.contentVersion = contentVersion
+        self.contextInfo = contextInfo
+        self.astrologicalContext = astrologicalContext
+        self.numerologyContext = numerologyContext
+        self.expandedContent = expandedContent
+        self.timeframeLabel = timeframeLabel
+        self.summarySentence = summarySentence
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        type = try container.decode(CoreGuidanceCardType.self, forKey: .type)
+        preview = try container.decode(String.self, forKey: .preview)
+        fullInsight = try container.decode(String.self, forKey: .fullInsight)
+        headline = try container.decodeIfPresent(String.self, forKey: .headline)
+        bodyLines = try container.decodeIfPresent([String].self, forKey: .bodyLines)
+        lastUpdated = try container.decode(Date.self, forKey: .lastUpdated)
+        contentVersion = try container.decode(String.self, forKey: .contentVersion)
+        contextInfo = try container.decodeIfPresent(String.self, forKey: .contextInfo)
+        astrologicalContext = try container.decodeIfPresent(String.self, forKey: .astrologicalContext)
+        numerologyContext = try container.decodeIfPresent(String.self, forKey: .numerologyContext)
+        expandedContent = try container.decodeIfPresent(ExpandedGuidanceContent.self, forKey: .expandedContent)
+        timeframeLabel = try container.decodeIfPresent(String.self, forKey: .timeframeLabel)
+        summarySentence = try container.decodeIfPresent(String.self, forKey: .summarySentence)
+    }
+    
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(type, forKey: .type)
+        try container.encode(preview, forKey: .preview)
+        try container.encode(fullInsight, forKey: .fullInsight)
+        try container.encodeIfPresent(headline, forKey: .headline)
+        try container.encodeIfPresent(bodyLines, forKey: .bodyLines)
+        try container.encode(lastUpdated, forKey: .lastUpdated)
+        try container.encode(contentVersion, forKey: .contentVersion)
+        try container.encodeIfPresent(contextInfo, forKey: .contextInfo)
+        try container.encodeIfPresent(astrologicalContext, forKey: .astrologicalContext)
+        try container.encodeIfPresent(numerologyContext, forKey: .numerologyContext)
+        try container.encodeIfPresent(expandedContent, forKey: .expandedContent)
+        try container.encodeIfPresent(timeframeLabel, forKey: .timeframeLabel)
+        try container.encodeIfPresent(summarySentence, forKey: .summarySentence)
+    }
+    
+    // Equatable conformance - use only id for sheet presentation
+    // This ensures SwiftUI's sheet(item:) modifier can detect changes properly
+    static func == (lhs: CoreGuidanceCard, rhs: CoreGuidanceCard) -> Bool {
+        return lhs.id == rhs.id
+    }
     
     var hasNewContent: Bool {
         // This will be managed by the service based on user interaction

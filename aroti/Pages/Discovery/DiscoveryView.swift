@@ -53,7 +53,7 @@ struct DiscoveryView: View {
                                 .frame(height: 0)
                                 
                                 // 1. Premium Forecasts Section
-                                PremiumForecastsSection()
+                                PremiumForecastsSection(selectedTab: $selectedTab)
                                     .padding(.bottom, 20) // Increased title spacing between sections
                                 
                                 // 2. Tarot Readings Section
@@ -142,7 +142,10 @@ struct DiscoveryView: View {
 
 // MARK: - Premium Forecasts Section
 struct PremiumForecastsSection: View {
+    @Binding var selectedTab: TabItem
     @State private var showPaywall = false
+    @State private var selectedCard: CoreGuidanceCard?
+    @State private var showDetailSheet = false
     @State private var userData: UserData = UserData.default
     
     private let userSubscription = UserSubscriptionService.shared
@@ -155,9 +158,19 @@ struct PremiumForecastsSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             // Core Guidance carousel - increased vertical spacing and elevated
-            CoreGuidanceCarousel()
+            CoreGuidanceCarousel(onCardSelected: { card in
+                selectedCard = card
+                showDetailSheet = true
+            })
                 .padding(.top, 12) // Increased vertical spacing
                 .padding(.bottom, 12)
+        }
+        .sheet(isPresented: $showDetailSheet) {
+            if let card = selectedCard {
+                CoreGuidanceDetailSheet(card: card, selectedTab: $selectedTab)
+                    .presentationDetents([.large])
+                    .presentationDragIndicator(.visible)
+            }
         }
         .onAppear {
             loadUserData()
@@ -468,6 +481,9 @@ struct TarotReadingsSection: View {
                                         isForYou: spread.isForYou,
                                         ctaText: spread.ctaText,
                                         isFirstCard: spread.isFirstCard,
+                                        isPremium: spread.isPremium,
+                                        hasNewContent: false, // TODO: Add logic to determine if content is new
+                                        userIsPremium: isPremium,
                                         action: nil
                                     )
                                 }
@@ -485,6 +501,9 @@ struct TarotReadingsSection: View {
                                         isForYou: spread.isForYou,
                                         ctaText: spread.ctaText,
                                         isFirstCard: spread.isFirstCard,
+                                        isPremium: spread.isPremium,
+                                        hasNewContent: false, // TODO: Add logic to determine if content is new
+                                        userIsPremium: isPremium,
                                         action: nil
                                     )
                                 }
@@ -616,11 +635,16 @@ struct CategoryGridCard: View {
     var body: some View {
         BaseCard {
             VStack(alignment: .leading, spacing: 0) {
-                // Benefit chip in top-left (one chip only)
-                HStack(spacing: 6) {
-                    CardChip(text: item.benefit, type: .base)
+                // Chips in top-left (max 2 chips: Access chip first, then Status chip)
+                // For category cards, we don't show access chips unless they're premium
+                // Remove benefit/category chips per spec
+                HStack(spacing: 8) {
+                    // No chips for category cards (they're free by default)
+                    // If premium is needed in future, add Premium chip here
                     Spacer()
                 }
+                .padding(.top, 12)
+                .padding(.leading, 12)
                 .padding(.bottom, 10) // 8-12px spacing between chips row and title
                 
                 Spacer()
@@ -710,21 +734,18 @@ struct DiscoveryPracticeCard: View {
     var body: some View {
         BaseCard {
             VStack(alignment: .leading, spacing: 0) {
-                // Chips in top-left (max 3, single row) - 8-12px spacing to title
-                HStack(spacing: 6) {
-                    // Duration chip (time)
-                    CardChip(text: practice.duration, type: .base)
-                    
-                    // Category chip (benefit)
-                    CardChip(text: practice.category, type: .base)
-                    
-                    // "For you" chip (personalization) - only when applicable
+                // Chips in top-left (max 2 chips: Access chip first, then Status chip)
+                HStack(spacing: 8) {
+                    // Remove duration and category chips per spec
+                    // Only show "For you" status chip if applicable
                     if practice.isForYou {
                         CardChip(text: "For you", type: .forYou)
                     }
                     
                     Spacer()
                 }
+                .padding(.top, 12)
+                .padding(.leading, 12)
                 .padding(.bottom, 10) // 8-12px spacing between chips row and title
                 
                 Spacer()

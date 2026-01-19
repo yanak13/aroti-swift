@@ -23,6 +23,9 @@ struct TarotSpreadCard: View {
     let isForYou: Bool
     let ctaText: String?
     let isFirstCard: Bool
+    let isPremium: Bool
+    let hasNewContent: Bool
+    let userIsPremium: Bool
     let action: (() -> Void)?
     
     @State private var isPressed = false
@@ -40,6 +43,9 @@ struct TarotSpreadCard: View {
         isForYou: Bool = false,
         ctaText: String? = nil,
         isFirstCard: Bool = false,
+        isPremium: Bool = false,
+        hasNewContent: Bool = false,
+        userIsPremium: Bool = false,
         action: (() -> Void)? = nil
     ) {
         self.name = name
@@ -52,6 +58,9 @@ struct TarotSpreadCard: View {
         self.isForYou = isForYou
         self.ctaText = ctaText
         self.isFirstCard = isFirstCard
+        self.isPremium = isPremium
+        self.hasNewContent = hasNewContent
+        self.userIsPremium = userIsPremium
         self.action = action
     }
     
@@ -133,23 +142,30 @@ struct TarotSpreadCard: View {
                 .opacity(0.4)
             
             // Content layout
-            VStack(alignment: .leading, spacing: 0) {
-                // Chips in top-left (max 2-3, single row)
-                HStack(spacing: 6) {
-                    if let time = time {
-                        CardChip(text: time, type: .base)
+            ZStack {
+                VStack(alignment: .leading, spacing: 0) {
+                    // Chips in top-left (max 2 chips: Access chip first, then Status chip)
+                    HStack(spacing: 8) {
+                        // Access chip (Premium or Free) - always first if applicable
+                        if isPremium {
+                            CardChip(text: "Premium", type: .premium)
+                        } else {
+                            // Only show Free chip if explicitly needed (optional)
+                            // For now, we'll skip Free chip for non-premium cards
+                        }
+                        
+                        // Status chip (New or For you) - only if space allows (max 2 total)
+                        if hasNewContent {
+                            CardChip(text: "New", type: .new)
+                        } else if isForYou {
+                            CardChip(text: "For you", type: .forYou)
+                        }
+                        
+                        Spacer()
                     }
-                    if let depth = depth {
-                        CardChip(text: depth, type: .base)
-                    }
-                    if isForYou {
-                        CardChip(text: "For you", type: .forYou)
-                    }
-                    Spacer()
-                }
-                .padding(.top, 12)
-                .padding(.leading, 12)
-                .padding(.bottom, 10) // 8-12px spacing to title
+                    .padding(.top, 12)
+                    .padding(.leading, 12)
+                    .padding(.bottom, 10) // 8-12px spacing to title
                 
                 Spacer()
                 
@@ -259,8 +275,24 @@ struct TarotSpreadCard: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 12)
                 .padding(.bottom, 12)
+                }
+                .frame(width: cardWidth, height: cardHeight)
+                
+                // Lock icon in top-right for premium cards when user is not premium
+                if isPremium && !userIsPremium {
+                    VStack {
+                        HStack {
+                            Spacer()
+                            Image(systemName: "lock.fill")
+                                .font(.system(size: 13))
+                                .foregroundColor(DesignColors.mutedForeground.opacity(0.6))
+                                .padding(.top, 12)
+                                .padding(.trailing, 12)
+                        }
+                        Spacer()
+                    }
+                }
             }
-            .frame(width: cardWidth, height: cardHeight)
             
             // Subtle texture overlay
             RoundedRectangle(cornerRadius: 12)

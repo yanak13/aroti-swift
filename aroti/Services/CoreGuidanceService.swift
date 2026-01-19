@@ -12,6 +12,7 @@ class CoreGuidanceService {
     
     private var state: CoreGuidanceState
     private static let stateKey = "core_guidance_state"
+    private let contentGenerator = CoreGuidanceContentGenerator.shared
     
     private init() {
         self.state = Self.loadState() ?? CoreGuidanceState.default()
@@ -20,10 +21,12 @@ class CoreGuidanceService {
     
     // MARK: - Public API
     
-    /// Get all Core Guidance cards in order
+    /// Get all Core Guidance cards in order (excluding "Right Now")
     func getCards() -> [CoreGuidanceCard] {
         ensureCardsExist()
-        return state.cards.sorted { $0.type.order < $1.type.order }
+        return state.cards
+            .filter { $0.type != .rightNow }
+            .sorted { $0.type.order < $1.type.order }
     }
     
     /// Get a specific card by type
@@ -82,8 +85,8 @@ class CoreGuidanceService {
     // MARK: - Private Helpers
     
     private func ensureCardsExist() {
-        // Ensure all 5 card types exist
-        for cardType in CoreGuidanceCardType.allCases {
+        // Ensure all card types exist (excluding "Right Now")
+        for cardType in CoreGuidanceCardType.allCases where cardType != .rightNow {
             if state.cards.first(where: { $0.type == cardType }) == nil {
                 let newCard = generateDefaultCard(for: cardType)
                 state.cards.append(newCard)
@@ -95,6 +98,19 @@ class CoreGuidanceService {
     private func generateDefaultCard(for type: CoreGuidanceCardType) -> CoreGuidanceCard {
         let (preview, fullInsight, headline, bodyLines) = getDefaultContent(for: type)
         
+        // Default timeframe labels
+        let timeframeLabel: String
+        switch type {
+        case .rightNow: timeframeLabel = "Daily Focus"
+        case .thisPeriod: timeframeLabel = "Weekly Focus"
+        case .whereToFocus: timeframeLabel = "Monthly Focus"
+        case .whatsComingUp: timeframeLabel = "Upcoming"
+        case .personalInsight: timeframeLabel = "Personal Cycle"
+        }
+        
+        // Default summary sentence
+        let summarySentence = bodyLines.first ?? headline
+        
         return CoreGuidanceCard(
             id: UUID().uuidString,
             type: type,
@@ -103,7 +119,13 @@ class CoreGuidanceService {
             headline: headline,
             bodyLines: bodyLines,
             lastUpdated: Date(),
-            contentVersion: UUID().uuidString
+            contentVersion: UUID().uuidString,
+            contextInfo: nil,
+            astrologicalContext: nil,
+            numerologyContext: nil,
+            expandedContent: nil,
+            timeframeLabel: timeframeLabel,
+            summarySentence: summarySentence
         )
     }
     
@@ -185,7 +207,7 @@ class CoreGuidanceService {
     
     // MARK: - Update Logic (called periodically or on-demand)
     
-    /// Check if a card should update based on its cadence
+    /// Check if a card should update based on its cadence and cycles
     func shouldUpdateCard(type: CoreGuidanceCardType) -> Bool {
         guard let card = state.cards.first(where: { $0.type == type }) else {
             return true
@@ -193,39 +215,130 @@ class CoreGuidanceService {
         
         let hoursSinceUpdate = Date().timeIntervalSince(card.lastUpdated) / 3600
         
+        // Check time-based cadence
+        let timeBasedUpdate: Bool
         switch type {
         case .rightNow:
-            return hoursSinceUpdate >= 48 // 48-72 hours
+            timeBasedUpdate = hoursSinceUpdate >= 48 // 48-72 hours
         case .thisPeriod:
-            return hoursSinceUpdate >= 168 // Weekly
+            timeBasedUpdate = hoursSinceUpdate >= 168 // Weekly
         case .whereToFocus:
-            return hoursSinceUpdate >= 168 // Weekly
+            timeBasedUpdate = hoursSinceUpdate >= 168 // Weekly
         case .whatsComingUp:
-            return hoursSinceUpdate >= 72 // 3-5 days
+            timeBasedUpdate = hoursSinceUpdate >= 72 // 3-5 days
         case .personalInsight:
-            return hoursSinceUpdate >= 168 // Weekly
+            timeBasedUpdate = hoursSinceUpdate >= 168 // Weekly
         }
+        
+        // Check cycle-based updates (e.g., Mercury retrograde, new personal month)
+        // For V1, we'll rely on time-based updates, but this can be enhanced
+        return timeBasedUpdate
     }
     
-    /// Update card content (in real implementation, this would call AI service)
+    /// Get reason why card should update
+    func getUpdateReason(type: CoreGuidanceCardType) -> String? {
+        let astroService = AstrologicalCycleService.shared
+        
+        if astroService.isMercuryRetrograde() {
+            return "Mercury retrograde"
+        }
+        
+        // Check for other significant cycles
+        let moonPhase = astroService.getCurrentMoonPhase()
+        if moonPhase == .new || moonPhase == .full {
+            return moonPhase.rawValue
+        }
+        
+        return nil
+    }
+    
+    /// Generate dynamic content for a card type
+    func generateDynamicContent(
+        cardType: CoreGuidanceCardType,
+        userData: UserData
+    ) -> (preview: String, fullInsight: String, headline: String, bodyLines: [String], contextInfo: String?, astrologicalContext: String?, numerologyContext: String?, expandedContent: ExpandedGuidanceContent?, timeframeLabel: String?, summarySentence: String?) {
+        let generated = contentGenerator.generateContent(cardType: cardType, userData: userData)
+        return (
+            preview: generated.preview,
+            fullInsight: generated.fullInsight,
+            headline: generated.headline,
+            bodyLines: generated.bodyLines,
+            contextInfo: generated.contextInfo,
+            astrologicalContext: generated.astrologicalContext,
+            numerologyContext: generated.numerologyContext,
+            expandedContent: generated.expandedContent,
+            timeframeLabel: generated.timeframeLabel,
+            summarySentence: generated.summarySentence
+        )
+    }
+    
+    /// Update card content with dynamic generation
+    func refreshCard(type: CoreGuidanceCardType, userData: UserData) {
+        guard let index = state.cards.firstIndex(where: { $0.type == type }) else {
+            return
+        }
+        
+        var card = state.cards[index]
+        let generated = contentGenerator.generateContent(cardType: card.type, userData: userData)
+        
+        card = CoreGuidanceCard(
+            id: card.id,
+            type: card.type,
+            preview: generated.preview,
+            fullInsight: generated.fullInsight,
+            headline: generated.headline,
+            bodyLines: generated.bodyLines,
+            lastUpdated: Date(),
+            contentVersion: UUID().uuidString, // New version triggers "New" chip
+            contextInfo: generated.contextInfo,
+            astrologicalContext: generated.astrologicalContext,
+            numerologyContext: generated.numerologyContext,
+            expandedContent: generated.expandedContent,
+            timeframeLabel: generated.timeframeLabel,
+            summarySentence: generated.summarySentence
+        )
+        
+        state.cards[index] = card
+        saveState()
+    }
+    
+    /// Update card content (backward compatibility - uses default content)
     func refreshCard(type: CoreGuidanceCardType) {
-        // In production, this would generate new content via AI
-        // For now, we'll just update the timestamp and version
         guard let index = state.cards.firstIndex(where: { $0.type == type }) else {
             return
         }
         
         var card = state.cards[index]
         let (preview, fullInsight, headline, bodyLines) = getDefaultContent(for: card.type)
+        
+        // Default timeframe labels
+        let timeframeLabel: String
+        switch card.type {
+        case .rightNow: timeframeLabel = "Daily Focus"
+        case .thisPeriod: timeframeLabel = "Weekly Focus"
+        case .whereToFocus: timeframeLabel = "Monthly Focus"
+        case .whatsComingUp: timeframeLabel = "Upcoming"
+        case .personalInsight: timeframeLabel = "Personal Cycle"
+        }
+        
+        // Default summary sentence
+        let summarySentence = bodyLines.first ?? headline
+        
         card = CoreGuidanceCard(
             id: card.id,
             type: card.type,
-            preview: preview, // In production, generate new preview
-            fullInsight: fullInsight, // In production, generate new insight
+            preview: preview,
+            fullInsight: fullInsight,
             headline: headline,
             bodyLines: bodyLines,
             lastUpdated: Date(),
-            contentVersion: UUID().uuidString // New version triggers "New" chip
+            contentVersion: UUID().uuidString,
+            contextInfo: nil,
+            astrologicalContext: nil,
+            numerologyContext: nil,
+            expandedContent: nil,
+            timeframeLabel: timeframeLabel,
+            summarySentence: summarySentence
         )
         
         state.cards[index] = card

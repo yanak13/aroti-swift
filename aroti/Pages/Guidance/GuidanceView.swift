@@ -107,6 +107,21 @@ struct GuidanceView: View {
         .onReceive(NotificationCenter.default.publisher(for: NotificationService.notificationsUpdated)) { _ in
             updateNotificationState()
         }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("NavigateToGuidanceWithInsight"))) { notification in
+            // Handle navigation from Core Guidance detail page
+            if let insightText = notification.userInfo?["insightText"] as? String {
+                // Switch to chat screen
+                currentScreen = .chat
+                
+                // Set input text with the insight attached
+                inputText = "I'd like to understand this insight better:\n\n\(insightText)\n\nCan you help me explore this?"
+                
+                // Auto-send the message after a brief delay to ensure view is ready
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    sendMessage()
+                }
+            }
+        }
         .sheet(isPresented: $showPointsSpendModal) {
             let balance = PointsService.shared.getBalance()
             let (_, cost) = AccessControlService.shared.canAccessAIChat()

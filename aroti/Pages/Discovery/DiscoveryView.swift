@@ -541,18 +541,33 @@ struct SpreadItem: Identifiable {
 struct LearningByCategoriesSection: View {
     @Binding var selectedCategory: String?
     
-    // Limited to 4 categories as per spec
-    let categories = ["All", "Tarot", "Astrology", "Numerology", "Compatibility"]
+    // Learning Hub categories - 6 pillars
+    let categories = ["All", "Astrology", "Tarot", "Numerology", "Timing & Cycles", "Self-awareness & Integration", "Using the App Intelligently"]
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Learning by Categories")
-                    .font(DesignTypography.headlineFont(weight: .medium))
-                    .foregroundColor(DesignColors.foreground)
-                Text("Explore your interests")
-                    .font(DesignTypography.footnoteFont())
-                    .foregroundColor(DesignColors.mutedForeground)
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Learning by Categories")
+                        .font(DesignTypography.headlineFont(weight: .medium))
+                        .foregroundColor(DesignColors.foreground)
+                    Text("Explore your interests")
+                        .font(DesignTypography.footnoteFont())
+                        .foregroundColor(DesignColors.mutedForeground)
+                }
+                
+                Spacer()
+                
+                NavigationLink(destination: LearningHubListingPage(selectedCategory: selectedCategory)) {
+                    HStack(spacing: 4) {
+                        Text("View All")
+                            .font(DesignTypography.subheadFont())
+                            .foregroundColor(DesignColors.mutedForeground.opacity(0.8))
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 12))
+                            .foregroundColor(DesignColors.mutedForeground.opacity(0.8))
+                    }
+                }
             }
             
             ScrollView(.horizontal, showsIndicators: false) {
@@ -583,27 +598,37 @@ struct LearningByCategoriesSection: View {
 struct CategoryGridSection: View {
     let selectedCategory: String?
     
-    let categoryItems = [
-        CategoryGridItem(id: "1", title: "Three Card Spread", subtitle: "Past, present, future insights", category: "Tarot", benefit: "Beginner friendly"),
-        CategoryGridItem(id: "2", title: "Birth Chart", subtitle: "Discover your cosmic blueprint", category: "Astrology", benefit: "Self-discovery"),
-        CategoryGridItem(id: "3", title: "Life Path Number", subtitle: "Calculate your numerology", category: "Numerology", benefit: "Self-discovery"),
-        CategoryGridItem(id: "4", title: "Relationship Compatibility", subtitle: "Explore connections and dynamics", category: "Compatibility", benefit: "Relationships")
-    ]
+    // Get articles from ArticleData, convert to CategoryGridItems
+    var categoryItems: [CategoryGridItem] {
+        let articles = ArticleData.articles.values
+        
+        // If a category is selected, filter by it; otherwise show featured articles from each pillar
+        let filteredArticles: [Article]
+        if let category = selectedCategory, category != "All" {
+            filteredArticles = Array(articles.filter { $0.category == category })
+        } else {
+            // Show featured articles from each pillar when "All" is selected
+            filteredArticles = Array(articles.prefix(8)) // Show first 8 articles as featured
+        }
+        
+        return filteredArticles.map { article in
+            // Calculate reading time - use helper function from ArticleDetailPage
+            let readingTime = calculateReadingTime(article: article)
+            return CategoryGridItem(
+                id: article.id,
+                title: article.title,
+                subtitle: article.subtitle,
+                category: article.category,
+                benefit: article.difficulty?.displayName ?? "",
+                difficulty: article.difficulty,
+                readingTime: readingTime
+            )
+        }
+    }
     
     var body: some View {
-        if let category = selectedCategory {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: DiscoveryLayout.interCardSpacing) {
-                    ForEach(categoryItems.filter { $0.category == category }) { item in
-                        NavigationLink(destination: ArticleDetailPage(articleId: item.id)) {
-                            CategoryGridCard(item: item)
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                    }
-                }
-                .padding(.horizontal, DiscoveryLayout.horizontalPadding)
-            }
-            .padding(.horizontal, -DiscoveryLayout.horizontalPadding)
+        if categoryItems.isEmpty {
+            EmptyView()
         } else {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: DiscoveryLayout.interCardSpacing) {
@@ -627,6 +652,8 @@ struct CategoryGridItem: Identifiable {
     let subtitle: String
     let category: String
     let benefit: String
+    let difficulty: ArticleDifficulty?
+    let readingTime: String?
 }
 
 struct CategoryGridCard: View {
@@ -635,12 +662,40 @@ struct CategoryGridCard: View {
     var body: some View {
         BaseCard {
             VStack(alignment: .leading, spacing: 0) {
-                // Chips in top-left (max 2 chips: Access chip first, then Status chip)
-                // For category cards, we don't show access chips unless they're premium
-                // Remove benefit/category chips per spec
+                // Chips in top-left: difficulty and reading time
                 HStack(spacing: 8) {
-                    // No chips for category cards (they're free by default)
-                    // If premium is needed in future, add Premium chip here
+                    if let difficulty = item.difficulty {
+                        Text(difficulty.displayName)
+                            .font(DesignTypography.footnoteFont(weight: .medium))
+                            .foregroundColor(DesignColors.mutedForeground)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(
+                                Capsule()
+                                    .fill(Color.white.opacity(0.05))
+                                    .overlay(
+                                        Capsule()
+                                            .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                                    )
+                            )
+                    }
+                    
+                    if let readingTime = item.readingTime {
+                        Text(readingTime)
+                            .font(DesignTypography.footnoteFont(weight: .medium))
+                            .foregroundColor(DesignColors.mutedForeground)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(
+                                Capsule()
+                                    .fill(Color.white.opacity(0.05))
+                                    .overlay(
+                                        Capsule()
+                                            .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                                    )
+                            )
+                    }
+                    
                     Spacer()
                 }
                 .padding(.top, 12)

@@ -8,12 +8,14 @@
 import SwiftUI
 import Foundation
 
+import UIKit // Import UIKit for NSParagraphStyle
+
 // Helper function to create justified text using AttributedString
 func createJustifiedText(_ text: String) -> AttributedString {
     var attributedString = AttributedString(text)
     
-    // Create Swift AttributedString paragraph style with justified alignment
-    var paragraphStyle = ParagraphStyle()
+    // Create NSParagraphStyle with justified alignment
+    let paragraphStyle = NSMutableParagraphStyle()
     paragraphStyle.alignment = .justified
     paragraphStyle.lineSpacing = 4
     

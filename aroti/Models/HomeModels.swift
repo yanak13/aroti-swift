@@ -90,3 +90,20 @@ struct ReflectionEntry: Codable {
         return manager.loadTodayReflection()
     }
 }
+
+// Season enum for astrological context
+enum Season: String, Codable {
+    case spring = "Spring"
+    case summer = "Summer"
+    case autumn = "Autumn"
+    case winter = "Winter"
+    
+    var hashValue: Int {
+        switch self {
+        case .spring: return 1
+        case .summer: return 2
+        case .autumn: return 3
+        case .winter: return 4
+        }
+    }
+}

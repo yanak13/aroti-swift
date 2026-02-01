@@ -125,6 +125,40 @@ class NumerologyCycleService {
         return reduceToSingleDigit(sum)
     }
     
+    // MARK: - Personal Day
+    
+    /// Calculate personal day number (1-9)
+    /// Formula: (Personal Month + Current Day) reduced to single digit
+    func getPersonalDayNumber(birthDate: Date, currentDate: Date = Date()) -> Int {
+        let personalMonth = getPersonalMonthNumber(birthDate: birthDate, currentDate: currentDate)
+        let calendar = Calendar.current
+        let day = calendar.component(.day, from: currentDate)
+        
+        // Personal day = (personal month + current day) reduced to single digit
+        let sum = personalMonth + day
+        return reduceToSingleDigit(sum)
+    }
+    
+    /// Get personal day description
+    func getPersonalDayDescription(birthDate: Date, currentDate: Date = Date()) -> String {
+        let number = getPersonalDayNumber(birthDate: birthDate, currentDate: currentDate)
+        let descriptions: [Int: String] = [
+            1: "Leadership patterns become more noticeable",
+            2: "Cooperation patterns feel more accessible",
+            3: "Creative patterns surface more easily",
+            4: "Structure supports clear thinking",
+            5: "Change patterns become more noticeable",
+            6: "Care patterns feel more aligned",
+            7: "Introspection patterns play a stronger role",
+            8: "Material patterns become more noticeable",
+            9: "Completion patterns feel more accessible",
+            11: "Intuitive patterns are heightened",
+            22: "Master building patterns are active",
+            33: "Master teaching patterns are present"
+        ]
+        return descriptions[number] ?? "Numerological patterns become more noticeable"
+    }
+    
     // MARK: - Day Number
     
     /// Calculate day number for numerology

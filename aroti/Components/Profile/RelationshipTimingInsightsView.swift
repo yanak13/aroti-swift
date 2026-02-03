@@ -35,33 +35,10 @@ struct RelationshipTimingInsightsView: View {
     var body: some View {
         BaseCard {
             VStack(alignment: .leading, spacing: 16) {
-                // Premium Badge
+                // Premium Badge - using CardChip for consistency
                 HStack {
                     Spacer()
-                    HStack(spacing: 4) {
-                        Image(systemName: "sparkles")
-                            .font(.system(size: 12))
-                            .foregroundColor(DesignColors.accent)
-                        Text("Premium Exclusive")
-                            .font(DesignTypography.caption2Font(weight: .medium))
-                            .foregroundColor(DesignColors.accent)
-                    }
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(
-                        Capsule()
-                            .fill(
-                                LinearGradient(
-                                    colors: [DesignColors.accent.opacity(0.2), DesignColors.accent.opacity(0.1)],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
-                            )
-                            .overlay(
-                                Capsule()
-                                    .stroke(DesignColors.accent.opacity(0.3), lineWidth: 1)
-                            )
-                    )
+                    CardChip(text: "Premium Exclusive", type: .premium)
                 }
                 
                 VStack(alignment: .leading, spacing: 4) {

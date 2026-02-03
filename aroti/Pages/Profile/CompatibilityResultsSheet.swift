@@ -68,41 +68,47 @@ struct CompatibilityResultsSheet: View {
                 CelestialBackground()
                 
                 ScrollView {
-                    VStack(spacing: 24) {
-                        // Header
-                        VStack(spacing: 8) {
+                    VStack(spacing: 20) {
+                        // Header Section
+                        VStack(alignment: .leading, spacing: 8) {
                             Text("Compatibility Analysis")
-                                .font(DesignTypography.title2Font())
+                                .font(DesignTypography.title2Font(weight: .semibold))
                                 .foregroundColor(DesignColors.foreground)
                             
                             Text("\(partnerName) • \(formatDate(partnerBirthDate))")
                                 .font(DesignTypography.bodyFont())
                                 .foregroundColor(DesignColors.mutedForeground)
                         }
-                        .padding()
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, DesignSpacing.sm)
+                        .padding(.top, DesignSpacing.md)
                         
-                        // Overall Score
+                        // Overall Score Card
                         BaseCard {
-                            VStack(spacing: 12) {
+                            VStack(spacing: 16) {
                                 HStack {
                                     Image(systemName: "heart.fill")
                                         .font(.system(size: 24))
                                         .foregroundColor(DesignColors.accent)
                                     Text("Overall Compatibility")
-                                        .font(DesignTypography.footnoteFont())
-                                        .foregroundColor(DesignColors.mutedForeground)
+                                        .font(DesignTypography.subheadFont(weight: .medium))
+                                        .foregroundColor(DesignColors.foreground)
+                                    Spacer()
                                 }
                                 
-                                Text("\(compatibilityData.overallScore)%")
-                                    .font(.system(size: 48, weight: .bold))
-                                    .foregroundColor(getScoreColor(compatibilityData.overallScore))
-                                
-                                Text("Strong connection with excellent potential")
-                                    .font(DesignTypography.bodyFont())
-                                    .foregroundColor(DesignColors.mutedForeground)
+                                VStack(spacing: 8) {
+                                    Text("\(compatibilityData.overallScore)%")
+                                        .font(.system(size: 56, weight: .bold))
+                                        .foregroundColor(getScoreColor(compatibilityData.overallScore))
+                                    
+                                    Text("Strong connection with excellent potential")
+                                        .font(DesignTypography.bodyFont())
+                                        .foregroundColor(DesignColors.mutedForeground)
+                                        .multilineTextAlignment(.center)
+                                }
                             }
                         }
-                        .padding(.horizontal)
+                        .padding(.horizontal, DesignSpacing.sm)
                         
                         // Detailed Metrics
                         VStack(spacing: 16) {
@@ -136,48 +142,52 @@ struct CompatibilityResultsSheet: View {
                                 scoreBg: getScoreBg(compatibilityData.longTermPotential.score)
                             )
                         }
-                        .padding(.horizontal)
+                        .padding(.horizontal, DesignSpacing.sm)
                         
                         // Premium Timing Insights
                         if isPremium {
                             RelationshipTimingInsightsView(partnerName: partnerName)
-                                .padding(.horizontal)
+                                .padding(.horizontal, DesignSpacing.sm)
                         }
                         
                         // Save Button
-                        Button(action: {
-                            // In real app, save to backend
-                            saved = true
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                                saved = false
+                        BaseCard {
+                            Button(action: {
+                                // Haptic feedback
+                                let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+                                impactFeedback.impactOccurred()
+                                
+                                // In real app, save to backend
+                                saved = true
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                                    saved = false
+                                }
+                            }) {
+                                HStack(spacing: 12) {
+                                    Image(systemName: saved ? "checkmark.circle.fill" : "square.and.arrow.down")
+                                        .font(.system(size: 18))
+                                        .foregroundColor(saved ? DesignColors.accent : DesignColors.foreground)
+                                    
+                                    Text(saved ? "Saved!" : "Save Compatibility Check")
+                                        .font(DesignTypography.subheadFont(weight: .medium))
+                                        .foregroundColor(DesignColors.foreground)
+                                    
+                                    Spacer()
+                                }
+                                .frame(maxWidth: .infinity)
                             }
-                        }) {
-                            HStack {
-                                Image(systemName: saved ? "checkmark" : "square.and.arrow.down")
-                                    .font(.system(size: 14))
-                                Text(saved ? "Saved!" : "Save Compatibility Check")
-                                    .font(DesignTypography.subheadFont(weight: .medium))
-                            }
-                            .foregroundColor(DesignColors.foreground)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(
-                                RoundedRectangle(cornerRadius: 10)
-                                    .fill(Color.white.opacity(0.05))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 10)
-                                            .stroke(Color.white.opacity(0.1), lineWidth: 1)
-                                    )
-                            )
+                            .buttonStyle(PlainButtonStyle())
                         }
-                        .buttonStyle(PlainButtonStyle())
-                        .padding(.horizontal)
+                        .padding(.horizontal, DesignSpacing.sm)
+                        .padding(.bottom, DesignSpacing.lg)
                     }
-                    .padding(.vertical)
                 }
             }
             .navigationTitle("Compatibility")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(ArotiColor.surface.opacity(0.9), for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Close") {
@@ -207,7 +217,7 @@ struct CompatibilityMetricCard: View {
     var body: some View {
         BaseCard {
             VStack(alignment: .leading, spacing: 12) {
-                HStack {
+                HStack(alignment: .center) {
                     HStack(spacing: 8) {
                         Image(systemName: icon)
                             .font(.system(size: 20))
@@ -237,6 +247,7 @@ struct CompatibilityMetricCard: View {
                 Text(description)
                     .font(DesignTypography.footnoteFont())
                     .foregroundColor(DesignColors.mutedForeground)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
     }

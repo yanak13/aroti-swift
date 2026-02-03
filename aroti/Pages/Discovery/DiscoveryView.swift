@@ -60,21 +60,25 @@ struct DiscoveryView: View {
                                 TarotReadingsSection()
                                     .padding(.bottom, 20) // Increased title spacing between sections
                                 
-                                // 3. Daily Rituals Section
+                                // 3. Tools Section
+                                ToolsSection()
+                                    .padding(.bottom, 20) // Increased title spacing between sections
+                                
+                                // 4. Daily Rituals Section
                                 DailyRitualsSection()
                                     .padding(.bottom, 20) // Increased title spacing between sections
                                 
-                                // 4. Learning by Categories
+                                // 5. Learning by Categories
                                 LearningByCategoriesSection(
                                     selectedCategory: $selectedCategory
                                 )
                                     .padding(.bottom, 20) // Increased title spacing between sections
                                 
-                                // 5. Category Grid
+                                // 6. Category Grid
                                 CategoryGridSection(selectedCategory: selectedCategory)
                                     .padding(.bottom, 20) // Increased title spacing between sections
                                 
-                                // 6. Courses Section
+                                // 7. Courses Section
                                 CoursesSection()
                             }
                             .padding(.horizontal, DiscoveryLayout.horizontalPadding)
@@ -383,6 +387,17 @@ struct PremiumForecastCard: View {
 
 // MARK: - For You Section (REMOVED)
 
+// MARK: - Tool Data Model
+struct ToolItem: Identifiable {
+    let id: String
+    let title: String
+    let description: String
+    let iconName: String
+    let timeEstimate: String
+    let isPremium: Bool
+    let category: String
+}
+
 // MARK: - Tarot Readings Section
 struct TarotReadingsSection: View {
     @State private var showPaywall = false
@@ -562,10 +577,10 @@ struct LearningByCategoriesSection: View {
                     HStack(spacing: 4) {
                         Text("View All")
                             .font(DesignTypography.subheadFont())
-                            .foregroundColor(DesignColors.mutedForeground.opacity(0.8))
+                            .foregroundColor(DesignColors.accent)
                         Image(systemName: "chevron.right")
                             .font(.system(size: 12))
-                            .foregroundColor(DesignColors.mutedForeground.opacity(0.8))
+                            .foregroundColor(DesignColors.accent)
                     }
                 }
             }
@@ -721,6 +736,166 @@ struct CategoryGridCard: View {
     }
 }
 
+// MARK: - Tool Card Component
+struct ToolCard: View {
+    let tool: ToolItem
+    let width: CGFloat
+    let height: CGFloat
+    let userIsPremium: Bool
+    let action: (() -> Void)?
+    
+    var body: some View {
+        BaseCard(variant: .standard) {
+            ZStack {
+                // Main content
+                VStack(alignment: .leading, spacing: 12) {
+                    // Chips in top-left
+                    HStack(spacing: 8) {
+                        if tool.isPremium {
+                            CardChip(text: "Premium", type: .premium)
+                        }
+                        Spacer()
+                        
+                        // Lock icon for premium tools when user is not premium
+                        if tool.isPremium && !userIsPremium {
+                            Image(systemName: "lock.fill")
+                                .font(.system(size: 13))
+                                .foregroundColor(DesignColors.mutedForeground.opacity(0.6))
+                        }
+                    }
+                    .padding(.top, 12)
+                    .padding(.leading, 12)
+                    
+                    Spacer()
+                    
+                    // Icon in center
+                    VStack(spacing: 12) {
+                        Image(systemName: tool.iconName)
+                            .font(.system(size: 40))
+                            .foregroundColor(DesignColors.accent)
+                            .frame(width: 60, height: 60)
+                            .background(
+                                Circle()
+                                    .fill(DesignColors.accent.opacity(0.15))
+                            )
+                    }
+                    .frame(maxWidth: .infinity)
+                    
+                    Spacer()
+                    
+                    // Title, description, and time estimate
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(tool.title)
+                            .font(DesignTypography.headlineFont(weight: .medium))
+                            .foregroundColor(DesignColors.foreground)
+                            .lineLimit(2)
+                        
+                        Text(tool.description)
+                            .font(.system(size: 14))
+                            .foregroundColor(DesignColors.mutedForeground)
+                            .lineLimit(2)
+                            .lineSpacing(4)
+                            .padding(.top, 4)
+                        
+                        if !tool.timeEstimate.isEmpty {
+                            HStack(spacing: 4) {
+                                Image(systemName: "clock.fill")
+                                    .font(.system(size: 10))
+                                    .foregroundColor(DesignColors.mutedForeground.opacity(0.7))
+                                Text(tool.timeEstimate)
+                                    .font(DesignTypography.caption2Font())
+                                    .foregroundColor(DesignColors.mutedForeground.opacity(0.7))
+                            }
+                            .padding(.top, 4)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.top, 8)
+                }
+                .frame(maxWidth: .infinity, alignment: .topLeading)
+                .frame(height: height) // Match premium cards content height
+            }
+        }
+        .shadow(color: Color.black.opacity(0.2), radius: 12, x: 0, y: 4) // Match premium cards shadow
+        .frame(width: width) // Match premium cards width
+    }
+}
+
+// MARK: - Tools Section
+struct ToolsSection: View {
+    @State private var showPaywall = false
+    private let accessControl = AccessControlService.shared
+    private let userSubscription = UserSubscriptionService.shared
+    
+    private var isPremium: Bool {
+        userSubscription.isPremium
+    }
+    
+    let tools = [
+        ToolItem(
+            id: "compatibility-report",
+            title: "Compatibility Report",
+            description: "Astrology compatibility analysis for relationships",
+            iconName: "person.2.fill",
+            timeEstimate: "2-3 min",
+            isPremium: false,
+            category: "Relationships"
+        )
+    ]
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Tools")
+                        .font(DesignTypography.headlineFont(weight: .medium))
+                        .foregroundColor(DesignColors.foreground)
+                    Text("Calculators and interactive tools for astrology, numerology, and more")
+                        .font(DesignTypography.footnoteFont())
+                        .foregroundColor(DesignColors.mutedForeground)
+                }
+                
+                Spacer()
+                
+                NavigationLink(destination: ToolsListingPage()) {
+                    HStack(spacing: 4) {
+                        Text("View All")
+                            .font(DesignTypography.subheadFont())
+                            .foregroundColor(DesignColors.accent)
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 12))
+                            .foregroundColor(DesignColors.accent)
+                    }
+                }
+            }
+            
+            // Fixed card dimensions for horizontal scrolling (matching Premium content cards)
+            let cardWidth: CGFloat = 400 // Match premium content cards
+            let cardHeight: CGFloat = 250 // Maintaining 1.6:1 ratio
+            
+            ScrollView(.horizontal, showsIndicators: false) {
+                LazyHStack(spacing: DiscoveryLayout.interCardSpacing) {
+                    ForEach(tools) { tool in
+                        NavigationLink(destination: CompatibilityToolPage()) {
+                            ToolCard(
+                                tool: tool,
+                                width: cardWidth,
+                                height: cardHeight,
+                                userIsPremium: isPremium,
+                                action: nil
+                            )
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                }
+                .padding(.horizontal, DiscoveryLayout.horizontalPadding)
+                .padding(.vertical, 4)
+            }
+            .padding(.horizontal, -DiscoveryLayout.horizontalPadding)
+        }
+    }
+}
+
 // MARK: - Daily Rituals Section
 struct DailyRitualsSection: View {
     let practices = [
@@ -749,10 +924,10 @@ struct DailyRitualsSection: View {
                     HStack(spacing: 4) {
                         Text("View All")
                             .font(DesignTypography.subheadFont())
-                            .foregroundColor(DesignColors.mutedForeground.opacity(0.8)) // Lower contrast
+                            .foregroundColor(DesignColors.accent)
                         Image(systemName: "chevron.right")
                             .font(.system(size: 12))
-                            .foregroundColor(DesignColors.mutedForeground.opacity(0.8)) // Lower contrast
+                            .foregroundColor(DesignColors.accent)
                     }
                 }
             }

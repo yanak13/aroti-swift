@@ -13,6 +13,8 @@ class CoreGuidanceService {
     private var state: CoreGuidanceState
     private static let stateKey = "core_guidance_state"
     private let contentGenerator = CoreGuidanceContentGenerator.shared
+    private let eventDetector = PremiumEventDetector.shared
+    private let eventContentGenerator = PremiumEventContentGenerator.shared
     
     private init() {
         self.state = Self.loadState() ?? CoreGuidanceState.default()
@@ -27,6 +29,40 @@ class CoreGuidanceService {
         return state.cards
             .filter { $0.type != .rightNow }
             .sorted { $0.type.order < $1.type.order }
+    }
+    
+    /// Get premium event cards (dynamic, event-driven cards)
+    /// Returns max 2 cards based on priority
+    func getPremiumEventCards(userData: UserData) -> [CoreGuidanceCard] {
+        let events = eventDetector.detectActiveEvents(userData: userData)
+        // Limit to max 2 cards
+        let limitedEvents = Array(events.prefix(2))
+        return limitedEvents.map { event in
+            // Check if we already have this card in state
+            if let existingCard = state.cards.first(where: { $0.id == event.cardId }) {
+                // Check if event is still active
+                if event.isActive {
+                    // Update if needed (event might have new data)
+                    let newCard = eventContentGenerator.generateCard(from: event, userData: userData)
+                    if existingCard.contentVersion != newCard.contentVersion {
+                        updateCard(newCard)
+                        return newCard
+                    }
+                    return existingCard
+                } else {
+                    // Event is no longer active, remove from state
+                    state.cards.removeAll { $0.id == event.cardId }
+                    saveState()
+                    return nil
+                }
+            } else {
+                // New event card, generate and add to state
+                let newCard = eventContentGenerator.generateCard(from: event, userData: userData)
+                state.cards.append(newCard)
+                saveState()
+                return newCard
+            }
+        }.compactMap { $0 }
     }
     
     /// Get a specific card by type

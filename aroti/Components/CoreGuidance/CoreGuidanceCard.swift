@@ -36,7 +36,7 @@ struct CoreGuidanceCardView: View {
                     
                     // Title and Preview - matching Monthly Horoscope layout
                     VStack(alignment: .leading, spacing: 8) {
-                        Text(card.type.title)
+                        Text(card.headline ?? card.type.title)
                             .font(DesignTypography.headlineFont(weight: .medium))
                             .foregroundColor(DesignColors.foreground)
                             .lineLimit(2)

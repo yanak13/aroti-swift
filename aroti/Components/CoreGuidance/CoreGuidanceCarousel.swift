@@ -9,6 +9,7 @@ import SwiftUI
 
 struct CoreGuidanceCarousel: View {
     @State private var cards: [CoreGuidanceCard] = []
+    @State private var premiumEventCards: [CoreGuidanceCard] = []
     @State private var showPaywall = false
     @State private var selectedCard: CoreGuidanceCard?
     @State private var userData: UserData = UserData.default
@@ -30,44 +31,111 @@ struct CoreGuidanceCarousel: View {
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             LazyHStack(spacing: DiscoveryLayout.interCardSpacing) {
-                ForEach(cards) { card in
-                    Button(action: {
-                        // Haptic feedback
-                        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-                        impactFeedback.impactOccurred()
-                        
-                        if isPremium {
-                            // Mark as opened to clear "New" chip
-                            guidanceService.markCardOpened(cardId: card.id)
+                // Premium Event Cards (dynamic, event-driven) - Show these first when they exist
+                if !premiumEventCards.isEmpty {
+                    ForEach(premiumEventCards) { card in
+                        Button(action: {
+                            // Haptic feedback
+                            let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+                            impactFeedback.impactOccurred()
                             
-                            // Get the latest card from service to ensure it has expandedContent
-                            if let latestCard = guidanceService.getCard(id: card.id) {
-                                // Set selected card (use latest version)
-                                selectedCard = latestCard
+                            if isPremium {
+                                // Mark as opened to clear "New" chip
+                                guidanceService.markCardOpened(cardId: card.id)
                                 
-                                // Notify parent via callback
-                                onCardSelected?(latestCard)
+                                // Get the latest card from service to ensure it has expandedContent
+                                if let latestCard = guidanceService.getCard(id: card.id) {
+                                    // Set selected card (use latest version)
+                                    selectedCard = latestCard
+                                    
+                                    // Notify parent via callback
+                                    onCardSelected?(latestCard)
+                                } else {
+                                    // Fallback to current card if service doesn't have it
+                                    selectedCard = card
+                                    onCardSelected?(card)
+                                }
+                                
+                                // Refresh cards to update "New" chip state
+                                loadCards()
+                                loadPremiumEventCards()
                             } else {
-                                // Fallback to current card if service doesn't have it
-                                selectedCard = card
-                                onCardSelected?(card)
+                                showPaywall = true
                             }
-                            
-                            // Refresh cards to update "New" chip state
-                            loadCards()
-                        } else {
-                            showPaywall = true
+                        }) {
+                            ZStack {
+                                CoreGuidanceCardView(
+                                    card: card,
+                                    hasNewContent: guidanceService.hasNewContent(cardId: card.id),
+                                    isPremium: isPremium
+                                )
+                                
+                                // Lock overlay for free users
+                                if !isPremium {
+                                    VStack {
+                                        Spacer()
+                                        HStack {
+                                            Spacer()
+                                            Image(systemName: "lock.fill")
+                                                .font(.system(size: 24, weight: .semibold))
+                                                .foregroundColor(.white)
+                                                .padding(12)
+                                                .background(
+                                                    Circle()
+                                                        .fill(Color.black.opacity(0.6))
+                                                )
+                                                .padding(.trailing, 16)
+                                                .padding(.bottom, 16)
+                                        }
+                                    }
+                                }
+                            }
                         }
-                    }) {
-                        CoreGuidanceCardView(
-                            card: card,
-                            hasNewContent: guidanceService.hasNewContent(cardId: card.id),
-                            isPremium: isPremium
-                        )
+                        .buttonStyle(PlainButtonStyle())
+                        .contentShape(Rectangle())
+                        .frame(width: 400) // Increased from 320, maintaining 1.6:1 ratio
                     }
-                    .buttonStyle(PlainButtonStyle())
-                    .contentShape(Rectangle())
-                    .frame(width: 400) // Increased from 320, maintaining 1.6:1 ratio
+                } else {
+                    // Regular Core Guidance Cards - Only show when no premium event cards exist
+                    ForEach(cards) { card in
+                        Button(action: {
+                            // Haptic feedback
+                            let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+                            impactFeedback.impactOccurred()
+                            
+                            if isPremium {
+                                // Mark as opened to clear "New" chip
+                                guidanceService.markCardOpened(cardId: card.id)
+                                
+                                // Get the latest card from service to ensure it has expandedContent
+                                if let latestCard = guidanceService.getCard(id: card.id) {
+                                    // Set selected card (use latest version)
+                                    selectedCard = latestCard
+                                    
+                                    // Notify parent via callback
+                                    onCardSelected?(latestCard)
+                                } else {
+                                    // Fallback to current card if service doesn't have it
+                                    selectedCard = card
+                                    onCardSelected?(card)
+                                }
+                                
+                                // Refresh cards to update "New" chip state
+                                loadCards()
+                            } else {
+                                showPaywall = true
+                            }
+                        }) {
+                            CoreGuidanceCardView(
+                                card: card,
+                                hasNewContent: guidanceService.hasNewContent(cardId: card.id),
+                                isPremium: isPremium
+                            )
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .contentShape(Rectangle())
+                        .frame(width: 400) // Increased from 320, maintaining 1.6:1 ratio
+                    }
                 }
             }
             .padding(.horizontal, DiscoveryLayout.horizontalPadding)
@@ -84,6 +152,7 @@ struct CoreGuidanceCarousel: View {
         .onAppear {
             loadUserData()
             loadCards()
+            loadPremiumEventCards()
             refreshCardsIfNeeded()
         }
     }
@@ -99,6 +168,11 @@ struct CoreGuidanceCarousel: View {
         cards = guidanceService.getCards().filter { $0.type != .rightNow }
     }
     
+    private func loadPremiumEventCards() {
+        // Load dynamic premium event cards
+        premiumEventCards = guidanceService.getPremiumEventCards(userData: userData)
+    }
+    
     private func refreshCardsIfNeeded() {
         // Check each card and refresh if needed (excluding "Right Now")
         for cardType in CoreGuidanceCardType.allCases where cardType != .rightNow {
@@ -111,6 +185,7 @@ struct CoreGuidanceCarousel: View {
         }
         // Reload cards after refresh
         loadCards()
+        loadPremiumEventCards()
         
         // Ensure all cards have expandedContent (refresh again if needed)
         // This is a safety check to ensure content is always available
@@ -122,6 +197,7 @@ struct CoreGuidanceCarousel: View {
                 }
             }
             loadCards()
+            loadPremiumEventCards()
         }
     }
 }

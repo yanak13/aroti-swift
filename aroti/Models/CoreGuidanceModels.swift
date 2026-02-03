@@ -176,3 +176,60 @@ struct CoreGuidanceState: Codable {
     }
 }
 
+// MARK: - Premium Event Models
+enum PremiumEventType: String, Codable {
+    case mercuryRetrograde = "mercury_retrograde"
+    case monthlyHoroscope = "monthly_horoscope"
+    case personalMonthChange = "personal_month_change"
+    case saturnReturn = "saturn_return"
+    case favorableDates = "favorable_dates"
+    case focusArea = "focus_area"
+    case moonPhase = "moon_phase"
+}
+
+struct PremiumEvent: Identifiable {
+    let id: String
+    let type: PremiumEventType
+    let priority: Int // 1-10, higher = more important
+    let startDate: Date
+    let endDate: Date?
+    let title: String
+    let preview: String
+    let isActive: Bool
+    let personalizationData: EventPersonalization
+    
+    var cardId: String {
+        "premium_event_\(type.rawValue)_\(id)"
+    }
+}
+
+struct EventPersonalization {
+    let userSunSign: String
+    let userMoonSign: String?
+    let userMercurySign: String?
+    let userPersonalMonth: Int?
+    let userPersonalYear: Int?
+    let userAge: Int?
+    let relevantTransits: [String]
+    let additionalData: [String: Any]?
+    
+    init(
+        userSunSign: String,
+        userMoonSign: String? = nil,
+        userMercurySign: String? = nil,
+        userPersonalMonth: Int? = nil,
+        userPersonalYear: Int? = nil,
+        userAge: Int? = nil,
+        relevantTransits: [String] = [],
+        additionalData: [String: Any]? = nil
+    ) {
+        self.userSunSign = userSunSign
+        self.userMoonSign = userMoonSign
+        self.userMercurySign = userMercurySign
+        self.userPersonalMonth = userPersonalMonth
+        self.userPersonalYear = userPersonalYear
+        self.userAge = userAge
+        self.relevantTransits = relevantTransits
+        self.additionalData = additionalData
+    }
+}

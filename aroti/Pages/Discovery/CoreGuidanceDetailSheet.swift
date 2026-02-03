@@ -107,10 +107,28 @@ struct CoreGuidanceDetailSheet: View {
                 
                 ScrollView {
                     VStack(spacing: 0) {
-                        // Minimal Premium Card
-                        minimalPremiumCard()
+                        // Hero Section (matching LearningIntroCard style)
+                        heroSection()
                             .padding(.horizontal, DesignSpacing.sm)
                             .padding(.top, DesignSpacing.md)
+                            .padding(.bottom, DesignSpacing.md)
+                        
+                        // Main Content Sections (matching ArticleDetailPage style)
+                        if let expanded = currentCard.expandedContent {
+                            mainContentSections(expanded: expanded)
+                                .padding(.horizontal, DesignSpacing.sm)
+                        } else {
+                            // Loading state
+                            VStack(spacing: 16) {
+                                ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle(tint: DesignColors.accent))
+                                Text("Loading content...")
+                                    .font(DesignTypography.bodyFont())
+                                    .foregroundColor(DesignColors.mutedForeground)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                        }
                         
                         // Ask Aroti Button
                         VStack(spacing: 8) {
@@ -152,7 +170,7 @@ struct CoreGuidanceDetailSheet: View {
                     }
                 }
             }
-            .navigationTitle(currentCard.type.title)
+            .navigationTitle(currentCard.headline ?? currentCard.type.title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(ArotiColor.surface.opacity(0.9), for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
@@ -183,21 +201,324 @@ struct CoreGuidanceDetailSheet: View {
     // MARK: - Card Refresh
     
     private func refreshCardIfNeeded() {
-        // Always get the latest card from service by type (more reliable than ID)
+        // Check if this is a premium event card (ID starts with "premium_event_")
+        let isPremiumEventCard = currentCard.id.hasPrefix("premium_event_")
+        
         if let userData = stateManager.loadUserData() {
             // If card doesn't have expandedContent, refresh it first
             if currentCard.expandedContent == nil {
-                guidanceService.refreshCard(type: currentCard.type, userData: userData)
+                if isPremiumEventCard {
+                    // For premium event cards, refresh by regenerating from events
+                    // The card will be regenerated when getPremiumEventCards is called
+                } else {
+                    guidanceService.refreshCard(type: currentCard.type, userData: userData)
+                }
             }
             
-            // Get the latest card from service (by type, not ID, since ID might change)
-            if let latestCard = guidanceService.getCard(type: currentCard.type) {
-                displayedCard = latestCard
+            // Get the latest card from service
+            // For premium event cards, use ID lookup; for regular cards, use type lookup
+            if isPremiumEventCard {
+                // Look up by ID for premium event cards
+                if let latestCard = guidanceService.getCard(id: currentCard.id) {
+                    displayedCard = latestCard
+                } else {
+                    // If card not found, try to get it from premium event cards
+                    let premiumCards = guidanceService.getPremiumEventCards(userData: userData)
+                    if let matchingCard = premiumCards.first(where: { $0.id == currentCard.id }) {
+                        displayedCard = matchingCard
+                    }
+                }
+            } else {
+                // For regular cards, use type lookup
+                if let latestCard = guidanceService.getCard(type: currentCard.type) {
+                    displayedCard = latestCard
+                }
             }
         }
     }
     
-    // MARK: - Minimal Premium Card
+    // MARK: - Hero Section (matching LearningIntroCard)
+    
+    private func heroSection() -> some View {
+        BaseCard {
+            VStack(alignment: .leading, spacing: 12) {
+                // Category chips (matching ArticleDetailPage style)
+                HStack(spacing: 8) {
+                    // Premium chip
+                    Text("Premium Forecast")
+                        .font(DesignTypography.footnoteFont(weight: .medium))
+                        .foregroundColor(DesignColors.accent)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(
+                            Capsule()
+                                .fill(DesignColors.accent.opacity(0.2))
+                                .overlay(
+                                    Capsule()
+                                        .stroke(DesignColors.accent.opacity(0.3), lineWidth: 1)
+                                )
+                        )
+                    
+                    // Event type chip (extract from contextInfo or use timeframe)
+                    if let contextInfo = currentCard.contextInfo {
+                        Text(contextInfo)
+                            .font(DesignTypography.footnoteFont(weight: .medium))
+                            .foregroundColor(DesignColors.mutedForeground)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(
+                                Capsule()
+                                    .fill(Color.white.opacity(0.05))
+                                    .overlay(
+                                        Capsule()
+                                            .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                                    )
+                            )
+                    } else if let timeframeLabel = currentCard.timeframeLabel {
+                        Text(timeframeLabel)
+                            .font(DesignTypography.footnoteFont(weight: .medium))
+                            .foregroundColor(DesignColors.mutedForeground)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(
+                                Capsule()
+                                    .fill(Color.white.opacity(0.05))
+                                    .overlay(
+                                        Capsule()
+                                            .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                                    )
+                            )
+                    }
+                }
+                
+                // Title (matching ArticleDetailPage)
+                Text(currentCard.headline ?? currentCard.type.title)
+                    .font(DesignTypography.title2Font(weight: .medium))
+                    .foregroundColor(DesignColors.foreground)
+                
+                // REMOVED: Subtitle/One-line description - this duplicates Overview section below
+                // The Overview section will show this content instead
+                
+                // Divider (matching ArticleDetailPage)
+                Divider()
+                    .background(Color.white.opacity(0.1))
+                
+                // Meta info (date range, timeframe, etc.)
+                if let metaInfo = getMetaInfo() {
+                    Text(metaInfo)
+                        .font(DesignTypography.caption2Font())
+                        .foregroundColor(DesignColors.mutedForeground)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+    
+    // Helper to generate meta info string
+    private func getMetaInfo() -> String? {
+        var metaParts: [String] = []
+        
+        // Add timeframe date range if available
+        let dateRange = timeframeDateRange
+        if !dateRange.isEmpty {
+            metaParts.append(dateRange)
+        }
+        
+        // Add astrological/numerological context if available
+        if let astroContext = currentCard.astrologicalContext {
+            metaParts.append(astroContext.components(separatedBy: " • ").first ?? astroContext)
+        }
+        if let numContext = currentCard.numerologyContext {
+            metaParts.append(numContext.components(separatedBy: " • ").first ?? numContext)
+        }
+        
+        return metaParts.isEmpty ? nil : metaParts.joined(separator: " • ")
+    }
+    
+    // MARK: - Main Content Sections (matching ArticleDetailPage style)
+    
+    @ViewBuilder
+    private func mainContentSections(expanded: ExpandedGuidanceContent) -> some View {
+        VStack(alignment: .leading, spacing: 24) {
+            // Overview Section (expanded oneLineInsight as paragraph with justified text)
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Overview")
+                    .font(DesignTypography.title3Font(weight: .medium))
+                    .foregroundColor(DesignColors.foreground)
+                
+                Text(justifiedText(expanded.oneLineInsight))
+                    .font(DesignTypography.bodyFont())
+                    .foregroundColor(DesignColors.foreground)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .lineSpacing(4)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            
+            // Key Insights Section
+            if !expanded.insightBullets.isEmpty {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Key Insights")
+                        .font(DesignTypography.title3Font(weight: .medium))
+                        .foregroundColor(DesignColors.foreground)
+                    
+                    VStack(alignment: .leading, spacing: 8) {
+                        ForEach(expanded.insightBullets, id: \.self) { bullet in
+                            HStack(alignment: .top, spacing: 12) {
+                                Text("•")
+                                    .font(DesignTypography.bodyFont(weight: .medium))
+                                    .foregroundColor(DesignColors.accent)
+                                
+                                // Parse bullet to emphasize label if it contains ":"
+                                let parts = bullet.components(separatedBy: ":")
+                                if parts.count == 2 {
+                                    (Text(parts[0] + ":")
+                                        .font(DesignTypography.bodyFont(weight: .medium))
+                                        .foregroundColor(DesignColors.foreground)
+                                     + Text(" " + parts[1])
+                                        .font(DesignTypography.bodyFont())
+                                        .foregroundColor(DesignColors.foreground))
+                                    .fixedSize(horizontal: false, vertical: true)
+                                } else {
+                                    Text(bullet)
+                                        .font(DesignTypography.bodyFont())
+                                        .foregroundColor(DesignColors.foreground)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+                            }
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            
+            // Detailed Guidance Section
+            if !expanded.guidance.isEmpty {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Guidance")
+                        .font(DesignTypography.title3Font(weight: .medium))
+                        .foregroundColor(DesignColors.foreground)
+                    
+                    VStack(alignment: .leading, spacing: 8) {
+                        ForEach(expanded.guidance, id: \.self) { item in
+                            HStack(alignment: .top, spacing: 12) {
+                                Text("•")
+                                    .font(DesignTypography.bodyFont(weight: .medium))
+                                    .foregroundColor(DesignColors.accent)
+                                
+                                // Parse guidance item to emphasize label if it contains ":"
+                                let parts = item.components(separatedBy: ":")
+                                if parts.count == 2 {
+                                    (Text(parts[0] + ":")
+                                        .font(DesignTypography.bodyFont(weight: .medium))
+                                        .foregroundColor(DesignColors.foreground)
+                                     + Text(" " + parts[1])
+                                        .font(DesignTypography.bodyFont())
+                                        .foregroundColor(DesignColors.foreground))
+                                    .fixedSize(horizontal: false, vertical: true)
+                                } else {
+                                    Text(item)
+                                        .font(DesignTypography.bodyFont())
+                                        .foregroundColor(DesignColors.foreground)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+                            }
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            
+            // Why This Matters Now Section (enhanced with more context)
+            if let contextSection = expanded.contextSection, !contextSection.isEmpty {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Why This Matters Now")
+                        .font(DesignTypography.title3Font(weight: .medium))
+                        .foregroundColor(DesignColors.foreground)
+                    
+                    VStack(alignment: .leading, spacing: 8) {
+                        // Show astrological and numerological context as highlighted tags
+                        if let astroContext = currentCard.astrologicalContext {
+                            Text(astroContext)
+                                .font(DesignTypography.bodyFont(weight: .medium))
+                                .foregroundColor(DesignColors.accent)
+                        }
+                        
+                        if let numContext = currentCard.numerologyContext, numContext != currentCard.astrologicalContext {
+                            Text(numContext)
+                                .font(DesignTypography.bodyFont(weight: .medium))
+                                .foregroundColor(DesignColors.accent)
+                        }
+                        
+                        // Detailed context explanation
+                        Text(justifiedText(contextSection))
+                            .font(DesignTypography.bodyFont())
+                            .foregroundColor(DesignColors.foreground)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .lineSpacing(4)
+                            .padding(.top, 4)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            } else if let astroContext = currentCard.astrologicalContext, let numContext = currentCard.numerologyContext {
+                // Fallback: show context even without detailed explanation
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Why This Matters Now")
+                        .font(DesignTypography.title3Font(weight: .medium))
+                        .foregroundColor(DesignColors.foreground)
+                    
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(astroContext)
+                            .font(DesignTypography.bodyFont(weight: .medium))
+                            .foregroundColor(DesignColors.accent)
+                        
+                        if numContext != astroContext {
+                            Text(numContext)
+                                .font(DesignTypography.bodyFont(weight: .medium))
+                                .foregroundColor(DesignColors.accent)
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            
+            // Reflection Questions Section
+            if !expanded.reflectionQuestions.isEmpty {
+                Divider()
+                    .background(Color.white.opacity(0.1))
+                    .padding(.vertical, 8)
+                
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Reflection")
+                        .font(DesignTypography.title3Font(weight: .medium))
+                        .foregroundColor(DesignColors.foreground)
+                    
+                    VStack(alignment: .leading, spacing: 8) {
+                        ForEach(expanded.reflectionQuestions, id: \.self) { question in
+                            HStack(alignment: .top, spacing: 12) {
+                                Text("•")
+                                    .font(DesignTypography.bodyFont(weight: .medium))
+                                    .foregroundColor(DesignColors.accent)
+                                Text(question)
+                                    .font(DesignTypography.bodyFont())
+                                    .foregroundColor(DesignColors.foreground)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.leading, 16) // Align with text inside BaseCard (BaseCard has 16pt internal padding)
+    }
+    
+    // Helper function to create justified text (matching ArticleDetailPage)
+    private func justifiedText(_ text: String) -> AttributedString {
+        return createJustifiedText(text)
+    }
+    
+    // MARK: - Minimal Premium Card (deprecated - keeping for backward compatibility)
     
     private func minimalPremiumCard() -> some View {
         guard let expanded = currentCard.expandedContent else {
